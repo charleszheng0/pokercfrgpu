@@ -1,0 +1,10 @@
+build/
+build-*/
+build-cuda/
+.venv/
+node_modules/
+.next/
+*.egg-info/
+__pycache__/
+*.pyc
+.DS_Store

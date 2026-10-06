@@ -1,0 +1,12 @@
+{
+  "game": "kuhn",
+  "iterations": 100000,
+  "cpu": {
+    "elapsed_ms": 10381.09375,
+    "iterations_per_second": 9632.896341,
+    "states_visited": 5400000,
+    "states_per_second": 520176.4024,
+    "nash_conv": 0.00126531026
+  },
+  "cuda": null
+}
