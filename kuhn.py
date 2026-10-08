@@ -1,7 +1,7 @@
 import random
 
 cards = {"J":11, "Q":12, "K":13}
-p1_card, p2_card = random.sample(list(cards.keys()),2)
+# p1_card, p2_card = random.sample(list(cards.keys()),2)
 history = ""
 
 #c = check
@@ -38,31 +38,35 @@ def terminate(history):
     ): 
         return True
 
-while not terminate(history): 
-    actions = get_avail_actions(history)
-    print(actions)
-    action = input("Choose action: ")
+# while not terminate(history): 
+#     actions = get_avail_actions(history)
+#     print(actions)
+#     action = input("Choose action: ")
     
-    if action == "check":
-        history+='c'
-    elif action == "bet":
-        history+='b'
-    elif action =="call":
-        history+='k'
-    elif action=="fold": 
-        history+='f'
+#     if action == "check":
+#         history+='c'
+#     elif action == "bet":
+#         history+='b'
+#     elif action =="call":
+#         history+='k'
+#     elif action=="fold": 
+#         history+='f'
 
-    print(action)
+#     print(action)
 
-def payoff(history): 
+def payoff(history, p1_card, p2_card): 
     if history == "bf":
         return 1
     elif history =="cbf": 
         return -1
     else: 
         if cards[p1_card] > cards[p2_card]: 
+            if history == "cc":
+                return 1
             return 2
         else: 
+            if history == "cc":
+                return -1
             return -2
 # regrets measures how much you wish you had chosen a different action at a decision point
 # at terminal payoff points, those are used to calculate regret at the decision that led to it
@@ -86,9 +90,27 @@ regrets = {
     "Kcb": {"fold": 0, "call": 0},
 }
 
-def cfr(history, p1_reach, p2_reach): 
+strategy_sum = { # sum of all strategy's reach weighted EVs. 
+    "J":   {"check": 0, "bet": 0},
+    "Q":   {"check": 0, "bet": 0},
+    "K":   {"check": 0, "bet": 0},
+
+    "Jc":  {"check": 0, "bet": 0},
+    "Qc":  {"check": 0, "bet": 0},
+    "Kc":  {"check": 0, "bet": 0},
+
+    "Jb":  {"fold": 0, "call": 0},
+    "Qb":  {"fold": 0, "call": 0},
+    "Kb":  {"fold": 0, "call": 0},
+
+    "Jcb": {"fold": 0, "call": 0},
+    "Qcb": {"fold": 0, "call": 0},
+    "Kcb": {"fold": 0, "call": 0},
+}
+
+def cfr(history, p1_card, p2_card, p1_reach, p2_reach): 
     if terminate(history): 
-        return payoff(history)
+        return payoff(history, p1_card, p2_card)
     else:
         if len(history)%2==0:
             infoset = p1_card+history # "Qcb"
@@ -100,14 +122,28 @@ def cfr(history, p1_reach, p2_reach):
         
         # only update p1 when p1's turn, likewise for p2
         if len(history)%2==0:
-            value1 = cfr(history + action_to_char(poss1), p1_reach*prop1, p2_reach) # cfr(key1) = p1's regret value
-            value2 = cfr(history + action_to_char(poss2), p1_reach*prop2, p2_reach) # cfr(key2) 
+            value1 = cfr(history + action_to_char(poss1), p1_card, p2_card, p1_reach*prop1, p2_reach) # cfr(key1) = p1's regret value
+            value2 = cfr(history + action_to_char(poss2), p1_card, p2_card, p1_reach*prop2, p2_reach) # cfr(key2) 
+
         else: 
-            value1 = cfr(history + action_to_char(poss1), p1_reach, p2_reach*prop1)
-            value2 = cfr(history + action_to_char(poss2), p1_reach, p2_reach*prop2) 
+            value1 = cfr(history + action_to_char(poss1), p1_card, p2_card, p1_reach, p2_reach*prop1)
+            value2 = cfr(history + action_to_char(poss2), p1_card, p2_card, p1_reach, p2_reach*prop2) 
         curr_ev = prop1*value1+prop2*value2 # EV under current strategy
-        regret_actions[poss1] = p2_reach * (value1-curr_ev) # update regret dictionary
-        regret_actions[poss2] = p1_reach * (value2-curr_ev)
+        if len(history)%2==0: 
+            regret_actions[poss1] += p2_reach * (value1-curr_ev) # update regret dictionary
+            regret_actions[poss2] += p2_reach * (value2-curr_ev)
+
+            strategy_sum[infoset][poss1] += p1_reach*prop1
+            strategy_sum[infoset][poss2] += p1_reach*prop2
+
+        else: 
+            #p2's regret needs to be reversed since all values are p1's
+            regret_actions[poss1] += p1_reach * (curr_ev-value1) # update regret dictionary
+            regret_actions[poss2] += p1_reach * (curr_ev-value2)
+
+            strategy_sum[infoset][poss1] += p2_reach*prop1
+            strategy_sum[infoset][poss2] += p2_reach*prop2
+    
     return curr_ev #-> acts as payoff, its just that we must return up the calculated value via both nodes
 
 def regretMatch(val1, val2):
@@ -125,6 +161,20 @@ def regretMatch(val1, val2):
         val2Proportion = 0.5
     return val1Proportion, val2Proportion
 
-cfr("", 1.0, 1.0)
+#run algo many times
+card_faces = (cards.keys())
+for i in range(10000): 
+    for card1 in card_faces: 
+        for card2 in card_faces: 
+            if card1!=card2: 
+                cfr("", card1, card2, 1.0, 1.0)
 
-
+nash_strategies = {}
+for infoset in strategy_sum:
+        total = sum(strategy_sum[infoset].values()) # aggregates all values from dictionary ignoring keys
+        nash_strategies[infoset] = {}
+        
+        if total > 0:
+            for action in strategy_sum[infoset]: 
+                nash_strategies[infoset][action] = strategy_sum[infoset][action]/total
+print(nash_strategies)
