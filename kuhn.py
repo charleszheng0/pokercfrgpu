@@ -163,7 +163,7 @@ def regretMatch(val1, val2):
 
 #run algo many times
 card_faces = (cards.keys())
-for i in range(10000): 
+for i in range(12342): 
     for card1 in card_faces: 
         for card2 in card_faces: 
             if card1!=card2: 
