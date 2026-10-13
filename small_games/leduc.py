@@ -1,4 +1,3 @@
-
 import random
 
 
@@ -45,7 +44,7 @@ class LeducPoker:
             "raises_remaining": self.max_raises - self.raises_this_round,
             "current_player": self.current_player,
             "round_bets": self.round_bets.copy(),
-            "contributions": self.contributions.copy()
+            "contributions": self.contributions.copy(),
         }
 
     def legal_actions(self):
@@ -94,8 +93,7 @@ class LeducPoker:
 
         if action not in self.legal_actions():
             raise ValueError(
-                f"Illegal action: {action}. "
-                f"Legal actions: {self.legal_actions()}"
+                f"Illegal action: {action}. " f"Legal actions: {self.legal_actions()}"
             )
 
         player = self.current_player
@@ -137,7 +135,7 @@ class LeducPoker:
             "winner": self.winner,
             "pot": self.pot,
             "next_player": None if self.done else self.current_player,
-            "rewards": self.rewards() if self.done else [0, 0]
+            "rewards": self.rewards() if self.done else [0, 0],
         }
 
     def showdown(self):
@@ -171,7 +169,7 @@ class LeducPoker:
         if self.winner is None:
             return [
                 self.pot / 2 - self.contributions[0],
-                self.pot / 2 - self.contributions[1]
+                self.pot / 2 - self.contributions[1],
             ]
 
         rewards = [-self.contributions[0], -self.contributions[1]]
@@ -180,27 +178,24 @@ class LeducPoker:
         return rewards
 
 
-# ============================================
-# PLAY A RANDOM GAME
-# ============================================
+if __name__ == "__main__":
+    game = LeducPoker()
 
-game = LeducPoker()
+    while not game.done:
+        player = game.current_player
 
-while not game.done:
-    player = game.current_player
+        print(f"\nPlayer {player}'s turn")
+        print("Observation:", game.observe(player))
 
-    print(f"\nPlayer {player}'s turn")
-    print("Observation:", game.observe(player))
+        action = random.choice(game.legal_actions())
 
-    action = random.choice(game.legal_actions())
+        print("Action:", action)
+        game.step(action)
 
-    print("Action:", action)
-    game.step(action)
-
-print("\n========== GAME OVER ==========")
-print("Player cards:", game.players)
-print("Public card:", game.public_card)
-print("History:", game.history)
-print("Pot:", game.pot)
-print("Winner:", game.winner)
-print("Rewards:", game.rewards())
+    print("\n========== GAME OVER ==========")
+    print("Player cards:", game.players)
+    print("Public card:", game.public_card)
+    print("History:", game.history)
+    print("Pot:", game.pot)
+    print("Winner:", game.winner)
+    print("Rewards:", game.rewards())

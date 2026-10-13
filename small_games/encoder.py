@@ -1,10 +1,11 @@
-
 import torch
 
 CARDS = ["J", "Q", "K"]
 ACTIONS = ["check", "bet", "fold", "call", "raise"]
 
-# Maximum actions: 4 per round, 2 rounds.
+# Store eight explicit actions. A ninth-action decision is reachable, but its
+# omitted tail is uniquely determined by the pot/to-call/raise/player features;
+# test_nfsp.py checks that no two reachable information sets collide.
 MAX_HISTORY = 8
 
 # Private card (3) + public card (4) + round (2)
@@ -27,7 +28,7 @@ def encode_state(obs):
         obs["pot"] / 30.0,
         obs["to_call"] / 12.0,
         obs["raises_remaining"] / 2.0,
-        float(obs["current_player"])
+        float(obs["current_player"]),
     ]
 
     for round_id, player, action in obs["history"][:MAX_HISTORY]:

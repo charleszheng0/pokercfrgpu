@@ -1,0 +1,9 @@
+# Architecture
+
+The new CPU reference is independent of the historical research scripts. `cards.py` scores every five-card subset of a five-to-seven-card hand into category and lexicographic kickers. `engine.py` deals and burns from a seeded deck, tracks street/total contributions and stacks, restricts bet targets, and emits observation dictionaries. Its step function resolves folds, calls, street transitions, and terminal net rewards. In heads-up play unmatched chips are refunded; a multiway side-pot ledger is outside scope.
+
+`agents.py` consumes only observations. The random agent selects a legal action. The heuristic agent estimates random-opponent showdown equity with Monte Carlo sampling, then applies simple thresholds. `play.py` gives seat 0 to a human and seat 1 to either baseline. `experiments/baseline.py` plays reproducible hands with seat rotation and writes JSON.
+
+`small_games/train_nfsp.py` contains distinct Q and average-policy networks, replay and reservoir buffers, and episodic anticipatory mode. `small_games/compare_cfr_nfsp.py` contains a separate Leduc CFR implementation and a policy comparison path. They are not wired to the new Hold'em engine. Original weights are in `artifacts/legacy/`; new training writes to `artifacts/nfsp/`. The historical CUDA files in `cuda_experiments/` are outside the CPU reference and have not been benchmarked here. `examples/template_tensor.py` is a standalone learning exercise.
+
+Planned boundaries: NFSP observation → legal-action-masked Q and policy logits; CFR public state plus private hand ranges → hand-dependent counterfactual values; continuation model `(public position, both ranges, hand)` → counterfactual value vector. These planned representations will be specified before training. CPU output is always the correctness reference for later acceleration.

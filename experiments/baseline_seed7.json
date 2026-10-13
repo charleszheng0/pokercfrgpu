@@ -1,0 +1,15 @@
+{
+  "experiment": "heuristic_vs_random",
+  "seed": 7,
+  "hands": 100,
+  "equity_samples_per_decision": 32,
+  "mean_chips_per_hand": -2.68,
+  "standard_error": 5.911260953519652,
+  "wins": 27,
+  "ties": 0,
+  "elapsed_seconds": 4.749035999993794,
+  "python": "3.10.6",
+  "machine": "arm64",
+  "revision": "f0f9fc7feeb704d51bb77bf8763e00ea30d5c0fe",
+  "working_tree_dirty": true
+}

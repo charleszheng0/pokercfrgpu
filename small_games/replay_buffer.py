@@ -1,4 +1,3 @@
-
 import random
 from collections import deque
 
@@ -10,14 +9,7 @@ class ReplayBuffer:
 
     def push(self, state, action, reward, next_state, done, next_legal):
         # Save one experience from gameplay.
-        self.buffer.append((
-            state,
-            action,
-            reward,
-            next_state,
-            done,
-            next_legal
-        ))
+        self.buffer.append((state, action, reward, next_state, done, next_legal))
 
     def sample(self, batch_size):
         # Randomly select previous experiences for DQN training.
@@ -37,7 +29,7 @@ if __name__ == "__main__":
         reward=2,
         next_state=[0, 1, 0],
         done=False,
-        next_legal=[True, True, False, False, False]
+        next_legal=[True, True, False, False, False],
     )
 
     print("Experiences stored:", len(buffer))

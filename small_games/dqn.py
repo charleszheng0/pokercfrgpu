@@ -1,7 +1,6 @@
-
 import torch
 import torch.nn as nn
-from encoder import INPUT_DIM
+from .encoder import INPUT_DIM
 
 ACTIONS = ["check", "bet", "fold", "call", "raise"]
 
@@ -16,7 +15,7 @@ class QNetwork(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(128, len(ACTIONS))
+            nn.Linear(128, len(ACTIONS)),
         )
 
     def forward(self, x):
