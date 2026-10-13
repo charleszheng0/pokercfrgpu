@@ -1,0 +1,24 @@
+{
+  "experiment": "tiny_range_river_value_equity_feature",
+  "source_dataset": "experiments/river_value_extended_dataset.json",
+  "feature_change": "append exact showdown equity against opponent range",
+  "dataset_seed": 53,
+  "train_seed": 54,
+  "train_positions": 180,
+  "test_positions": 20,
+  "epochs": 300,
+  "lr": 0.001,
+  "model_path": "artifacts/river_value_equity_180_seed54.pt",
+  "metrics": {
+    "held_out_mae_chips": 2.2254865169525146,
+    "held_out_rmse_chips": 2.982193946838379,
+    "network_inference_seconds_per_hand_value": 8.795833370337883e-06,
+    "zero_predictor_mae_chips": 3.950331211090088,
+    "shallow_vs_reference_mae_chips": 0.9610535536623264
+  },
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true
+}

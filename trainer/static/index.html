@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Heads-Up Hold'em Trainer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #111416;
+      color: #f0f1ed;
+      --panel: #1b2022;
+      --panel-raised: #232a2b;
+      --line: #373f3f;
+      --muted: #a7b0ad;
+      --green: #1b674a;
+      --green-light: #71c89a;
+      --gold: #e1bd76;
+      --red: #e27f75;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; }
+    header { min-height: 62px; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; gap: 18px; background: #181c1e; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; color: #111916; background: var(--green-light); font-weight: 900; }
+    h1 { margin: 0; font-size: .96rem; letter-spacing: .08em; }
+    #status { font-variant-numeric: tabular-nums; }
+    main { width: min(1340px, 100%); padding: 20px 24px 36px; margin: auto; display: grid; gap: 16px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+    .setup { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 13px 16px; }
+    .setup label, .eyebrow { color: var(--muted); font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    select, button { font: inherit; border-radius: 8px; }
+    select { min-width: 180px; padding: 9px 12px; color: #f3f5f0; background: #121718; border: 1px solid #4b5654; }
+    button { cursor: pointer; }
+    .new-hand { padding: 10px 16px; border: 0; background: var(--gold); color: #201b11; font-weight: 750; }
+    .new-hand:hover { background: #efd398; }
+    .new-hand:disabled { cursor: not-allowed; opacity: .55; }
+    .rules { margin-left: auto; color: var(--muted); font-size: .84rem; }
+    .play-layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(330px, .85fr); gap: 16px; align-items: stretch; }
+    .play-column { display: grid; gap: 14px; min-width: 0; }
+    .table { min-height: 510px; display: flex; flex-direction: column; justify-content: space-between; padding: 22px; overflow: hidden; border: 1px solid #537262; border-radius: 18px; background: radial-gradient(ellipse at center, #286e51 0%, #1d573e 49%, #173c2e 100%); box-shadow: inset 0 0 0 7px #202827, inset 0 0 0 9px #a17b47, 0 18px 42px #0004; }
+    .seat { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 7px 12px; width: min(540px, 100%); padding: 12px 14px; border: 1px solid #ffffff25; border-radius: 11px; background: #101816c9; text-align: left; }
+    .seat.active { outline: 2px solid var(--gold); }
+    .seat-name { font-weight: 750; }
+    .seat-meta { color: #d1dbd5; font-size: .85rem; font-variant-numeric: tabular-nums; }
+    .cards { display: flex; justify-content: center; gap: 7px; min-height: 66px; }
+    .seat .cards { justify-content: flex-start; grid-column: 1; }
+    .card { width: 44px; height: 62px; border-radius: 6px; background: #f6f4ed; color: #19201c; display: grid; place-items: center; font-size: 1.18rem; font-weight: 800; box-shadow: 0 3px 8px #0006; }
+    .card.red { color: #b42929; }
+    .card.back { background: repeating-linear-gradient(45deg, #29456b, #29456b 5px, #6986a8 5px, #6986a8 9px); color: transparent; border: 3px solid #eee; }
+    .bet-marker { grid-column: 2; grid-row: 1 / span 2; justify-self: end; padding: 8px 11px; border: 1px solid #e1bd7677; border-radius: 999px; color: #ffe8b6; background: #302a1e; font-size: .83rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .center-table { display: grid; justify-items: center; gap: 12px; padding: 18px 0; }
+    .street-label { color: #d6e5dc; font-size: .73rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .pot { padding: 8px 15px; border: 1px solid #ffffff35; border-radius: 999px; background: #101816d9; color: #fff5db; font-size: .95rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .board { min-height: 68px; }
+    .controls { padding: 15px 16px; }
+    .controls-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    #message { font-weight: 700; }
+    .to-call { color: var(--gold); font-size: .86rem; font-variant-numeric: tabular-nums; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+    .custom-wager { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #303a39; }
+    .custom-wager[hidden] { display: none; }
+    .custom-wager label { display: grid; gap: 5px; color: var(--muted); font-size: .77rem; }
+    .custom-wager input { width: 110px; padding: 9px; border: 1px solid #465150; background: #171c1c; color: #edf0ea; }
+    .custom-wager button { padding: 9px 12px; border: 1px solid #987e4d; background: #3c3324; color: #f6d797; font-weight: 700; }
+    .action-button { min-width: 96px; padding: 10px 12px; border: 1px solid #465150; color: #edf0ea; background: #2a3232; text-align: left; }
+    .action-button:hover { border-color: var(--green-light); background: #35413d; }
+    .action-button.fold { color: #f3b5ae; }
+    .action-button.call { color: #c4e7ce; }
+    .action-button.bet, .action-button.raise { border-color: #987e4d; color: #f6d797; }
+    .action-detail { display: block; margin-top: 3px; color: var(--muted); font-size: .72rem; font-weight: 500; }
+    .study-panel { min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    .study-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    h2 { margin: 0; font-size: 1rem; }
+    .tag { padding: 4px 8px; border-radius: 999px; background: #302a1e; color: #f0d69e; font-size: .7rem; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; }
+    .study-note { margin: 0; color: var(--muted); font-size: .83rem; line-height: 1.5; }
+    .frequencies { display: grid; gap: 9px; }
+    .frequency-row { display: grid; grid-template-columns: minmax(95px, 1.2fr) minmax(70px, 1fr) 44px; gap: 9px; align-items: center; font-size: .8rem; }
+    .frequency-action { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e7ebe5; }
+    .frequency-track { height: 8px; overflow: hidden; border-radius: 999px; background: #343c3d; }
+    .frequency-fill { height: 100%; border-radius: inherit; background: var(--green-light); }
+    .frequency-value { text-align: right; color: #d8e5db; font-variant-numeric: tabular-nums; }
+    .ev-box { padding: 11px 12px; border-left: 3px solid #747c78; border-radius: 5px; background: #23292a; }
+    .ev-box strong { display: block; margin-bottom: 4px; font-size: .83rem; }
+    .ev-box p { margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.45; }
+    .divider { height: 1px; background: var(--line); }
+    .review-list { display: grid; gap: 9px; max-height: 250px; overflow: auto; }
+    .review-item { padding: 10px; border: 1px solid #343d3e; border-radius: 8px; background: #202627; }
+    .review-title { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: .79rem; font-weight: 750; }
+    .review-choice { color: #f4d793; }
+    .review-sub { color: var(--muted); font-size: .75rem; }
+    .live-log { max-height: 150px; overflow: auto; display: grid; gap: 5px; color: #d5dcd7; font-size: .78rem; }
+    .log-row { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid #303839; padding: 4px 0; }
+    .log-amount { color: #f1d28e; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .below-grid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 16px; }
+    .history, .results { min-width: 0; padding: 16px; }
+    .history-list { max-height: 220px; overflow: auto; color: #d5dcd7; font-size: .84rem; }
+    .history-list p { margin: 8px 0; padding-bottom: 8px; border-bottom: 1px solid #303839; line-height: 1.5; }
+    .results { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: .78rem; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #343d3e; white-space: nowrap; }
+    th { color: var(--muted); font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; }
+    .muted { color: var(--muted); }
+    .warning { color: #f2c48b; }
+    .empty { color: var(--muted); font-size: .8rem; }
+    @media (max-width: 900px) { .play-layout { grid-template-columns: minmax(0, 1fr); } .table { min-height: 465px; } }
+    @media (max-width: 600px) { header { padding: 11px 14px; } main { padding: 12px; } .rules { width: 100%; margin: 0; } .setup { gap: 9px; } .table { min-height: 430px; padding: 14px; border-radius: 14px; } .seat { padding: 9px; } .card { width: 39px; height: 56px; } .below-grid { grid-template-columns: 1fr; } .study-panel { padding: 13px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><span class="brand-mark">♠</span><h1>HEADS-UP HOLD'EM · STUDY TABLE</h1></div>
+    <span id="status" class="muted">Start a hand</span>
+  </header>
+  <main>
+    <section class="setup panel">
+      <label for="opponent">Opponent</label>
+      <select id="opponent"><option value="heuristic">Heuristic</option><option value="random">Random</option><option value="nfsp">NFSP · experimental, preset-trained</option></select>
+      <button id="new-hand" class="new-hand">New hand</button>
+      <span id="rules" class="rules">100-chip stacks · 1/2 blinds · preset sizes plus any legal integer wager</span>
+    </section>
+
+    <div class="play-layout">
+      <div class="play-column">
+        <section class="table" aria-label="Poker table">
+          <div id="opponent-seat" class="seat">
+            <div><div id="opponent-label" class="seat-name">Opponent <span id="opponent-role" class="muted"></span></div><div id="opponent-stack" class="seat-meta">Stack —</div></div>
+            <span id="opponent-bet" class="bet-marker">Bet 0</span>
+            <div id="opponent-cards" class="cards"></div>
+          </div>
+          <div class="center-table">
+            <div id="street-label" class="street-label">Preflop</div>
+            <div id="board" class="cards board"></div>
+            <div id="pot" class="pot">Pot —</div>
+          </div>
+          <div id="hero-seat" class="seat">
+            <div><div class="seat-name">You <span id="button-marker" class="muted"></span></div><div id="your-stack" class="seat-meta">Stack —</div></div>
+            <span id="your-bet" class="bet-marker">Bet 0</span>
+            <div id="your-cards" class="cards"></div>
+          </div>
+        </section>
+
+        <section class="controls panel">
+          <div class="controls-top"><div id="message">Choose an opponent and start a hand.</div><div id="to-call" class="to-call"></div></div>
+          <div id="actions" class="actions"></div>
+          <div id="custom-wager" class="custom-wager" hidden>
+            <label><span id="custom-wager-label">Wager target</span><input id="wager-target" type="number" min="1" step="1"></label>
+            <button id="submit-wager" type="button">Bet to target</button>
+            <span id="wager-limits" class="muted"></span>
+          </div>
+        </section>
+      </div>
+
+      <aside class="study-panel panel" aria-label="Strategy study panel">
+        <div class="study-heading"><h2>Strategy study</h2><span class="tag">Model output</span></div>
+        <p class="study-note">The NFSP average policy is an experimental reference. Frequencies show what this saved model chooses in this state; they are not GTO frequencies. It was trained on preset wager sizes, so custom human wagers are outside its training distribution.</p>
+        <div id="frequency-list" class="frequencies"><span class="empty">Start a hand to see available model frequencies.</span></div>
+        <div id="ev-box" class="ev-box"><strong>Action EV unavailable</strong><p>No validated full-hand Hold'em solver produces per-action EV or EV loss yet. The current CFR reference covers a tiny fixed-range river game only.</p></div>
+        <div class="divider"></div>
+        <div><div class="eyebrow">Your decision review</div><div id="review-list" class="review-list"><span class="empty">Your decisions and the model's frequencies will appear here.</span></div></div>
+        <div class="divider"></div>
+        <div><div class="eyebrow">Actions this hand</div><div id="action-log" class="live-log"><span class="empty">No actions yet.</span></div></div>
+      </aside>
+    </div>
+
+    <div class="below-grid">
+      <section class="history panel"><h2>Recent hands</h2><div id="history-list" class="history-list">No completed hands yet.</div></section>
+      <section class="history results panel"><h2>Measured research results</h2><p class="study-note">Small-game NashConv uses exact best responses under the stated rules. Hold'em chips per hand is a noisy baseline result.</p><table><thead><tr><th>Method</th><th>Condition</th><th>Metric</th><th>Value</th><th>Raw file</th></tr></thead><tbody id="results-body"></tbody></table></section>
+    </div>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    const suit = {c: '♣', d: '♦', h: '♥', s: '♠'};
+    const streets = ['Preflop', 'Flop', 'Turn', 'River'];
+    function card(code, hidden = false) {
+      const node = document.createElement('span');
+      node.className = 'card' + (hidden ? ' back' : (code && 'dh'.includes(code[1]) ? ' red' : ''));
+      node.textContent = hidden ? '?' : code ? code[0] + suit[code[1]] : '·';
+      return node;
+    }
+    function showCards(id, cards, count = cards.length, hidden = false) {
+      const holder = $(id); holder.replaceChildren();
+      for (let i = 0; i < count; i++) holder.append(card(cards[i], hidden));
+    }
+    function actionLabel(action, toCall = 0) {
+      if (action.kind === 'call') return `Call ${toCall}`;
+      if (action.kind === 'bet' || action.kind === 'raise') return `${action.kind === 'bet' ? 'Bet' : 'Raise'} to ${action.amount}`;
+      return action.kind[0].toUpperCase() + action.kind.slice(1);
+    }
+    function actionDetail(action, toCall = 0, streetBet = 0) {
+      if (action.kind === 'call') return `add ${toCall} chips`;
+      if (action.kind === 'bet' || action.kind === 'raise') return `add ${action.amount - streetBet} · ${action.amount} total`;
+      return '';
+    }
+    function renderFrequencies(legal, probabilities, toCall, chosen = null) {
+      const list = $('frequency-list'); list.replaceChildren();
+      if (!legal || !probabilities || !legal.length) {
+        list.innerHTML = '<span class="empty">Frequency reference is shown in 20-chip NFSP games. Baseline games use a different stack and have no matching trained policy.</span>';
+        return;
+      }
+      legal.forEach((action, index) => {
+        const row = document.createElement('div'); row.className = 'frequency-row';
+        const label = document.createElement('span'); label.className = 'frequency-action';
+        label.textContent = actionLabel(action, toCall);
+        if (chosen && chosen.kind === action.kind && chosen.amount === action.amount) label.classList.add('review-choice');
+        const track = document.createElement('span'); track.className = 'frequency-track';
+        const fill = document.createElement('span'); fill.className = 'frequency-fill';
+        fill.style.width = `${Math.max(0, Math.min(100, probabilities[index] * 100))}%`;
+        track.append(fill);
+        const value = document.createElement('span'); value.className = 'frequency-value'; value.textContent = `${(probabilities[index] * 100).toFixed(1)}%`;
+        row.append(label, track, value); list.append(row);
+      });
+    }
+    function renderReviews(reviews) {
+      const list = $('review-list'); list.replaceChildren();
+      if (!reviews || !reviews.length) {
+        list.innerHTML = '<span class="empty">Take an action to save a frequency snapshot for review.</span>';
+        return;
+      }
+      [...reviews].reverse().forEach(review => {
+        const item = document.createElement('div'); item.className = 'review-item';
+        const title = document.createElement('div'); title.className = 'review-title';
+        const street = document.createElement('span'); street.textContent = `${streets[review.street]} · pot ${review.pot}`;
+        const choice = document.createElement('span'); choice.className = 'review-choice';
+        const chosenName = actionLabel(review.chosen_action, review.to_call);
+        choice.textContent = review.chosen_probability == null
+          ? `${chosenName} · outside NFSP action set`
+          : `${chosenName} · ${(review.chosen_probability * 100).toFixed(1)}%`;
+        title.append(street, choice);
+        const sub = document.createElement('div'); sub.className = 'review-sub';
+        sub.textContent = `NFSP reference mix · ${review.inference_ms.toFixed(2)} ms`;
+        item.append(title, sub);
+        const freqs = document.createElement('div'); freqs.className = 'frequencies';
+        review.legal_actions.forEach((action, index) => {
+          const row = document.createElement('div'); row.className = 'frequency-row';
+          const label = document.createElement('span'); label.className = 'frequency-action';
+          label.textContent = actionLabel(action, review.to_call);
+          const track = document.createElement('span'); track.className = 'frequency-track';
+          const fill = document.createElement('span'); fill.className = 'frequency-fill';
+          fill.style.width = `${Math.max(0, Math.min(100, review.action_probabilities[index] * 100))}%`;
+          track.append(fill);
+          const value = document.createElement('span'); value.className = 'frequency-value'; value.textContent = `${(review.action_probabilities[index] * 100).toFixed(1)}%`;
+          row.append(label, track, value); freqs.append(row);
+        });
+        item.append(freqs); list.append(item);
+      });
+    }
+    function renderActionLog(events, actions) {
+      const list = $('action-log'); list.replaceChildren();
+      if (!events || !events.length) {
+        list.innerHTML = '<span class="empty">No actions yet.</span>';
+        return;
+      }
+      let actionIndex = 0;
+      let revealed = 0;
+      const button = events.find(event => event.type === 'deal')?.button;
+      events.forEach(event => {
+        const row = document.createElement('div'); row.className = 'log-row';
+        let description = '';
+        let amountText = '';
+        if (event.type === 'deal') description = `Hand dealt · button seat ${event.button + 1}`;
+        if (event.type === 'blind') {
+          const role = event.player === button ? 'small blind' : 'big blind';
+          description = `Preflop · ${event.player === 0 ? 'You' : 'Bot'} posts ${role}`;
+          amountText = `+${event.amount}`;
+        }
+        if (event.type === 'action') {
+          const action = actions[actionIndex++];
+          if (!action) return;
+          const who = action.player === 0 ? 'You' : 'Bot';
+          let verb = action.kind;
+          if (action.kind === 'bet' || action.kind === 'raise') verb = `${action.kind} to ${action.target}`;
+          if (action.kind === 'call') verb = `call ${action.amount_paid}`;
+          description = `${streets[action.street]} · ${who} ${verb}`;
+          amountText = action.amount_paid ? `+${action.amount_paid}` : '';
+        }
+        if (event.type === 'board') {
+          const newlyShown = event.cards.slice(revealed);
+          revealed = event.cards.length;
+          description = `${streets[event.street]} · board ${newlyShown.join(' ')}`;
+        }
+        if (event.type === 'uncalled_return') {
+          description = `${event.player === 0 ? 'You' : 'Bot'} receives uncalled chips`;
+          amountText = `+${event.amount}`;
+        }
+        if (event.type === 'award') {
+          description = event.showdown
+            ? (event.winner == null ? 'Showdown · split pot' : `Showdown · ${event.winner === 0 ? 'You' : 'Bot'} wins`)
+            : `Fold · ${event.winner === 0 ? 'You' : 'Bot'} wins`;
+          amountText = `pot ${event.pot}`;
+        }
+        const text = document.createElement('span'); text.textContent = description;
+        const amount = document.createElement('span'); amount.className = 'log-amount';
+        amount.textContent = amountText;
+        row.append(text, amount); list.append(row);
+      });
+      list.scrollTop = list.scrollHeight;
+    }
+    function render(s) {
+      if (!s.started) return;
+      window.currentPokerState = s;
+      $('opponent').value = s.opponent;
+      $('opponent').disabled = !s.done;
+      $('rules').textContent = `${s.starting_stack}-chip stacks · ${s.blinds[0]}/${s.blinds[1]} blinds · preset sizes plus any legal integer wager`;
+      $('status').textContent = `Hand ${s.hand} · ${streets[s.street]}`;
+      $('street-label').textContent = streets[s.street];
+      $('opponent-label').firstChild.textContent = `${s.opponent.toUpperCase()} opponent `;
+      $('opponent-role').textContent = s.button === 1 ? '· BUTTON / SMALL BLIND' : '· BIG BLIND';
+      $('button-marker').textContent = s.button === 0 ? `· BUTTON / SMALL BLIND (${s.blinds[0]})` : `· BIG BLIND (${s.blinds[1]})`;
+      showCards('your-cards', s.hole);
+      showCards('opponent-cards', s.opponent_hole || [], 2, !s.opponent_hole);
+      showCards('board', s.board);
+      $('opponent-stack').textContent = `Stack ${s.stacks[1]}`;
+      $('your-stack').textContent = `Stack ${s.stacks[0]}`;
+      $('opponent-bet').textContent = `Bet ${s.street_bets[1]}`;
+      $('your-bet').textContent = `Bet ${s.street_bets[0]}`;
+      $('pot').textContent = `Pot ${s.pot}`;
+      $('opponent-seat').classList.toggle('active', !s.done && s.current_player === 1);
+      $('hero-seat').classList.toggle('active', !s.done && s.current_player === 0);
+      $('message').textContent = s.done ? `Hand over · your net result ${s.rewards[0] > 0 ? '+' : ''}${s.rewards[0]} chips` : (s.current_player === 0 ? 'Your turn · choose an action' : 'Opponent is acting');
+      $('message').className = '';
+      $('to-call').textContent = !s.done && s.current_player === 0 && s.to_call ? `To call ${s.to_call}` : '';
+      $('new-hand').textContent = s.done ? 'Next hand' : 'New hand';
+      $('new-hand').disabled = !s.done;
+      const actions = $('actions'); actions.replaceChildren();
+      s.legal_actions.forEach((action, index) => {
+        const button = document.createElement('button');
+        button.className = `action-button ${action.kind}`;
+        const title = document.createElement('span'); title.textContent = actionLabel(action, s.to_call);
+        button.append(title);
+        const detailText = actionDetail(action, s.to_call, s.street_bets[0]);
+        if (detailText) { const detail = document.createElement('span'); detail.className = 'action-detail'; detail.textContent = detailText; button.append(detail); }
+        button.onclick = () => post('/api/action', {index});
+        actions.append(button);
+      });
+      const limits = s.betting_limits;
+      const custom = $('custom-wager');
+      custom.hidden = !limits || s.current_player !== 0 || s.done;
+      if (limits && !custom.hidden) {
+        const targets = s.legal_actions.filter(action => action.kind === limits.kind);
+        const preferred = targets[Math.floor((targets.length - 1) / 2)];
+        $('custom-wager-label').textContent = `${limits.kind === 'bet' ? 'Bet' : 'Raise'} target`;
+        $('wager-target').min = limits.min_target;
+        $('wager-target').max = limits.max_target;
+        $('wager-target').value = preferred ? preferred.amount : limits.max_target;
+        $('submit-wager').textContent = `${limits.kind === 'bet' ? 'Bet' : 'Raise'} to target`;
+        $('wager-limits').textContent = limits.minimum_is_short_all_in
+          ? `Only the short all-in target ${limits.max_target} is available.`
+          : `Any integer target ${limits.min_target}–${limits.max_target} is legal.`;
+      }
+      if (s.analysis) renderFrequencies(s.legal_actions, s.analysis.action_probabilities, s.to_call);
+      else if (s.done && s.decision_reviews.length) {
+        const last = s.decision_reviews[s.decision_reviews.length - 1];
+        renderFrequencies(last.legal_actions, last.action_probabilities, last.to_call, last.chosen_action);
+      } else renderFrequencies([], [], 0);
+      renderReviews(s.decision_reviews);
+      renderActionLog(s.events, s.actions);
+      const history = $('history-list'); history.replaceChildren();
+      const recent = [...s.hands].reverse();
+      if (!recent.length) history.textContent = 'No completed hands yet.';
+      recent.forEach(hand => {
+        const row = document.createElement('p');
+        const moves = hand.actions.map(action => {
+          const who = action.player === 0 ? 'You' : 'Bot';
+          const move = action.kind === 'bet' || action.kind === 'raise' ? `${action.kind} to ${action.target}` : action.kind === 'call' ? `call ${action.amount_paid}` : action.kind;
+          return `${streets[action.street]} ${who} ${move}${action.amount_paid ? ` (+${action.amount_paid})` : ''}`;
+        }).join(' · ');
+        const boardText = (hand.board || []).join(' ');
+        const showdown = hand.opponent_hole
+          ? ` · Showdown ${hand.hole.join(' ')} vs ${hand.opponent_hole.join(' ')}`
+          : '';
+        row.textContent = `#${hand.hand} · ${hand.rewards[0] > 0 ? '+' : ''}${hand.rewards[0]} chips · Board ${boardText}${showdown} · ${moves}`;
+        history.append(row);
+      });
+    }
+    async function post(path, body) {
+      try {
+        const response = await fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Request failed');
+        render(data);
+      } catch (error) { $('message').textContent = error.message; $('message').className = 'warning'; }
+    }
+    $('new-hand').onclick = () => post('/api/new', {opponent: $('opponent').value});
+    $('submit-wager').onclick = () => {
+      const s = window.currentPokerState;
+      const limits = s && s.betting_limits;
+      const amount = Number($('wager-target').value);
+      if (!limits || !Number.isInteger(amount) || amount < limits.min_target || amount > limits.max_target) {
+        $('message').textContent = 'Enter a legal integer-chip wager target.';
+        $('message').className = 'warning';
+        return;
+      }
+      post('/api/action', {action: {kind: limits.kind, amount}});
+    };
+    fetch('/api/state').then(response => response.json()).then(render);
+    fetch('/api/results').then(response => response.json()).then(data => {
+      const body = $('results-body'); body.replaceChildren();
+      data.results.forEach(result => {
+        const row = document.createElement('tr');
+        [result.method, result.condition, result.metric, String(result.value), result.source].forEach(value => {
+          const cell = document.createElement('td'); cell.textContent = value; row.append(cell);
+        });
+        body.append(row);
+      });
+    });
+  </script>
+</body>
+</html>

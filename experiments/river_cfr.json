@@ -1,0 +1,112 @@
+{
+  "experiment": "tiny_range_holdem_river_cfr",
+  "board": "As Kh Qd 7c 2s",
+  "ranges": [
+    [
+      [
+        "Jc",
+        "Tc"
+      ],
+      [
+        "9h",
+        "9s"
+      ],
+      [
+        "3c",
+        "3d"
+      ]
+    ],
+    [
+      [
+        "Jd",
+        "Td"
+      ],
+      [
+        "8h",
+        "8s"
+      ],
+      [
+        "4c",
+        "4d"
+      ]
+    ]
+  ],
+  "pot": 8,
+  "effective_stack": 10,
+  "action_abstraction": "min/half-pot/pot/effective-all-in; one raise",
+  "joint_deals": 9,
+  "checkpoints": [
+    {
+      "iterations": 20,
+      "nash_conv": 2.036626772671249,
+      "seat0_ev": 0.016090527967878687,
+      "elapsed_seconds": 0.07633737500873394
+    },
+    {
+      "iterations": 100,
+      "nash_conv": 0.7512666195613473,
+      "seat0_ev": 0.04727231907403029,
+      "elapsed_seconds": 0.3490245830034837
+    },
+    {
+      "iterations": 500,
+      "nash_conv": 0.30181068595022226,
+      "seat0_ev": 0.10987742222335972,
+      "elapsed_seconds": 1.8346085420052987
+    }
+  ],
+  "root_conditional_ev": [
+    {
+      "player": 0,
+      "hand": [
+        "Jc",
+        "Tc"
+      ],
+      "ev": 4.400988307715448
+    },
+    {
+      "player": 0,
+      "hand": [
+        "9h",
+        "9s"
+      ],
+      "ev": 0.058686761836947765
+    },
+    {
+      "player": 0,
+      "hand": [
+        "3c",
+        "3d"
+      ],
+      "ev": -4.130042802882317
+    },
+    {
+      "player": 1,
+      "hand": [
+        "Jd",
+        "Td"
+      ],
+      "ev": 5.468655084945289
+    },
+    {
+      "player": 1,
+      "hand": [
+        "8h",
+        "8s"
+      ],
+      "ev": -2.8991436758076836
+    },
+    {
+      "player": 1,
+      "hand": [
+        "4c",
+        "4d"
+      ],
+      "ev": -2.8991436758076836
+    }
+  ],
+  "python": "3.10.6",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true
+}

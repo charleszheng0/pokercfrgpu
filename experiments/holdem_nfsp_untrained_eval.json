@@ -1,0 +1,85 @@
+{
+  "experiment": "restricted_holdem_nfsp_untrained_evaluation",
+  "seeds": [
+    11,
+    23,
+    37
+  ],
+  "hands_per_seed_per_opponent": 1000,
+  "evaluation_seed": 900000,
+  "opponents": [
+    "random",
+    "heuristic"
+  ],
+  "stack": 20,
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true,
+  "runs": [
+    {
+      "initialization_seed": 11,
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 1000,
+          "mean_chips_per_hand": -0.379,
+          "standard_error": 0.3756600584031785,
+          "wins": 483,
+          "ties": 13
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 1000,
+          "mean_chips_per_hand": -0.912,
+          "standard_error": 0.4016286363813736,
+          "wins": 570,
+          "ties": 22
+        }
+      ]
+    },
+    {
+      "initialization_seed": 23,
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 1000,
+          "mean_chips_per_hand": -0.146,
+          "standard_error": 0.37473605525904646,
+          "wins": 464,
+          "ties": 11
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 1000,
+          "mean_chips_per_hand": -0.924,
+          "standard_error": 0.3951054698840961,
+          "wins": 559,
+          "ties": 18
+        }
+      ]
+    },
+    {
+      "initialization_seed": 37,
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 1000,
+          "mean_chips_per_hand": 0.073,
+          "standard_error": 0.3810102883648155,
+          "wins": 495,
+          "ties": 18
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 1000,
+          "mean_chips_per_hand": -0.968,
+          "standard_error": 0.4055532633939092,
+          "wins": 570,
+          "ties": 24
+        }
+      ]
+    }
+  ]
+}

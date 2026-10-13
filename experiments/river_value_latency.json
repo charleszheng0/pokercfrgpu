@@ -1,0 +1,19 @@
+{
+  "experiment": "river_value_end_to_end_latency",
+  "model": "artifacts/river_value_equity_180_seed53.pt",
+  "dataset": "experiments/river_value_extended_dataset.json",
+  "test_board": [
+    "7c",
+    "Kd",
+    "6s",
+    "Qh",
+    "Ah"
+  ],
+  "network_including_features_seconds_per_position": 0.001734152499702759,
+  "shallow_20_iteration_seconds_per_position": 0.0702946103992872,
+  "machine": "arm64",
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true
+}

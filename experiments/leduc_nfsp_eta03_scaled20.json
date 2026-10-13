@@ -1,0 +1,205 @@
+{
+  "experiment": "leduc_nfsp_exact_nash_conv",
+  "episodes": 20000,
+  "batch_size": 64,
+  "eta": 0.3,
+  "reward_scale": 20.0,
+  "seeds": [
+    11,
+    23,
+    37
+  ],
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true,
+  "runs": [
+    {
+      "seed": 11,
+      "snapshots": [
+        {
+          "episodes": 0,
+          "nash_conv": 6.514342225216856,
+          "exploitability_nash_conv_over_2": 3.257171112608428,
+          "seat0_ev": 0.3771603677216627,
+          "best_response_seat0_ev": 3.2869104663487625,
+          "best_response_seat1_ev": 3.227431758868093,
+          "mean_training_reward_seat0": null,
+          "mean_q_loss": null,
+          "mean_policy_loss": null,
+          "elapsed_seconds": 0.33377512500737794
+        },
+        {
+          "episodes": 3000,
+          "nash_conv": 5.340179968012478,
+          "exploitability_nash_conv_over_2": 2.670089984006239,
+          "seat0_ev": 0.4819148372097911,
+          "best_response_seat0_ev": 2.5165976955379685,
+          "best_response_seat1_ev": 2.82358227247451,
+          "mean_training_reward_seat0": 0.5593333333333333,
+          "mean_q_loss": 0.032667104524153605,
+          "mean_policy_loss": 0.5607260866767748,
+          "elapsed_seconds": 5.281874834006885
+        },
+        {
+          "episodes": 10000,
+          "nash_conv": 3.8359292710136277,
+          "exploitability_nash_conv_over_2": 1.9179646355068138,
+          "seat0_ev": -0.19489161691014262,
+          "best_response_seat0_ev": 2.0355214991457684,
+          "best_response_seat1_ev": 1.8004077718678593,
+          "mean_training_reward_seat0": 0.0166,
+          "mean_q_loss": 0.0295119540781578,
+          "mean_policy_loss": 0.5560656362823682,
+          "elapsed_seconds": 15.358270249998895
+        },
+        {
+          "episodes": 20000,
+          "nash_conv": 2.6915569377688366,
+          "exploitability_nash_conv_over_2": 1.3457784688844183,
+          "seat0_ev": -0.34083241105198947,
+          "best_response_seat0_ev": 1.1892848474343922,
+          "best_response_seat1_ev": 1.5022720903344442,
+          "mean_training_reward_seat0": -0.1319,
+          "mean_q_loss": 0.02583184234250579,
+          "mean_policy_loss": 0.5501311171061424,
+          "elapsed_seconds": 28.812405834003584
+        }
+      ],
+      "final_rl_buffer_sizes": [
+        10000,
+        10000
+      ],
+      "final_sl_buffer_sizes": [
+        10000,
+        10000
+      ],
+      "model_directory": "artifacts/nfsp_eta03_scaled20/seed11"
+    },
+    {
+      "seed": 23,
+      "snapshots": [
+        {
+          "episodes": 0,
+          "nash_conv": 6.4856088248224655,
+          "exploitability_nash_conv_over_2": 3.2428044124112327,
+          "seat0_ev": 0.06858438391072436,
+          "best_response_seat0_ev": 3.2230130643241703,
+          "best_response_seat1_ev": 3.262595760498295,
+          "mean_training_reward_seat0": null,
+          "mean_q_loss": null,
+          "mean_policy_loss": null,
+          "elapsed_seconds": 0.22499929199693725
+        },
+        {
+          "episodes": 3000,
+          "nash_conv": 5.376338934406096,
+          "exploitability_nash_conv_over_2": 2.688169467203048,
+          "seat0_ev": -0.6917436869657931,
+          "best_response_seat0_ev": 2.3629136874576853,
+          "best_response_seat1_ev": 3.013425246948411,
+          "mean_training_reward_seat0": -0.503,
+          "mean_q_loss": 0.026650906526342485,
+          "mean_policy_loss": 0.5941934220298655,
+          "elapsed_seconds": 4.925848249986302
+        },
+        {
+          "episodes": 10000,
+          "nash_conv": 3.3187617416213153,
+          "exploitability_nash_conv_over_2": 1.6593808708106577,
+          "seat0_ev": -0.2191838180091735,
+          "best_response_seat0_ev": 1.6777902261026294,
+          "best_response_seat1_ev": 1.640971515518686,
+          "mean_training_reward_seat0": -0.3333,
+          "mean_q_loss": 0.02585658170226793,
+          "mean_policy_loss": 0.5864701649206403,
+          "elapsed_seconds": 14.547139250003966
+        },
+        {
+          "episodes": 20000,
+          "nash_conv": 2.6156578927919667,
+          "exploitability_nash_conv_over_2": 1.3078289463959833,
+          "seat0_ev": -0.20035622758766963,
+          "best_response_seat0_ev": 1.3224741477181814,
+          "best_response_seat1_ev": 1.2931837450737853,
+          "mean_training_reward_seat0": -0.22965,
+          "mean_q_loss": 0.023253985359876765,
+          "mean_policy_loss": 0.5769363400159914,
+          "elapsed_seconds": 29.662870917003602
+        }
+      ],
+      "final_rl_buffer_sizes": [
+        10000,
+        10000
+      ],
+      "final_sl_buffer_sizes": [
+        10000,
+        10000
+      ],
+      "model_directory": "artifacts/nfsp_eta03_scaled20/seed23"
+    },
+    {
+      "seed": 37,
+      "snapshots": [
+        {
+          "episodes": 0,
+          "nash_conv": 6.4991152304507604,
+          "exploitability_nash_conv_over_2": 3.2495576152253802,
+          "seat0_ev": 0.225725570695892,
+          "best_response_seat0_ev": 3.3317185209745803,
+          "best_response_seat1_ev": 3.1673967094761797,
+          "mean_training_reward_seat0": null,
+          "mean_q_loss": null,
+          "mean_policy_loss": null,
+          "elapsed_seconds": 0.24489466700470075
+        },
+        {
+          "episodes": 3000,
+          "nash_conv": 5.4889815710568275,
+          "exploitability_nash_conv_over_2": 2.7444907855284137,
+          "seat0_ev": 0.05266168726404368,
+          "best_response_seat0_ev": 3.3617130612591253,
+          "best_response_seat1_ev": 2.1272685097977027,
+          "mean_training_reward_seat0": 0.14333333333333334,
+          "mean_q_loss": 0.02329086060397748,
+          "mean_policy_loss": 0.6212119289981756,
+          "elapsed_seconds": 5.48752212501131
+        },
+        {
+          "episodes": 10000,
+          "nash_conv": 3.603017023952647,
+          "exploitability_nash_conv_over_2": 1.8015085119763234,
+          "seat0_ev": -0.14561355246344743,
+          "best_response_seat0_ev": 1.9189876562584502,
+          "best_response_seat1_ev": 1.6840293676941966,
+          "mean_training_reward_seat0": -0.0433,
+          "mean_q_loss": 0.02367552656620399,
+          "mean_policy_loss": 0.5925046878520868,
+          "elapsed_seconds": 15.85475970900734
+        },
+        {
+          "episodes": 20000,
+          "nash_conv": 2.1579213697887476,
+          "exploitability_nash_conv_over_2": 1.0789606848943738,
+          "seat0_ev": -0.07944759381821123,
+          "best_response_seat0_ev": 1.045523684602835,
+          "best_response_seat1_ev": 1.1123976851859125,
+          "mean_training_reward_seat0": -0.06195,
+          "mean_q_loss": 0.022921150106476208,
+          "mean_policy_loss": 0.5834661972724988,
+          "elapsed_seconds": 30.077262375009013
+        }
+      ],
+      "final_rl_buffer_sizes": [
+        10000,
+        10000
+      ],
+      "final_sl_buffer_sizes": [
+        10000,
+        10000
+      ],
+      "model_directory": "artifacts/nfsp_eta03_scaled20/seed37"
+    }
+  ]
+}

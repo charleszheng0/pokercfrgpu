@@ -1,0 +1,159 @@
+{
+  "experiment": "restricted_holdem_nfsp",
+  "stack": 20,
+  "blinds": [
+    1,
+    2
+  ],
+  "seeds": [
+    11,
+    23,
+    37
+  ],
+  "hands_per_training_seed": 10000,
+  "evaluation_hands_per_opponent": 200,
+  "algorithm": "DQN best response plus reservoir-supervised average policy, eta=0.3",
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true,
+  "runs": [
+    {
+      "seed": 11,
+      "training_hands": 10000,
+      "training_seconds": 38.47267954199924,
+      "mean_self_play_reward_seat0": -0.4045,
+      "mean_q_loss": 0.10061367827852866,
+      "mean_policy_loss": 0.6897868335210762,
+      "rl_buffer_sizes": [
+        26326,
+        26321
+      ],
+      "sl_buffer_sizes": [
+        8218,
+        8384
+      ],
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 200,
+          "mean_chips_per_hand": 1.97,
+          "standard_error": 0.9545687547461881,
+          "wins": 125,
+          "ties": 8
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 200,
+          "mean_chips_per_hand": -1.71,
+          "standard_error": 0.9970456358662827,
+          "wins": 111,
+          "ties": 7
+        }
+      ],
+      "model_directory": "artifacts/holdem_nfsp/seed11",
+      "model_sha256": {
+        "policy_player_0.pt": "a90d25c6419de2fbd9014d567469b535761debe3aaaa451a9f04d10d56dfcfa8",
+        "policy_player_1.pt": "a66a44144b837f93c4c22cac0218c767685e3b5889b8a267d056d2ad87ce5efc",
+        "q_player_0.pt": "c3acec74400a0d6eacc0f461241b158d65c29e8d1ab5cb695b6d508e5cbde928",
+        "q_player_1.pt": "9bfc1c3bc3baf74e6241ae4fa0aff91e8feb4aa45fcf18c0fd6247eed90ea86e"
+      }
+    },
+    {
+      "seed": 23,
+      "training_hands": 10000,
+      "training_seconds": 24.30446650000522,
+      "mean_self_play_reward_seat0": -0.5923,
+      "mean_q_loss": 0.11185266710653276,
+      "mean_policy_loss": 0.6649665005735702,
+      "rl_buffer_sizes": [
+        27792,
+        26058
+      ],
+      "sl_buffer_sizes": [
+        8846,
+        8409
+      ],
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 200,
+          "mean_chips_per_hand": 1.17,
+          "standard_error": 0.9716356721513392,
+          "wins": 119,
+          "ties": 4
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 200,
+          "mean_chips_per_hand": -1.765,
+          "standard_error": 0.9221718274795565,
+          "wins": 117,
+          "ties": 7
+        }
+      ],
+      "model_directory": "artifacts/holdem_nfsp/seed23",
+      "model_sha256": {
+        "policy_player_0.pt": "0921910be420d5f251fcd3b2b504ddac79efd35169d8d56fac449985b0879d3a",
+        "policy_player_1.pt": "229f13b2d69181ee82c6f1d901805434b12e9ec9d9acd7ecf35353fba74f649a",
+        "q_player_0.pt": "bcb981cc4a87a08e7118a65bcac6bacaef21790d2c86f054b7be9f793df4dec1",
+        "q_player_1.pt": "dfa10ec2ede72ebd2b339797be18f42cfdace31dd5f4b82e59fac25279cfc2dd"
+      }
+    },
+    {
+      "seed": 37,
+      "training_hands": 10000,
+      "training_seconds": 22.891806875006296,
+      "mean_self_play_reward_seat0": 0.0357,
+      "mean_q_loss": 0.11738075767073954,
+      "mean_policy_loss": 0.6694155966918609,
+      "rl_buffer_sizes": [
+        23686,
+        25046
+      ],
+      "sl_buffer_sizes": [
+        7538,
+        8203
+      ],
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 200,
+          "mean_chips_per_hand": 2.135,
+          "standard_error": 0.981836999950787,
+          "wins": 118,
+          "ties": 6
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 200,
+          "mean_chips_per_hand": -2.85,
+          "standard_error": 0.850945380268913,
+          "wins": 114,
+          "ties": 8
+        }
+      ],
+      "model_directory": "artifacts/holdem_nfsp/seed37",
+      "model_sha256": {
+        "policy_player_0.pt": "ea53a9d9eaf7e14c73eb823ac50514812b2ff395504c1922bee7f2cc71ee2d68",
+        "policy_player_1.pt": "9c5944d852b5d8191c4bcfae9e64166b6e5ba627c4ca3ce4b7a08b9429ab491e",
+        "q_player_0.pt": "04e510de7153532998d10621623d23dcfdd53b27f30d36cf8535e1ea202cc99a",
+        "q_player_1.pt": "3149fa345f519a71ec47460ffd7e3c82b46745f25d7f767de6d6e4318e53e039"
+      }
+    }
+  ],
+  "observation_dim": 525,
+  "action_slots": 11,
+  "network_hidden_units": [
+    128,
+    128
+  ],
+  "eta": 0.3,
+  "epsilon": 0.1,
+  "learning_rate": 0.001,
+  "dqn_reward_scale": 20,
+  "target_update_interval": 200,
+  "rl_capacity": 100000,
+  "sl_capacity": 100000
+}

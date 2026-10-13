@@ -1,0 +1,13 @@
+{
+  "experiment": "cpu_profile",
+  "hand_evaluation_seconds": 0.00018853237500297837,
+  "heuristic_decision_seconds_32_samples": 0.01408814207999967,
+  "nfsp_policy_inference_seconds": 3.393026679987088e-05,
+  "leduc_cfr_step_seconds_profiled": 0.11007282089849468,
+  "leduc_cfr_profile_top12": "         1861270 function calls (1669270 primitive calls) in 1.101 seconds\n\n   Ordered by: cumulative time\n   List reduced from 35 to 12 due to restriction <12>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        1    0.000    0.000    1.101    1.101 /Users/charleszheng/pokercfrgpu/small_games/compare_cfr_nfsp.py:262(train)\n       10    0.005    0.001    1.101    0.110 /Users/charleszheng/pokercfrgpu/small_games/compare_cfr_nfsp.py:223(step)\n193200/1200    0.481    0.000    1.090    0.001 /Users/charleszheng/pokercfrgpu/small_games/compare_cfr_nfsp.py:227(visit)\n     1536    0.001    0.000    0.168    0.000 /Users/charleszheng/pokercfrgpu/small_games/compare_cfr_nfsp.py:152(children)\n     1536    0.002    0.000    0.166    0.000 /Users/charleszheng/pokercfrgpu/small_games/compare_cfr_nfsp.py:154(<dictcomp>)\n     3840    0.017    0.000    0.164    0.000 /Users/charleszheng/pokercfrgpu/small_games/compare_cfr_nfsp.py:55(advance)\n   116400    0.095    0.000    0.141    0.000 /Users/charleszheng/pokercfrgpu/small_games/compare_cfr_nfsp.py:116(terminal_payoff)\n     3840    0.127    0.000    0.141    0.000 /Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/dataclasses.py:1406(replace)\n   192000    0.086    0.000    0.128    0.000 <string>:2(__hash__)\n    82176    0.038    0.000    0.051    0.000 /Users/charleszheng/pokercfrgpu/small_games/compare_cfr_nfsp.py:46(legal)\n   192000    0.042    0.000    0.042    0.000 {built-in method builtins.hash}\n   158880    0.038    0.000    0.038    0.000 {method 'setdefault' of 'dict' objects}\n\n\n",
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true
+}

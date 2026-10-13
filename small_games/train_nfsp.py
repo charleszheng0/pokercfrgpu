@@ -72,10 +72,13 @@ class AveragePolicyNetwork(nn.Module):
 
 
 class NFSPAgent:
-    def __init__(self, eta=0.1, epsilon=0.1, lr=0.001):
+    def __init__(self, eta=0.1, epsilon=0.1, lr=0.001, reward_scale=1.0):
         # Create both learning systems for one poker player.
         self.eta = eta
         self.epsilon = epsilon
+        if reward_scale <= 0:
+            raise ValueError("reward_scale must be positive")
+        self.reward_scale = reward_scale
 
         self.q_network = QNetwork(INPUT_DIM)
         self.target_network = QNetwork(INPUT_DIM)
@@ -137,7 +140,9 @@ class NFSPAgent:
 
         states = torch.stack([t[0] for t in batch])
         actions = torch.tensor([t[1] for t in batch], dtype=torch.long)
-        rewards = torch.tensor([t[2] for t in batch], dtype=torch.float32)
+        rewards = torch.tensor(
+            [t[2] / self.reward_scale for t in batch], dtype=torch.float32
+        )
         next_states = torch.stack([t[3] for t in batch])
         dones = torch.tensor([t[4] for t in batch], dtype=torch.bool)
         next_legal = torch.stack([t[5] for t in batch])

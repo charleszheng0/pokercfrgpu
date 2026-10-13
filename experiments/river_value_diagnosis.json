@@ -1,0 +1,92 @@
+{
+  "experiment": "river_value_label_audit_and_suit_augmentation",
+  "dataset": "experiments/river_value_extended_dataset.json",
+  "source_reference_iterations": 200,
+  "target": "player-perspective root hand-conditional EV in chips under average CFR strategy",
+  "train_positions": 180,
+  "test_positions": 20,
+  "data_audit": {
+    "unique_train_boards": 180,
+    "unique_test_boards": 20,
+    "train_test_board_overlap": 0,
+    "train_hand_labels": 1080,
+    "test_hand_labels": 120,
+    "target_min_chips": -4.683775979469011,
+    "target_max_chips": 13.470029360119028,
+    "test_labels_are_clustered_by_public_position": true
+  },
+  "model_input_features": 426,
+  "range_schema": "3 explicit hands per player; independent exponential weights; incompatible joint hands removed and product weights normalized",
+  "encoding": "board and private hand card indicators; each explicit range hand and normalized marginal weight; player id; pot and effective stack; plus exact showdown equity feature",
+  "label_audit": {
+    "recomputed_positions": 4,
+    "max_saved_label_vs_recomputed_label_abs_error_chips": 8.881784197001252e-15,
+    "max_river_payoff_vs_engine_abs_error_chips": 0.0,
+    "engine_payoff_cases": 72
+  },
+  "convergence": [
+    {
+      "board": [
+        "7c",
+        "Kd",
+        "6s",
+        "Qh",
+        "Ah"
+      ],
+      "mae_20_vs_200_chips": 0.7254901799183479,
+      "mae_200_vs_500_chips": 0.06918809534096255,
+      "nash_conv_20": 1.9114263732844847,
+      "nash_conv_200": 0.5704324618928838,
+      "nash_conv_500": 0.3438438335014605
+    },
+    {
+      "board": [
+        "Qs",
+        "2s",
+        "4c",
+        "9s",
+        "Kd"
+      ],
+      "mae_20_vs_200_chips": 0.8377831215136181,
+      "mae_200_vs_500_chips": 0.11150721944058602,
+      "nash_conv_20": 2.3462898228358777,
+      "nash_conv_200": 0.5967868628407451,
+      "nash_conv_500": 0.34668308827759065
+    },
+    {
+      "board": [
+        "4h",
+        "5h",
+        "Qs",
+        "Js",
+        "7d"
+      ],
+      "mae_20_vs_200_chips": 0.8061407379843445,
+      "mae_200_vs_500_chips": 0.05918096467035753,
+      "nash_conv_20": 1.1646588748152054,
+      "nash_conv_200": 0.11646588748152098,
+      "nash_conv_500": 0.04658635499260644
+    }
+  ],
+  "controlled_model_comparison": {
+    "same_architecture_optimizer_seed_epochs_and_test_positions": true,
+    "raw_training_examples": {
+      "test_examples": 120,
+      "held_out_mae_chips": 2.1344456672668457,
+      "held_out_rmse_chips": 2.914947032928467,
+      "training_seconds": 4.631015666003805
+    },
+    "suit_augmented_training_examples": {
+      "test_examples": 120,
+      "held_out_mae_chips": 2.2007832527160645,
+      "held_out_rmse_chips": 2.880635976791382,
+      "training_seconds": 8.190886791999219
+    },
+    "augmentation_per_training_position": 4
+  },
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true
+}

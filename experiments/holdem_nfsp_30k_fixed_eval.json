@@ -1,0 +1,43 @@
+{
+  "experiment": "restricted_holdem_nfsp_fixed_evaluation",
+  "seeds": [
+    11
+  ],
+  "hands_per_seed_per_opponent": 1000,
+  "evaluation_seed": 900000,
+  "opponents": [
+    "random",
+    "heuristic"
+  ],
+  "stack": 20,
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true,
+  "runs": [
+    {
+      "training_seed": 11,
+      "model_path": "artifacts/holdem_nfsp_30k/seed11/policy_player_0.pt",
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 1000,
+          "mean_chips_per_hand": 0.817,
+          "standard_error": 0.43158055189358663,
+          "wins": 576,
+          "ties": 21
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 1000,
+          "mean_chips_per_hand": -1.505,
+          "standard_error": 0.42605574576397687,
+          "wins": 585,
+          "ties": 25
+        }
+      ],
+      "model_sha256": "ab32008a6ffe8e3170d673f0d0eb44c2b7bdc85d8ad668d00be0706773b6bf02"
+    }
+  ]
+}

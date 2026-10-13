@@ -1,0 +1,29 @@
+{
+  "experiment": "restricted_holdem_nfsp_cpu_profile",
+  "model": "artifacts/holdem_nfsp/seed11/policy_player_0.pt",
+  "model_sha256": "a90d25c6419de2fbd9014d567469b535761debe3aaaa451a9f04d10d56dfcfa8",
+  "observation": "seed-19 first preflop decision, 20-chip stacks",
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true,
+  "encoding": {
+    "repetitions": 1000,
+    "median_ms": 0.05,
+    "p95_ms": 0.050916,
+    "mean_ms": 0.050329223
+  },
+  "policy_forward": {
+    "repetitions": 1000,
+    "median_ms": 0.037625,
+    "p95_ms": 0.039167,
+    "mean_ms": 0.038033545
+  },
+  "complete_act": {
+    "repetitions": 1000,
+    "median_ms": 0.129,
+    "p95_ms": 0.134666,
+    "mean_ms": 0.130238301
+  }
+}

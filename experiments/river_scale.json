@@ -1,0 +1,45 @@
+{
+  "experiment": "river_range_size_cpu_scaling",
+  "seed": 71,
+  "board": [
+    "As",
+    "Kh",
+    "Qd",
+    "7c",
+    "2s"
+  ],
+  "iterations": 100,
+  "rows": [
+    {
+      "hands_per_seat": 3,
+      "joint_deals": 9,
+      "information_sets": 66,
+      "training_seconds_100_iterations": 1.4730454999953508,
+      "exact_best_response_seconds": 0.010696459008613601,
+      "nash_conv_100_iterations": 0.23463656794663823,
+      "tracemalloc_peak_bytes_training": 893785
+    },
+    {
+      "hands_per_seat": 6,
+      "joint_deals": 36,
+      "information_sets": 132,
+      "training_seconds_100_iterations": 5.369881582999369,
+      "exact_best_response_seconds": 0.0381350000097882,
+      "nash_conv_100_iterations": 0.6248677401004581,
+      "tracemalloc_peak_bytes_training": 1516010
+    },
+    {
+      "hands_per_seat": 10,
+      "joint_deals": 100,
+      "information_sets": 220,
+      "training_seconds_100_iterations": 13.798389167001005,
+      "exact_best_response_seconds": 0.11205349999363534,
+      "nash_conv_100_iterations": 0.4454872313179735,
+      "tracemalloc_peak_bytes_training": 2544840
+    }
+  ],
+  "python": "3.10.6",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true
+}

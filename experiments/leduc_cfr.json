@@ -1,0 +1,36 @@
+{
+  "experiment": "leduc_synchronous_cfr",
+  "checkpoints": [
+    {
+      "iterations": 20,
+      "nash_conv": 1.5848473791442224,
+      "exploitability_nash_conv_over_2": 0.7924236895721112,
+      "seat0_ev": -0.16771559641398665,
+      "best_response_seat0_ev": 0.6894813383349544,
+      "best_response_seat1_ev": 0.895366040809268,
+      "elapsed_seconds": 1.826103958999738
+    },
+    {
+      "iterations": 100,
+      "nash_conv": 0.43216042975144564,
+      "exploitability_nash_conv_over_2": 0.21608021487572282,
+      "seat0_ev": -0.11311155437417607,
+      "best_response_seat0_ev": 0.12954543721208994,
+      "best_response_seat1_ev": 0.3026149925393557,
+      "elapsed_seconds": 6.845612208999228
+    },
+    {
+      "iterations": 500,
+      "nash_conv": 0.13953897252915604,
+      "exploitability_nash_conv_over_2": 0.06976948626457802,
+      "seat0_ev": -0.08660053631789746,
+      "best_response_seat0_ev": -0.020652975253973894,
+      "best_response_seat1_ev": 0.16019194778312992,
+      "elapsed_seconds": 30.78604804200586
+    }
+  ],
+  "machine": "arm64",
+  "python": "3.10.6",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true
+}

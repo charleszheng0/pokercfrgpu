@@ -166,6 +166,23 @@ def test_average_policy_loss_can_fit_a_legal_action():
     assert torch.softmax(logits, dim=0)[1].item() > 0.999
 
 
+def test_scaled_dqn_target_is_consistent():
+    random.seed(17)
+    torch.manual_seed(17)
+    agent = NFSPAgent(lr=0.01, reward_scale=20.0)
+    state = torch.randn(INPUT_DIM)
+    empty = torch.zeros(INPUT_DIM)
+    mask = torch.zeros(len(ACTIONS), dtype=torch.bool)
+    for _ in range(64):
+        agent.rl_buffer.push(
+            (state.clone(), 1, 20.0, empty.clone(), True, mask.clone())
+        )
+    for _ in range(100):
+        agent.train_dqn(64)
+    with torch.no_grad():
+        assert abs(agent.q_network(state)[1].item() - 1.0) < 0.02
+
+
 def load_tests(loader, tests, pattern):
     """Expose the historical pytest-style checks to stdlib discovery too."""
     for name in (
@@ -173,6 +190,7 @@ def load_tests(loader, tests, pattern):
         "test_encoder_is_an_information_set_encoding",
         "test_dqn_loss_can_fit_a_terminal_target",
         "test_average_policy_loss_can_fit_a_legal_action",
+        "test_scaled_dqn_target_is_consistent",
     ):
         tests.addTest(unittest.FunctionTestCase(globals()[name]))
     return tests

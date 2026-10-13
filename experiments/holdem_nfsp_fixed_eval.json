@@ -1,0 +1,91 @@
+{
+  "experiment": "restricted_holdem_nfsp_fixed_evaluation",
+  "seeds": [
+    11,
+    23,
+    37
+  ],
+  "hands_per_seed_per_opponent": 1000,
+  "evaluation_seed": 900000,
+  "opponents": [
+    "random",
+    "heuristic"
+  ],
+  "stack": 20,
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true,
+  "runs": [
+    {
+      "training_seed": 11,
+      "model_path": "artifacts/holdem_nfsp/seed11/policy_player_0.pt",
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 1000,
+          "mean_chips_per_hand": 1.078,
+          "standard_error": 0.45253364814420455,
+          "wins": 605,
+          "ties": 26
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 1000,
+          "mean_chips_per_hand": -1.037,
+          "standard_error": 0.4349469045869965,
+          "wins": 589,
+          "ties": 26
+        }
+      ],
+      "model_sha256": "a90d25c6419de2fbd9014d567469b535761debe3aaaa451a9f04d10d56dfcfa8"
+    },
+    {
+      "training_seed": 23,
+      "model_path": "artifacts/holdem_nfsp/seed23/policy_player_0.pt",
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 1000,
+          "mean_chips_per_hand": 0.857,
+          "standard_error": 0.4503169287694349,
+          "wins": 574,
+          "ties": 18
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 1000,
+          "mean_chips_per_hand": -1.75,
+          "standard_error": 0.41446988465422346,
+          "wins": 587,
+          "ties": 29
+        }
+      ],
+      "model_sha256": "0921910be420d5f251fcd3b2b504ddac79efd35169d8d56fac449985b0879d3a"
+    },
+    {
+      "training_seed": 37,
+      "model_path": "artifacts/holdem_nfsp/seed37/policy_player_0.pt",
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 1000,
+          "mean_chips_per_hand": 1.477,
+          "standard_error": 0.4492742128347879,
+          "wins": 589,
+          "ties": 23
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 1000,
+          "mean_chips_per_hand": -2.077,
+          "standard_error": 0.4008987288465639,
+          "wins": 586,
+          "ties": 28
+        }
+      ],
+      "model_sha256": "ea53a9d9eaf7e14c73eb823ac50514812b2ff395504c1922bee7f2cc71ee2d68"
+    }
+  ]
+}

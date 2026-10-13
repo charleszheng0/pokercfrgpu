@@ -1,0 +1,75 @@
+{
+  "experiment": "restricted_holdem_nfsp",
+  "stack": 20,
+  "blinds": [
+    1,
+    2
+  ],
+  "seeds": [
+    11
+  ],
+  "hands_per_training_seed": 30000,
+  "evaluation_hands_per_opponent": 200,
+  "algorithm": "DQN best response plus reservoir-supervised average policy, eta=0.3",
+  "observation_dim": 525,
+  "action_slots": 11,
+  "network_hidden_units": [
+    128,
+    128
+  ],
+  "eta": 0.3,
+  "epsilon": 0.1,
+  "learning_rate": 0.001,
+  "dqn_reward_scale": 20,
+  "target_update_interval": 200,
+  "rl_capacity": 100000,
+  "sl_capacity": 100000,
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true,
+  "runs": [
+    {
+      "seed": 11,
+      "training_hands": 30000,
+      "training_seconds": 104.13605104101589,
+      "mean_self_play_reward_seat0": -0.215,
+      "mean_q_loss": 0.10441898518616212,
+      "mean_policy_loss": 0.7134335391132102,
+      "rl_buffer_sizes": [
+        87793,
+        90185
+      ],
+      "sl_buffer_sizes": [
+        26722,
+        28852
+      ],
+      "evaluation": [
+        {
+          "opponent": "random",
+          "hands": 200,
+          "mean_chips_per_hand": 2.08,
+          "standard_error": 1.0165307045863563,
+          "wins": 124,
+          "ties": 3
+        },
+        {
+          "opponent": "heuristic",
+          "hands": 200,
+          "mean_chips_per_hand": -1.94,
+          "standard_error": 0.9455433682843599,
+          "wins": 112,
+          "ties": 6
+        }
+      ],
+      "model_directory": "artifacts/holdem_nfsp_30k/seed11",
+      "model_sha256": {
+        "policy_player_0.pt": "ab32008a6ffe8e3170d673f0d0eb44c2b7bdc85d8ad668d00be0706773b6bf02",
+        "policy_player_1.pt": "8ce296db7ddc0d46cc7757cb2b8d42ddb6a62a351f489e41de0b105eba579891",
+        "q_player_0.pt": "97297ccdfd21d45d63174e9d327e27ed8b20ddaad4769ceddfa907e970074276",
+        "q_player_1.pt": "d7568afc4efc891e62cd6db64a1bb0eb42f4aaca237d8ce2a198d35d459b43ad"
+      }
+    }
+  ]
+}

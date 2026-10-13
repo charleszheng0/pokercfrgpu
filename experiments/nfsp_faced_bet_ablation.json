@@ -1,0 +1,53 @@
+{
+  "experiment": "restricted_holdem_nfsp_faced_bet_ablation",
+  "training_seed": 11,
+  "evaluation_seed": 902000,
+  "hands_per_condition": 500,
+  "opponent": "heuristic, 32 equity samples",
+  "model": "artifacts/holdem_nfsp/seed11/policy_player_0.pt",
+  "model_sha256": "a90d25c6419de2fbd9014d567469b535761debe3aaaa451a9f04d10d56dfcfa8",
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "revision": "23308d7946b52a247b480e15aa7ec0a93723c4f1",
+  "working_tree_dirty": true,
+  "results": {
+    "saved_nfsp": {
+      "opponent": "heuristic",
+      "hands": 500,
+      "mean_chips_per_hand": -0.708,
+      "standard_error": 0.6356583950443672,
+      "wins": 298,
+      "ties": 15,
+      "policy_action_counts": {
+        "nfsp": 1496,
+        "call": 142,
+        "bet": 897,
+        "raise": 300,
+        "check": 148,
+        "fold": 9
+      },
+      "policy_decision_seconds": 1.5659412187815178,
+      "mean_policy_decision_ms": 1.0467521515919236
+    },
+    "heuristic_when_facing_bet": {
+      "opponent": "heuristic",
+      "hands": 500,
+      "mean_chips_per_hand": -0.758,
+      "standard_error": 0.5528346264919528,
+      "wins": 288,
+      "ties": 13,
+      "policy_action_counts": {
+        "guard": 514,
+        "call": 402,
+        "nfsp": 1116,
+        "bet": 946,
+        "raise": 77,
+        "check": 170,
+        "fold": 35
+      },
+      "policy_decision_seconds": 8.977899468212854,
+      "mean_policy_decision_ms": 5.5079137841796655
+    }
+  }
+}

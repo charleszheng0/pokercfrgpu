@@ -208,6 +208,65 @@ class CFR:
         return {a: sums[a] / total if total else 1 / len(actions) for a in actions}
 
 
+class SynchronousCFR(CFR):
+    """Full-tree CFR with strategies frozen across all physical deals per step.
+
+    The original ``CFR`` above updates regrets during a deal sweep. Keeping it
+    available preserves previous comparisons; this class is the reference for
+    standard simultaneous full-tree CFR experiments.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.iterations = 0
+
+    def step(self):
+        updates = {}
+        strategies = {}
+
+        def visit(state, reaches):
+            if state.finished:
+                return terminal_payoff(state, 0)
+            player = state.current
+            actions = legal(state)
+            key = information_set(state, player)
+            if key not in strategies:
+                strategies[key] = self.strategy(key, actions)
+            strat = strategies[key]
+            sums = self.sum_policy.setdefault(key, {a: 0.0 for a in actions})
+            for action in actions:
+                sums[action] += reaches[player] * strat[action] / len(DEALS)
+            child_values = {}
+            node_value = 0.0
+            for action in actions:
+                next_reaches = list(reaches)
+                next_reaches[player] *= strat[action]
+                child_values[action] = visit(children(state)[action], next_reaches)
+                node_value += strat[action] * child_values[action]
+            changes = updates.setdefault(key, {a: 0.0 for a in actions})
+            sign = 1 if player == 0 else -1
+            for action in actions:
+                changes[action] += (
+                    reaches[1 - player]
+                    * sign
+                    * (child_values[action] - node_value)
+                    / len(DEALS)
+                )
+            return node_value
+
+        for deal in DEALS:
+            visit(initial(deal), (1.0, 1.0))
+        for key, changes in updates.items():
+            for action, delta in changes.items():
+                self.regrets[key][action] += delta
+        self.iterations += 1
+
+    def train(self, iterations):
+        for _ in range(iterations):
+            self.step()
+        return self
+
+
 class NeuralPolicy:
     def __init__(self, path):
         from .encoder import encode_state, INPUT_DIM
