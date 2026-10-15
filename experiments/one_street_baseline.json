@@ -1,0 +1,177 @@
+{
+  "experiment": "exact_runout_one_street_cfr_reference",
+  "date": "2026-10-13",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree": "dirty; one-street reference not committed",
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "ranges": [
+    [
+      [
+        "Jc",
+        "Tc"
+      ],
+      [
+        "8h",
+        "8s"
+      ]
+    ],
+    [
+      [
+        "9h",
+        "9s"
+      ],
+      [
+        "Ac",
+        "Ad"
+      ]
+    ]
+  ],
+  "pot": 8,
+  "effective_stack": 10,
+  "big_blind": 2,
+  "continuation_assumption": "No betting after the current street; all remaining public cards are enumerated exactly at showdown. This is not a full multi-street strategy.",
+  "methodology": "Two hands per seat, four compatible joint deals, 200 synchronous CFR+ iterations. Equity precomputation, CFR search, and exact root analysis timed separately. One CPU run per street; no random sampling.",
+  "runs": [
+    {
+      "street": "turn",
+      "board": [
+        "As",
+        "Kh",
+        "Qd",
+        "7c"
+      ],
+      "joint_deals": 4,
+      "future_runouts_per_deal": 44,
+      "iterations": 200,
+      "equity_precomputation_ms": 68.66466600331478,
+      "search_ms": 337.3580420156941,
+      "analysis_ms": 5.121709022205323,
+      "nash_conv": 0.08849002749878132,
+      "hero_action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.034746740199397996
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00048217953389819535
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.004180462783809114
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.15368307942211248
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.8069075380607823
+        }
+      ],
+      "hero_conditional_action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev": 5.44978586083284
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev": 5.218507632146971
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "ev": 5.211499696212558
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "ev": 5.573384038359535
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev": 5.638874769408463
+        }
+      ]
+    },
+    {
+      "street": "flop",
+      "board": [
+        "As",
+        "Kh",
+        "Qd"
+      ],
+      "joint_deals": 4,
+      "future_runouts_per_deal": 990,
+      "iterations": 200,
+      "equity_precomputation_ms": 1535.4059170058463,
+      "search_ms": 339.603915985208,
+      "analysis_ms": 4.727833991637453,
+      "nash_conv": 0.06864251973144697,
+      "hero_action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.14601149619107937
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.004683964212658635
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0657201739185229
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.01990036050188867
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.7636840051758503
+        }
+      ],
+      "hero_conditional_action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev": 4.085805055295828
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev": 3.687149834609591
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "ev": 4.0308604818299045
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "ev": 3.8817176751514637
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev": 4.1116791197033535
+        }
+      ]
+    }
+  ]
+}

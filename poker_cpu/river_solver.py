@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from collections import defaultdict
 from functools import lru_cache
 from math import isfinite
+from random import Random
 
 from .cards import evaluate, parse_cards
 from .engine import Action
@@ -43,7 +44,7 @@ class WeightedRange:
         if any(not isfinite(weight) or weight < 0 for weight in weights):
             raise ValueError("Range weights must be finite and nonnegative")
         total = sum(weights)
-        if total <= 0:
+        if not isfinite(total) or total <= 0:
             raise ValueError("Range needs positive total weight")
         object.__setattr__(self, "hands", hands)
         object.__setattr__(self, "weights", tuple(weight / total for weight in weights))
@@ -79,9 +80,15 @@ class WeightedRange:
 class RiverGame:
     def __init__(self, board, ranges, pot=8, stack=10, big_blind=2, range_weights=None):
         self.board = parse_cards(board)
-        if len(self.board) != 5 or pot < 0 or stack < big_blind or big_blind < 1:
+        if (
+            len(self.board) != 5
+            or not all(isinstance(value, int) for value in (pot, stack, big_blind))
+            or pot < 0
+            or stack < 1
+            or big_blind < 1
+        ):
             raise ValueError(
-                "Use a five-card board, nonnegative pot, and positive effective stack"
+                "Use a five-card board, nonnegative integer pot, and positive integer stack/blind"
             )
         self.pot, self.stack, self.big_blind = pot, stack, big_blind
         if len(ranges) != 2 or not all(ranges):
@@ -202,9 +209,14 @@ class RiverGame:
     def info(state, hands):
         return (state.current, hands[state.current], state.history)
 
-    def expected_value(self, policy0, policy1):
+    def expected_value(self, policy0, policy1, root_state=None):
+        root_state = root_state or RiverState(last_raise=self.big_blind)
         return sum(
-            weight * self.value_for_deal((a, b), policy0, policy1)
+            weight * _river_profile_value(
+                self, root_state, (a, b),
+                lambda state, hands: policy0(state, hands)
+                if state.current == 0 else policy1(state, hands),
+            )
             for a, b, weight in self.deals
         )
 
@@ -222,20 +234,74 @@ class RiverGame:
 
 
 class RiverCFR:
-    def __init__(self, game):
+    """Full-tree CFR on a tiny explicit-range river abstraction.
+
+    ``variant`` supports vanilla CFR, CFR+ regret clipping with linear
+    averaging, and DCFR with the standard discount exponents. These are
+    experimental update rules; they do not change the restricted game.
+    """
+
+    def __init__(self, game, variant="cfr", root_player=0, dcfr_alpha=1.5,
+                 dcfr_beta=0.0, dcfr_gamma=2.0, root_state=None,
+                 chance_sampling=False, sampling_seed=0):
+        if variant not in {"cfr", "cfr+", "dcfr"}:
+            raise ValueError("variant must be 'cfr', 'cfr+', or 'dcfr'")
+        if root_player not in (0, 1):
+            raise ValueError("root_player must be 0 or 1")
+        if chance_sampling and variant != "cfr":
+            raise ValueError("Chance sampling currently supports vanilla CFR only")
         self.game = game
+        self.variant = variant
+        self.root_player = root_player
+        self.root_state = root_state or RiverState(current=root_player, last_raise=game.big_blind)
+        if self.root_state.done or self.root_state.current != root_player:
+            raise ValueError("root_state must be a nonterminal decision for root_player")
+        self.dcfr_alpha = float(dcfr_alpha)
+        self.dcfr_beta = float(dcfr_beta)
+        self.dcfr_gamma = float(dcfr_gamma)
         self.regrets = {}
         self.strategy_sum = {}
         self.iterations = 0
+        self.chance_sampling = chance_sampling
+        self.random = Random(sampling_seed)
 
     def step(self):
         game = self.game
+        if self.variant == "dcfr" and self.iterations:
+            t = float(self.iterations)
+            positive_discount = t**self.dcfr_alpha / (t**self.dcfr_alpha + 1.0)
+            negative_discount = t**self.dcfr_beta / (t**self.dcfr_beta + 1.0)
+            for regrets in self.regrets.values():
+                for action, regret in regrets.items():
+                    regrets[action] *= positive_discount if regret > 0 else negative_discount
+            strategy_discount = (t / (t + 1.0)) ** self.dcfr_gamma
+            for sums in self.strategy_sum.values():
+                for action in sums:
+                    sums[action] *= strategy_discount
         policies = {}
         changes = {}
 
         def visit(state, hands, reach, chance):
             if state.done:
                 return game.terminal_payoff(state, hands)
+            if getattr(state, "chance", False):
+                if getattr(state, "all_in_runout", False):
+                    return game.chance_terminal_payoff(state, hands)
+                if self.chance_sampling:
+                    outcomes = game.chance_outcomes(state, hands)
+                    draw = self.random.random()
+                    cumulative = 0.0
+                    for child, probability in outcomes:
+                        cumulative += probability
+                        if draw < cumulative:
+                            # Sampling from the true chance distribution makes
+                            # the sampled utility an unbiased chance estimate.
+                            return visit(child, hands, reach, chance)
+                    return visit(outcomes[-1][0], hands, reach, chance)
+                return sum(
+                    probability * visit(child, hands, reach, chance * probability)
+                    for child, probability in game.chance_outcomes(state, hands)
+                )
             key = game.info(state, hands)
             actions = game.legal(state)
             if key not in policies:
@@ -249,8 +315,11 @@ class RiverCFR:
             strategy = policies[key]
             p = state.current
             sums = self.strategy_sum.setdefault(key, {a: 0.0 for a in actions})
+            averaging_weight = (
+                self.iterations + 1 if self.variant == "cfr+" else 1.0
+            )
             for action in actions:
-                sums[action] += chance * reach[p] * strategy[action]
+                sums[action] += averaging_weight * chance * reach[p] * strategy[action]
             action_values = {}
             node = 0.0
             for action in actions:
@@ -269,10 +338,11 @@ class RiverCFR:
             return node
 
         for a, b, chance in game.deals:
-            visit(RiverState(last_raise=game.big_blind), (a, b), (1.0, 1.0), chance)
+            visit(self.root_state, (a, b), (1.0, 1.0), chance)
         for key, delta in changes.items():
             for action, value in delta.items():
-                self.regrets[key][action] += value
+                updated = self.regrets[key][action] + value
+                self.regrets[key][action] = max(0.0, updated) if self.variant == "cfr+" else updated
         self.iterations += 1
 
     def train(self, iterations):
@@ -286,6 +356,10 @@ class RiverCFR:
         if not sums:
             return {a: 1 / len(actions) for a in actions}
         total = sum(sums.values())
+        if total <= 0:
+            # A sampled information set can be visited only with zero own
+            # reach; no average policy mass has been accumulated there.
+            return {a: 1 / len(actions) for a in actions}
         return {a: sums[a] / total for a in actions}
 
     def root_hand_values(self):
@@ -303,18 +377,142 @@ class RiverCFR:
                 weight = sum(x[2] for x in compatible)
                 total = 0.0
                 for a, b, chance in compatible:
-                    value = self.game.value_for_deal((a, b), self.average, self.average)
+                    value = _river_profile_value(
+                        self.game, self.root_state, (a, b), self.average
+                    )
                     total += chance * (value if player == 0 else -value)
                 result[player][hand] = total / weight
         return result
 
+    def analyze_root(self, player=0, chosen_action=None, private_hand=None):
+        """Return average frequencies and conditional chip EVs at root.
 
-def best_response(game, fixed_policy, player):
+        Conditional action EV means expected net chips for ``player`` given
+        their private hand, conditioned on compatible opponent hands, forcing
+        the named root action, then following the learned average profile.
+        It is distinct from CFR's reach-weighted counterfactual value.
+        """
+        if player not in (0, 1):
+            raise ValueError("player must be 0 or 1")
+        game = self.game
+        if player != self.root_player:
+            raise ValueError("analyze_root player must match solver root_player")
+        root = self.root_state
+        actions = game.legal(root)
+        opponent = 1 - player
+
+        per_hand = []
+        marginal_mass = defaultdict(float)
+        action_mass = defaultdict(float)
+        action_ev_mass = defaultdict(float)
+        all_values = {}
+        for hand in game.ranges[player]:
+            compatible = [
+                (deal[player], deal[opponent], deal[2])
+                for deal in game.deals
+                if deal[player] == hand
+            ]
+            mass = sum(row[2] for row in compatible)
+            if mass <= 0:
+                continue
+            # Information keys use the acting hand at the root, so construct
+            # any placeholder opponent holding; it is not read by that node.
+            placeholder = next(iter(game.ranges[opponent]))
+            hand_pair = [None, None]
+            hand_pair[player], hand_pair[opponent] = hand, placeholder
+            frequencies = self.average(root, tuple(hand_pair))
+            evs = {}
+            for action in actions:
+                total = 0.0
+                for own, other, joint_weight in compatible:
+                    hands = [None, None]
+                    hands[player], hands[opponent] = own, other
+                    next_state = game.advance(root, action)
+                    value0 = _river_profile_value(game, next_state, tuple(hands), self.average)
+                    total += joint_weight / mass * (value0 if player == 0 else -value0)
+                evs[action] = total
+            all_values[hand] = evs
+            hand_prob = mass
+            marginal_mass[hand] = hand_prob
+            for action in actions:
+                action_mass[action] += hand_prob * frequencies[action]
+                action_ev_mass[action] += hand_prob * evs[action]
+            per_hand.append({"hand": hand, "frequency": frequencies, "action_evs": evs})
+
+        total_mass = sum(marginal_mass.values())
+        aggregate_frequencies = {
+            action: action_mass[action] / total_mass for action in actions
+        }
+        aggregate_action_evs = {
+            action: action_ev_mass[action] / total_mass for action in actions
+        }
+        ev_loss = None
+        private_hand = tuple(private_hand) if private_hand is not None else None
+        if private_hand is not None and private_hand not in all_values:
+            raise ValueError("private_hand must have positive compatible range mass")
+        if chosen_action is not None:
+            if chosen_action not in actions:
+                raise ValueError("chosen_action must be legal at the root")
+            if private_hand is not None:
+                hand_evs = all_values[private_hand]
+                ev_loss = max(hand_evs.values()) - hand_evs[chosen_action]
+        return {
+            "status": getattr(
+                game, "solve_scope",
+                f"{game.street}_one_street_abstracted"
+                if hasattr(game, "street") else "river_abstracted",
+            ),
+            "validation_status": "exact_best_response_available",
+            "variant": self.variant,
+            "iterations": self.iterations,
+            "player": player,
+            "actions": actions,
+            "per_hand": tuple(per_hand),
+            "action_frequencies": aggregate_frequencies,
+            "conditional_action_evs": aggregate_action_evs,
+            "chosen_action_ev_loss": ev_loss,
+            "range_average_action_gap": (
+                max(aggregate_action_evs.values())
+                - aggregate_action_evs[chosen_action]
+                if chosen_action is not None else None
+            ),
+            "nash_conv": nash_conv(
+                game, self.average, self.average, root_state=self.root_state
+            ),
+        }
+
+
+def _river_profile_value(game, state, hands, policy):
+    """Expected seat-0 payoff under a fixed profile from a specified node."""
+    if state.done:
+        return game.terminal_payoff(state, hands)
+    if getattr(state, "chance", False):
+        if getattr(state, "all_in_runout", False):
+            return game.chance_terminal_payoff(state, hands)
+        return sum(
+            probability * _river_profile_value(game, child, hands, policy)
+            for child, probability in game.chance_outcomes(state, hands)
+        )
+    return sum(
+        probability * _river_profile_value(
+            game, game.advance(state, action), hands, policy
+        )
+        for action, probability in policy(state, hands).items()
+    )
+
+
+def best_response(game, fixed_policy, player, root_state=None):
     """Exact information-set-constrained response within the supplied ranges."""
     grouped = defaultdict(list)
 
     def collect(state, hands, opponent_reach, chance):
         if state.done:
+            return
+        if getattr(state, "chance", False):
+            if getattr(state, "all_in_runout", False):
+                return
+            for child, probability in game.chance_outcomes(state, hands):
+                collect(child, hands, opponent_reach, chance * probability)
             return
         if state.current == player:
             grouped[game.info(state, hands)].append(
@@ -328,7 +526,7 @@ def best_response(game, fixed_policy, player):
                     game.advance(state, action), hands, opponent_reach * prob, chance
                 )
 
-    start = RiverState(last_raise=game.big_blind)
+    start = root_state or RiverState(last_raise=game.big_blind)
     for a, b, chance in game.deals:
         collect(start, (a, b), 1.0, chance)
     chosen = {}
@@ -338,6 +536,14 @@ def best_response(game, fixed_policy, player):
         if state.done:
             payoff = game.terminal_payoff(state, hands)
             return payoff if player == 0 else -payoff
+        if getattr(state, "chance", False):
+            if getattr(state, "all_in_runout", False):
+                payoff = game.chance_terminal_payoff(state, hands)
+                return payoff if player == 0 else -payoff
+            return sum(
+                probability * continuation(child, hands)
+                for child, probability in game.chance_outcomes(state, hands)
+            )
         if state.current == player:
             return continuation(
                 game.advance(state, chosen[game.info(state, hands)]), hands
@@ -347,7 +553,7 @@ def best_response(game, fixed_policy, player):
             for action, prob in fixed_policy(state, hands).items()
         )
 
-    for key in sorted(grouped, key=lambda item: len(item[2]), reverse=True):
+    for key in sorted(grouped, key=lambda item: len(item[-1]), reverse=True):
         nodes = grouped[key]
         actions = game.legal(nodes[0][0])
         scores = {
@@ -367,11 +573,13 @@ def best_response(game, fixed_policy, player):
         }
 
     return (
-        game.expected_value(policy, fixed_policy)
+        game.expected_value(policy, fixed_policy, root_state=start)
         if player == 0
-        else -game.expected_value(fixed_policy, policy)
+        else -game.expected_value(fixed_policy, policy, root_state=start)
     )
 
 
-def nash_conv(game, policy0, policy1):
-    return best_response(game, policy1, 0) + best_response(game, policy0, 1)
+def nash_conv(game, policy0, policy1, root_state=None):
+    return best_response(game, policy1, 0, root_state) + best_response(
+        game, policy0, 1, root_state
+    )

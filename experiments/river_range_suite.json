@@ -1,0 +1,310 @@
+{
+  "experiment": "fixed_seed_weighted_river_range_suite_cfr_plus",
+  "seed": 729,
+  "positions": [
+    {
+      "position_id": 0,
+      "board": [
+        "Kc",
+        "7c",
+        "6h",
+        "Jc",
+        "Qs"
+      ],
+      "ranges": [
+        [
+          [
+            "3h",
+            "Jd"
+          ],
+          [
+            "5s",
+            "7h"
+          ],
+          [
+            "4h",
+            "3d"
+          ]
+        ],
+        [
+          [
+            "9d",
+            "9h"
+          ],
+          [
+            "5c",
+            "3s"
+          ],
+          [
+            "Kd",
+            "Qd"
+          ]
+        ]
+      ],
+      "range_weights": [
+        [
+          1,
+          3,
+          1
+        ],
+        [
+          3,
+          1,
+          3
+        ]
+      ],
+      "pot": 6,
+      "effective_stack": 6,
+      "compatible_deals": 9,
+      "iterations": 500,
+      "nash_conv_chips": 0.0055893513151703544,
+      "seat0_ev_chips": -2.5688479560496327,
+      "train_seconds": 1.0629727910272777,
+      "exact_report_seconds": 0.005924292025156319
+    },
+    {
+      "position_id": 1,
+      "board": [
+        "Qh",
+        "9d",
+        "Jc",
+        "Ad",
+        "Ac"
+      ],
+      "ranges": [
+        [
+          [
+            "6c",
+            "Js"
+          ],
+          [
+            "4c",
+            "8h"
+          ],
+          [
+            "4d",
+            "5s"
+          ]
+        ],
+        [
+          [
+            "3d",
+            "9c"
+          ],
+          [
+            "Kd",
+            "6s"
+          ],
+          [
+            "5h",
+            "2h"
+          ]
+        ]
+      ],
+      "range_weights": [
+        [
+          3,
+          3,
+          3
+        ],
+        [
+          2,
+          1,
+          3
+        ]
+      ],
+      "pot": 8,
+      "effective_stack": 10,
+      "compatible_deals": 9,
+      "iterations": 500,
+      "nash_conv_chips": 0.10841569259056505,
+      "seat0_ev_chips": 0.5794511932388509,
+      "train_seconds": 1.8426913339935709,
+      "exact_report_seconds": 0.011380915995687246
+    },
+    {
+      "position_id": 2,
+      "board": [
+        "6c",
+        "Jh",
+        "Qh",
+        "2c",
+        "6h"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "9h"
+          ],
+          [
+            "7h",
+            "Ac"
+          ],
+          [
+            "Qc",
+            "5s"
+          ]
+        ],
+        [
+          [
+            "8d",
+            "As"
+          ],
+          [
+            "Qd",
+            "Ts"
+          ],
+          [
+            "9c",
+            "3h"
+          ]
+        ]
+      ],
+      "range_weights": [
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          3,
+          1,
+          1
+        ]
+      ],
+      "pot": 6,
+      "effective_stack": 10,
+      "compatible_deals": 9,
+      "iterations": 500,
+      "nash_conv_chips": 0.10352963411414073,
+      "seat0_ev_chips": 1.1462355919544562,
+      "train_seconds": 2.0445495420135558,
+      "exact_report_seconds": 0.012517665978521109
+    },
+    {
+      "position_id": 3,
+      "board": [
+        "3h",
+        "Qh",
+        "2c",
+        "4h",
+        "9d"
+      ],
+      "ranges": [
+        [
+          [
+            "Tc",
+            "8d"
+          ],
+          [
+            "Kd",
+            "5d"
+          ],
+          [
+            "Qs",
+            "Ac"
+          ]
+        ],
+        [
+          [
+            "5s",
+            "6c"
+          ],
+          [
+            "2h",
+            "3s"
+          ],
+          [
+            "Td",
+            "8c"
+          ]
+        ]
+      ],
+      "range_weights": [
+        [
+          1,
+          2,
+          2
+        ],
+        [
+          3,
+          1,
+          3
+        ]
+      ],
+      "pot": 6,
+      "effective_stack": 10,
+      "compatible_deals": 9,
+      "iterations": 500,
+      "nash_conv_chips": 0.20381103005715095,
+      "seat0_ev_chips": -2.5686461004236016,
+      "train_seconds": 2.107794624986127,
+      "exact_report_seconds": 0.012569624988827854
+    },
+    {
+      "position_id": 4,
+      "board": [
+        "3c",
+        "6h",
+        "2d",
+        "9h",
+        "9d"
+      ],
+      "ranges": [
+        [
+          [
+            "6d",
+            "5s"
+          ],
+          [
+            "4h",
+            "8s"
+          ],
+          [
+            "5h",
+            "Ks"
+          ]
+        ],
+        [
+          [
+            "Qc",
+            "4s"
+          ],
+          [
+            "Ad",
+            "Qh"
+          ],
+          [
+            "4d",
+            "Js"
+          ]
+        ]
+      ],
+      "range_weights": [
+        [
+          2,
+          3,
+          1
+        ],
+        [
+          1,
+          1,
+          1
+        ]
+      ],
+      "pot": 12,
+      "effective_stack": 6,
+      "compatible_deals": 9,
+      "iterations": 500,
+      "nash_conv_chips": 0.04656820459052158,
+      "seat0_ev_chips": 0.6458284554500686,
+      "train_seconds": 0.7820721669995692,
+      "exact_report_seconds": 0.004897417005850002
+    }
+  ],
+  "python": "3.10.6",
+  "machine": "arm64",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree_dirty": true
+}

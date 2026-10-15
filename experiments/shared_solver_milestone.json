@@ -1,0 +1,181 @@
+{
+  "experiment": "shared_postflop_solver_milestone",
+  "date": "2026-10-13",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree": "dirty; shared solver milestone not committed",
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "methodology": "One deterministic river reference comparison at 50 CFR+ iterations, one one-deal turn comparison at 10 iterations, a three-variant turn comparison at 100 iterations, and a one-iteration one-deal flop stress check. Exact chance; no sampling. Timings include solver setup, search, and exact restricted-game best responses. One run per condition, no uncertainty estimate.",
+  "river": {
+    "board": [
+      "As",
+      "Kh",
+      "Qd",
+      "7c",
+      "2s"
+    ],
+    "ranges": [
+      [
+        [
+          "Jc",
+          "Tc"
+        ],
+        [
+          "8h",
+          "8s"
+        ]
+      ],
+      [
+        [
+          "9h",
+          "9s"
+        ],
+        [
+          "Ac",
+          "Ad"
+        ]
+      ]
+    ],
+    "iterations": 50,
+    "joint_deals": 4,
+    "shared_latency_ms": 139.6836249914486,
+    "reference_nash_conv_chips": 1.2291642600426556,
+    "shared_nash_conv_chips": 1.2291642600426556,
+    "max_hero_frequency_difference": 0.0,
+    "max_hero_conditional_ev_difference_chips": 0.0,
+    "per_hand_count": 2,
+    "hero_actions": [
+      {
+        "kind": "check",
+        "amount": 0,
+        "frequency": 0.05852381940877076,
+        "ev_chips": 6.036746851277435
+      },
+      {
+        "kind": "bet",
+        "amount": 2,
+        "frequency": 0.007356352617234771,
+        "ev_chips": 6.790771701889771
+      },
+      {
+        "kind": "bet",
+        "amount": 4,
+        "frequency": 0.08005714456576285,
+        "ev_chips": 8.072454093907359
+      },
+      {
+        "kind": "bet",
+        "amount": 8,
+        "frequency": 0.4024993248542678,
+        "ev_chips": 9.533022356506594
+      },
+      {
+        "kind": "bet",
+        "amount": 10,
+        "frequency": 0.4515633585539638,
+        "ev_chips": 8.454419476705583
+      }
+    ]
+  },
+  "turn": {
+    "board": [
+      "As",
+      "Kh",
+      "Qd",
+      "7c"
+    ],
+    "ranges": [
+      [
+        [
+          "8h",
+          "8s"
+        ]
+      ],
+      [
+        [
+          "9h",
+          "9s"
+        ]
+      ]
+    ],
+    "stack": 4,
+    "pot": 8,
+    "iterations": 10,
+    "joint_deals": 1,
+    "shared_latency_ms": 629.7134580090642,
+    "shared_nash_conv_chips": 1.4077443708587278,
+    "one_street_nash_conv_chips": 0.7271902213338546,
+    "hero_actions": [
+      {
+        "kind": "check",
+        "amount": 0,
+        "frequency": 0.9181453393104927,
+        "ev_chips": -4.665558450949441
+      },
+      {
+        "kind": "bet",
+        "amount": 2,
+        "frequency": 0.04682913845799917,
+        "ev_chips": -6.197707213470061
+      },
+      {
+        "kind": "bet",
+        "amount": 4,
+        "frequency": 0.035025522231508156,
+        "ev_chips": -7.170247933884294
+      }
+    ],
+    "one_street_hero_action_evs": [
+      {
+        "kind": "check",
+        "amount": 0,
+        "ev_chips": -4.404484160511592
+      },
+      {
+        "kind": "bet",
+        "amount": 2,
+        "ev_chips": -5.806004821992265
+      },
+      {
+        "kind": "bet",
+        "amount": 4,
+        "ev_chips": -7.170247933884299
+      }
+    ],
+    "continuation_difference": "Shared solver includes river betting; one-street reference does not"
+  },
+  "turn_variants": [
+    {
+      "variant": "cfr",
+      "iterations": 100,
+      "nash_conv_chips": 0.18753263037674328,
+      "latency_ms": 2394.346208020579
+    },
+    {
+      "variant": "cfr+",
+      "iterations": 100,
+      "nash_conv_chips": 0.016961767306373332,
+      "latency_ms": 2403.650500025833
+    },
+    {
+      "variant": "dcfr",
+      "iterations": 100,
+      "nash_conv_chips": 0.0016037058075850652,
+      "latency_ms": 2419.6012089960277
+    }
+  ],
+  "flop_experimental": {
+    "board": [
+      "As",
+      "Kh",
+      "Qd"
+    ],
+    "joint_deals": 1,
+    "effective_stack": 1,
+    "iterations": 1,
+    "nash_conv_chips": 2.4268939393939397,
+    "latency_ms": 8766.315374989063,
+    "app_status": "disabled: one iteration is not a useful convergence result"
+  }
+}

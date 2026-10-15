@@ -1,0 +1,727 @@
+{
+  "experiment": "play_and_learn_full_pipeline_diagnosis",
+  "seed": 29,
+  "opponent": "passive_call_check",
+  "rules": {
+    "stacks": [
+      100,
+      100
+    ],
+    "blinds": [
+      1,
+      2
+    ],
+    "button": 0
+  },
+  "traces": [
+    {
+      "street": "preflop",
+      "observation": {
+        "board": [],
+        "hero_hand": [
+          "8s",
+          "Qc"
+        ],
+        "pot": 3,
+        "stacks": [
+          99,
+          98
+        ],
+        "street_paid": [
+          1,
+          2
+        ],
+        "to_call": 1,
+        "legal_actions": [
+          {
+            "kind": "fold",
+            "amount": 0
+          },
+          {
+            "kind": "call",
+            "amount": 0
+          },
+          {
+            "kind": "raise",
+            "amount": 4
+          },
+          {
+            "kind": "raise",
+            "amount": 6
+          },
+          {
+            "kind": "raise",
+            "amount": 100
+          }
+        ]
+      },
+      "request": {
+        "board": [],
+        "pot_before_street": 0,
+        "stacks_at_street_start": [
+          100,
+          100
+        ],
+        "button": 0,
+        "first_actor": 0,
+        "current_player": 0,
+        "street_actions": [],
+        "range_source": "unvalidated_inference"
+      },
+      "assumed_ranges": [
+        {
+          "hands": [
+            [
+              "Qc",
+              "8s"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Ac",
+              "Ad"
+            ],
+            [
+              "Kd",
+              "Kh"
+            ],
+            [
+              "Qs",
+              "Js"
+            ]
+          ],
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      ],
+      "live_request": {
+        "status": "unsupported",
+        "reason": "Preflop blueprint and full-hand CFR have not passed validation",
+        "validation_status": "not_validated",
+        "wall_ms": 0.005167035851627588,
+        "reported_latency_ms": null,
+        "iterations": 0,
+        "nash_conv_chips": null,
+        "joint_deals": 0,
+        "actions": []
+      },
+      "assumed_request": {
+        "status": "unsupported",
+        "reason": "Preflop blueprint and full-hand CFR have not passed validation",
+        "validation_status": "not_validated",
+        "wall_ms": 0.004041008651256561,
+        "reported_latency_ms": null,
+        "iterations": 0,
+        "nash_conv_chips": null,
+        "joint_deals": 0,
+        "actions": []
+      },
+      "cutoff_request": null,
+      "chosen_action": {
+        "kind": "call",
+        "amount": 0
+      }
+    },
+    {
+      "street": "flop",
+      "observation": {
+        "board": [
+          "5s",
+          "4h",
+          "Js"
+        ],
+        "hero_hand": [
+          "8s",
+          "Qc"
+        ],
+        "pot": 4,
+        "stacks": [
+          98,
+          98
+        ],
+        "street_paid": [
+          0,
+          0
+        ],
+        "to_call": 0,
+        "legal_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 2
+          },
+          {
+            "kind": "bet",
+            "amount": 4
+          },
+          {
+            "kind": "bet",
+            "amount": 98
+          }
+        ]
+      },
+      "request": {
+        "board": [
+          "5s",
+          "4h",
+          "Js"
+        ],
+        "pot_before_street": 4,
+        "stacks_at_street_start": [
+          98,
+          98
+        ],
+        "button": 0,
+        "first_actor": 1,
+        "current_player": 0,
+        "street_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          }
+        ],
+        "range_source": "unvalidated_inference"
+      },
+      "assumed_ranges": [
+        {
+          "hands": [
+            [
+              "Qc",
+              "8s"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Ac",
+              "Ad"
+            ],
+            [
+              "Kd",
+              "Kh"
+            ],
+            [
+              "9h",
+              "9s"
+            ]
+          ],
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      ],
+      "live_request": {
+        "status": "unsupported",
+        "reason": "Live feedback requires validated betting-history range inference; none is available",
+        "validation_status": "not_validated",
+        "wall_ms": 0.004499976057559252,
+        "reported_latency_ms": null,
+        "iterations": 0,
+        "nash_conv_chips": null,
+        "joint_deals": 0,
+        "actions": []
+      },
+      "assumed_request": {
+        "status": "unsupported",
+        "reason": "Experimental flop search currently supports four deals/2000 sampled iterations or one deal/three exact iterations",
+        "validation_status": "not_validated",
+        "wall_ms": 0.09066599886864424,
+        "reported_latency_ms": null,
+        "iterations": 0,
+        "nash_conv_chips": null,
+        "joint_deals": 0,
+        "actions": []
+      },
+      "cutoff_request": {
+        "status": "supported_restricted_game",
+        "reason": "Experimental current-street CFR with exact showdown runouts and no later betting; not full-game GTO",
+        "validation_status": "experimental_showdown_cutoff_residual_measured",
+        "wall_ms": 1532.017834018916,
+        "reported_latency_ms": 1531.9992079748772,
+        "iterations": 500,
+        "nash_conv_chips": 0.0003648964012215039,
+        "joint_deals": 3,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.9999757370403353,
+            "ev_chips": -1.5703703703703702,
+            "ev_bb": -0.7851851851851851
+          },
+          {
+            "kind": "bet",
+            "amount": 2,
+            "frequency": 1.703530785089849e-05,
+            "ev_chips": -8.365588252888198,
+            "ev_bb": -4.182794126444099
+          },
+          {
+            "kind": "bet",
+            "amount": 4,
+            "frequency": 5.23164382973664e-06,
+            "ev_chips": -19.833748042279105,
+            "ev_bb": -9.916874021139552
+          },
+          {
+            "kind": "bet",
+            "amount": 98,
+            "frequency": 1.996007984031936e-06,
+            "ev_chips": -78.51819708730687,
+            "ev_bb": -39.25909854365344
+          }
+        ]
+      },
+      "chosen_action": {
+        "kind": "check",
+        "amount": 0
+      }
+    },
+    {
+      "street": "turn",
+      "observation": {
+        "board": [
+          "5s",
+          "4h",
+          "Js",
+          "Qh"
+        ],
+        "hero_hand": [
+          "8s",
+          "Qc"
+        ],
+        "pot": 4,
+        "stacks": [
+          98,
+          98
+        ],
+        "street_paid": [
+          0,
+          0
+        ],
+        "to_call": 0,
+        "legal_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 2
+          },
+          {
+            "kind": "bet",
+            "amount": 4
+          },
+          {
+            "kind": "bet",
+            "amount": 98
+          }
+        ]
+      },
+      "request": {
+        "board": [
+          "5s",
+          "4h",
+          "Js",
+          "Qh"
+        ],
+        "pot_before_street": 4,
+        "stacks_at_street_start": [
+          98,
+          98
+        ],
+        "button": 0,
+        "first_actor": 1,
+        "current_player": 0,
+        "street_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          }
+        ],
+        "range_source": "unvalidated_inference"
+      },
+      "assumed_ranges": [
+        {
+          "hands": [
+            [
+              "Qc",
+              "8s"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Ac",
+              "Ad"
+            ],
+            [
+              "Kd",
+              "Kh"
+            ],
+            [
+              "9h",
+              "9s"
+            ]
+          ],
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      ],
+      "live_request": {
+        "status": "unsupported",
+        "reason": "Live feedback requires validated betting-history range inference; none is available",
+        "validation_status": "not_validated",
+        "wall_ms": 0.005250039976090193,
+        "reported_latency_ms": null,
+        "iterations": 0,
+        "nash_conv_chips": null,
+        "joint_deals": 0,
+        "actions": []
+      },
+      "assumed_request": {
+        "status": "supported_restricted_game",
+        "reason": "Experimental assumed-range restricted game; strategy is not full-game GTO",
+        "validation_status": "experimental_assumed_range_residual_measured",
+        "wall_ms": 13454.296957992483,
+        "reported_latency_ms": 13454.275041993242,
+        "iterations": 1,
+        "nash_conv_chips": 43.592424242424244,
+        "joint_deals": 3,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.25,
+            "ev_chips": -4.6082702020201864,
+            "ev_bb": -2.3041351010100932
+          },
+          {
+            "kind": "bet",
+            "amount": 2,
+            "frequency": 0.25,
+            "ev_chips": -4.534343434343429,
+            "ev_bb": -2.2671717171717143
+          },
+          {
+            "kind": "bet",
+            "amount": 4,
+            "frequency": 0.25,
+            "ev_chips": -5.342393939393938,
+            "ev_bb": -2.671196969696969
+          },
+          {
+            "kind": "bet",
+            "amount": 98,
+            "frequency": 0.25,
+            "ev_chips": -9.606060606060602,
+            "ev_bb": -4.803030303030301
+          }
+        ]
+      },
+      "cutoff_request": {
+        "status": "supported_restricted_game",
+        "reason": "Experimental current-street CFR with exact showdown runouts and no later betting; not full-game GTO",
+        "validation_status": "experimental_showdown_cutoff_residual_measured",
+        "wall_ms": 466.70283400453627,
+        "reported_latency_ms": 466.6891249944456,
+        "iterations": 500,
+        "nash_conv_chips": 0.00021805479821113138,
+        "joint_deals": 3,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.9999864372045874,
+            "ev_chips": -0.4242424242424242,
+            "ev_bb": -0.2121212121212121
+          },
+          {
+            "kind": "bet",
+            "amount": 2,
+            "frequency": 9.309391641049611e-06,
+            "ev_chips": -5.761493144970792,
+            "ev_bb": -2.880746572485396
+          },
+          {
+            "kind": "bet",
+            "amount": 4,
+            "frequency": 2.2573957874624527e-06,
+            "ev_chips": -23.019986401990035,
+            "ev_bb": -11.509993200995018
+          },
+          {
+            "kind": "bet",
+            "amount": 98,
+            "frequency": 1.996007984031936e-06,
+            "ev_chips": -50.848155567652576,
+            "ev_bb": -25.424077783826288
+          }
+        ]
+      },
+      "chosen_action": {
+        "kind": "check",
+        "amount": 0
+      }
+    },
+    {
+      "street": "river",
+      "observation": {
+        "board": [
+          "5s",
+          "4h",
+          "Js",
+          "Qh",
+          "2s"
+        ],
+        "hero_hand": [
+          "8s",
+          "Qc"
+        ],
+        "pot": 4,
+        "stacks": [
+          98,
+          98
+        ],
+        "street_paid": [
+          0,
+          0
+        ],
+        "to_call": 0,
+        "legal_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 2
+          },
+          {
+            "kind": "bet",
+            "amount": 4
+          },
+          {
+            "kind": "bet",
+            "amount": 98
+          }
+        ]
+      },
+      "request": {
+        "board": [
+          "5s",
+          "4h",
+          "Js",
+          "Qh",
+          "2s"
+        ],
+        "pot_before_street": 4,
+        "stacks_at_street_start": [
+          98,
+          98
+        ],
+        "button": 0,
+        "first_actor": 1,
+        "current_player": 0,
+        "street_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          }
+        ],
+        "range_source": "unvalidated_inference"
+      },
+      "assumed_ranges": [
+        {
+          "hands": [
+            [
+              "Qc",
+              "8s"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Ac",
+              "Ad"
+            ],
+            [
+              "Kd",
+              "Kh"
+            ],
+            [
+              "9h",
+              "9s"
+            ]
+          ],
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      ],
+      "live_request": {
+        "status": "unsupported",
+        "reason": "Live feedback requires validated betting-history range inference; none is available",
+        "validation_status": "not_validated",
+        "wall_ms": 0.005249981768429279,
+        "reported_latency_ms": null,
+        "iterations": 0,
+        "nash_conv_chips": null,
+        "joint_deals": 0,
+        "actions": []
+      },
+      "assumed_request": {
+        "status": "supported_restricted_game",
+        "reason": "Experimental assumed-range restricted game; strategy is not full-game GTO",
+        "validation_status": "experimental_assumed_range_residual_measured",
+        "wall_ms": 850.260375009384,
+        "reported_latency_ms": 850.2394580282271,
+        "iterations": 1000,
+        "nash_conv_chips": 7.175495411448907e-05,
+        "joint_deals": 3,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.9999948556501822,
+            "ev_chips": -0.6666666666666666,
+            "ev_bb": -0.3333333333333333
+          },
+          {
+            "kind": "bet",
+            "amount": 2,
+            "frequency": 3.6752812525188047e-06,
+            "ev_chips": -5.606100629603356,
+            "ev_bb": -2.803050314801678
+          },
+          {
+            "kind": "bet",
+            "amount": 4,
+            "frequency": 9.695680657800022e-07,
+            "ev_chips": -15.663906214292723,
+            "ev_bb": -7.8319531071463615
+          },
+          {
+            "kind": "bet",
+            "amount": 98,
+            "frequency": 4.995004995004995e-07,
+            "ev_chips": -65.99989943389943,
+            "ev_bb": -32.999949716949715
+          }
+        ]
+      },
+      "cutoff_request": null,
+      "chosen_action": {
+        "kind": "check",
+        "amount": 0
+      }
+    }
+  ],
+  "hand_history": [
+    {
+      "street": 0,
+      "player": 0,
+      "kind": "call",
+      "amount_paid": 1,
+      "target": null,
+      "pot_after": 4
+    },
+    {
+      "street": 0,
+      "player": 1,
+      "kind": "check",
+      "amount_paid": 0,
+      "target": null,
+      "pot_after": 4
+    },
+    {
+      "street": 1,
+      "player": 1,
+      "kind": "check",
+      "amount_paid": 0,
+      "target": null,
+      "pot_after": 4
+    },
+    {
+      "street": 1,
+      "player": 0,
+      "kind": "check",
+      "amount_paid": 0,
+      "target": null,
+      "pot_after": 4
+    },
+    {
+      "street": 2,
+      "player": 1,
+      "kind": "check",
+      "amount_paid": 0,
+      "target": null,
+      "pot_after": 4
+    },
+    {
+      "street": 2,
+      "player": 0,
+      "kind": "check",
+      "amount_paid": 0,
+      "target": null,
+      "pot_after": 4
+    },
+    {
+      "street": 3,
+      "player": 1,
+      "kind": "check",
+      "amount_paid": 0,
+      "target": null,
+      "pot_after": 4
+    },
+    {
+      "street": 3,
+      "player": 0,
+      "kind": "check",
+      "amount_paid": 0,
+      "target": null,
+      "pot_after": 4
+    }
+  ],
+  "review_api_statuses": [
+    "unsupported",
+    "experimental_assumed_range",
+    "experimental_assumed_range",
+    "experimental_assumed_range"
+  ],
+  "hardware": "macOS-14.5-arm64-arm-64bit",
+  "python": "3.10.6",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "dirty_tree": true
+}

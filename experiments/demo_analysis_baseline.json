@@ -1,0 +1,421 @@
+{
+  "experiment": "one_click_restricted_river_demo",
+  "date": "2026-10-14",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree": "dirty",
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "request": {
+    "street": "river",
+    "board": "As Kh Qd 7c 2s",
+    "hero_hand": "8h 8s",
+    "pot": 8,
+    "stacks": [
+      10,
+      10
+    ],
+    "first_actor": 0,
+    "iterations": 2000,
+    "ranges": [
+      {
+        "hands": [
+          [
+            "Jc",
+            "Tc"
+          ],
+          [
+            "8h",
+            "8s"
+          ]
+        ],
+        "weights": [
+          1,
+          1
+        ]
+      },
+      {
+        "hands": [
+          [
+            "9h",
+            "9s"
+          ],
+          [
+            "Ac",
+            "Ad"
+          ]
+        ],
+        "weights": [
+          1,
+          1
+        ]
+      }
+    ]
+  },
+  "methodology": "One local CPU run of the exact trainer demo route; end-to-end latency includes setup, 2000 synchronous CFR+ iterations and exact finite-game best-response/action-EV analysis. One run is not a latency distribution. The browser test separately checks rendering and action comparison.",
+  "result": {
+    "position": {
+      "street": "river",
+      "board": [
+        "As",
+        "Kh",
+        "Qd",
+        "7c",
+        "2s"
+      ],
+      "hero_hand": [
+        "8h",
+        "8s"
+      ],
+      "pot": 8,
+      "stacks": [
+        10,
+        10
+      ],
+      "big_blind": 2,
+      "description": "Fixed river decision: hero is the big blind and acts first. Pot is 8 chips; both effective stacks are 10 chips at the start of river betting. Each listed private combo has equal assumed prior weight within its seat. These ranges are illustrative and were not inferred from a played hand. The bet sizes and one-raise limit define a restricted game.",
+      "range_assumptions": [
+        [
+          {
+            "hand": [
+              "Jc",
+              "Tc"
+            ],
+            "weight_percent": 50.0
+          },
+          {
+            "hand": [
+              "8h",
+              "8s"
+            ],
+            "weight_percent": 50.0
+          }
+        ],
+        [
+          {
+            "hand": [
+              "9h",
+              "9s"
+            ],
+            "weight_percent": 50.0
+          },
+          {
+            "hand": [
+              "Ac",
+              "Ad"
+            ],
+            "weight_percent": 50.0
+          }
+        ]
+      ]
+    },
+    "analysis": {
+      "status": "restricted_river_analysis",
+      "label": "Restricted river game \u00b7 supplied ranges \u00b7 CFR+",
+      "validation_status": "exact NashConv for this finite restricted game",
+      "board": [
+        "As",
+        "Kh",
+        "Qd",
+        "7c",
+        "2s"
+      ],
+      "street": "river",
+      "hero_hand": [
+        "8h",
+        "8s"
+      ],
+      "pot": 8,
+      "big_blind": 2,
+      "effective_stack": 10,
+      "first_actor": 0,
+      "river_actions": [],
+      "river_paid": [
+        0,
+        0
+      ],
+      "street_actions": [],
+      "street_paid": [
+        0,
+        0
+      ],
+      "iterations": 2000,
+      "latency_ms": 3689.1122910310514,
+      "search_latency_ms": 3677.0158953149803,
+      "joint_deals": 4,
+      "solver_quality_status": "restricted_residual_measured",
+      "target_nash_conv_chips": null,
+      "convergence_trace": [
+        {
+          "iterations": 1000,
+          "nash_conv_chips": 0.17124548273713103
+        },
+        {
+          "iterations": 2000,
+          "nash_conv_chips": 0.08025116814472977
+        }
+      ],
+      "solver_assumptions": [
+        "manual_assumption: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet fractions (0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "Training enumerates public-card chance exactly"
+      ],
+      "nash_conv": 0.08025116814472977,
+      "nash_conv_halfway": 0.17124548273713103,
+      "nash_conv_trend": "decreased",
+      "nash_conv_delta": -0.09099431459240126,
+      "frequencies": [
+        {
+          "action": {
+            "kind": "check",
+            "amount": 0
+          },
+          "frequency": 0.46018661711362496
+        },
+        {
+          "action": {
+            "kind": "bet",
+            "amount": 2
+          },
+          "frequency": 3.163273741139176e-05
+        },
+        {
+          "action": {
+            "kind": "bet",
+            "amount": 4
+          },
+          "frequency": 8.055336035080035e-05
+        },
+        {
+          "action": {
+            "kind": "bet",
+            "amount": 8
+          },
+          "frequency": 0.14177210427796347
+        },
+        {
+          "action": {
+            "kind": "bet",
+            "amount": 10
+          },
+          "frequency": 0.3979290925106493
+        }
+      ],
+      "action_evs": [
+        {
+          "action": {
+            "kind": "check",
+            "amount": 0
+          },
+          "ev": -4.000021926215174,
+          "ev_bb": -2.000010963107587,
+          "ev_loss": 0.04402695940700019,
+          "ev_loss_bb": 0.022013479703500094
+        },
+        {
+          "action": {
+            "kind": "bet",
+            "amount": 2
+          },
+          "ev": -6.001049645935224,
+          "ev_bb": -3.000524822967612,
+          "ev_loss": 2.0450546791270496,
+          "ev_loss_bb": 1.0225273395635248
+        },
+        {
+          "action": {
+            "kind": "bet",
+            "amount": 4
+          },
+          "ev": -6.130421122485447,
+          "ev_bb": -3.0652105612427234,
+          "ev_loss": 2.174426155677273,
+          "ev_loss_bb": 1.0872130778386364
+        },
+        {
+          "action": {
+            "kind": "bet",
+            "amount": 8
+          },
+          "ev": -4.315230916735277,
+          "ev_bb": -2.1576154583676384,
+          "ev_loss": 0.3592359499271027,
+          "ev_loss_bb": 0.17961797496355136
+        },
+        {
+          "action": {
+            "kind": "bet",
+            "amount": 10
+          },
+          "ev": -3.955994966808174,
+          "ev_bb": -1.977997483404087,
+          "ev_loss": 0.0,
+          "ev_loss_bb": 0.0
+        }
+      ],
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "marginal_probability": 0.5,
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 3.729028972822717e-05,
+              "ev": 4.525163086834362,
+              "ev_bb": 2.262581543417181,
+              "ev_loss": 3.8948341169479574,
+              "ev_loss_bb": 1.9474170584739787
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 4.687331127923196e-06,
+              "ev": 6.685938583418953,
+              "ev_bb": 3.3429692917094767,
+              "ev_loss": 1.734058620363366,
+              "ev_loss_bb": 0.867029310181683
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.00012112202304255828,
+              "ev": 7.3782006386716095,
+              "ev_bb": 3.6891003193358047,
+              "ev_loss": 1.04179656511071,
+              "ev_loss_bb": 0.520898282555355
+            },
+            {
+              "kind": "bet",
+              "amount": 8,
+              "frequency": 0.281766951373125,
+              "ev": 8.32536028980444,
+              "ev_bb": 4.16268014490222,
+              "ev_loss": 0.09463691397787954,
+              "ev_loss_bb": 0.04731845698893977
+            },
+            {
+              "kind": "bet",
+              "amount": 10,
+              "frequency": 0.7180699489829763,
+              "ev": 8.41999720378232,
+              "ev_bb": 4.20999860189116,
+              "ev_loss": 0.0,
+              "ev_loss_bb": 0.0
+            }
+          ]
+        },
+        {
+          "hand": [
+            "8h",
+            "8s"
+          ],
+          "marginal_probability": 0.5,
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.46018661711362496,
+              "ev": -4.000021926215174,
+              "ev_bb": -2.000010963107587,
+              "ev_loss": 0.04402695940700019,
+              "ev_loss_bb": 0.022013479703500094
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 3.163273741139176e-05,
+              "ev": -6.001049645935224,
+              "ev_bb": -3.000524822967612,
+              "ev_loss": 2.0450546791270496,
+              "ev_loss_bb": 1.0225273395635248
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 8.055336035080035e-05,
+              "ev": -6.130421122485447,
+              "ev_bb": -3.0652105612427234,
+              "ev_loss": 2.174426155677273,
+              "ev_loss_bb": 1.0872130778386364
+            },
+            {
+              "kind": "bet",
+              "amount": 8,
+              "frequency": 0.14177210427796347,
+              "ev": -4.315230916735277,
+              "ev_bb": -2.1576154583676384,
+              "ev_loss": 0.3592359499271027,
+              "ev_loss_bb": 0.17961797496355136
+            },
+            {
+              "kind": "bet",
+              "amount": 10,
+              "frequency": 0.3979290925106493,
+              "ev": -3.955994966808174,
+              "ev_bb": -1.977997483404087,
+              "ev_loss": 0.0,
+              "ev_loss_bb": 0.0
+            }
+          ]
+        }
+      ],
+      "aggregate_strategy": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.23011195370167659,
+          "ev": 0.2625705803095939,
+          "ev_bb": 0.13128529015479695,
+          "ev_loss": 1.969430538177479,
+          "ev_loss_bb": 0.9847152690887395
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 1.8160034269657477e-05,
+          "ev": 0.34244446874186485,
+          "ev_bb": 0.17122223437093242,
+          "ev_loss": 1.889556649745208,
+          "ev_loss_bb": 0.944778324872604
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.00010083769169667931,
+          "ev": 0.6238897580930813,
+          "ev_bb": 0.31194487904654067,
+          "ev_loss": 1.6081113603939916,
+          "ev_loss_bb": 0.8040556801969958
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.21176952782554426,
+          "ev": 2.0050646865345816,
+          "ev_bb": 1.0025323432672908,
+          "ev_loss": 0.22693643195249136,
+          "ev_loss_bb": 0.11346821597624568
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.5579995207468128,
+          "ev": 2.232001118487073,
+          "ev_bb": 1.1160005592435365,
+          "ev_loss": 0.0,
+          "ev_loss_bb": 0.0
+        }
+      ],
+      "ev_basis": "conditional chip EV for the entered hero hand; opponent hands are weighted by supplied range and blockers; average CFR+ continuation policy",
+      "range_note": "Manual ranges are user-supplied beliefs. They are not inferred from betting history.",
+      "supported_state": "River decision after the supplied abstract action history; pot is the amount before river betting, and supplied ranges must already reflect observed actions. Restricted bet sizes and one raise maximum."
+    }
+  }
+}

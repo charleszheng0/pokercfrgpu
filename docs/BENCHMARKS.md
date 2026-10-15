@@ -1,5 +1,11 @@
 # Measured benchmarks
 
+## Scheduled training and solver cache smoke (2026-10-14)
+
+On Apple M2/Python 3.10.6, a disposable 24-hand NFSP run using a 16×16 network, batch 4, and checkpoints every eight hands produced policy losses 1.3391/1.2409/1.2874; the four-hand-per-opponent evaluations are too small for a strength conclusion and no model was promoted. A separate 32-hand smoke with a 20-iteration CFR+ solve of the fixed explicit-range river demo measured 2.09864-chip exact restricted NashConv in 0.0505 seconds and failed the 0.1-chip cache gate. A headless Chrome end-to-end run rendered a 2,000-iteration demo solution with 0.080251-chip NashConv and 5,433.7 ms reported solve latency, then sampled an action from its cached hand strategy. These are single smoke runs, not latency distributions or general strategy-quality estimates. The Python suite passed 95 tests; the Chrome browser suite passed.
+
+A later disposable 64-hand NFSP run with a 20% held-out supervised split recorded validation sample counts 1/4/5/6 and policy cross-entropy 1.2305/1.2851/1.3199/1.2219 at 16/32/48/64 hands. This confirms the split/metric is wired, not that it predicts playing strength.
+
 ## River continuation-value diagnosis (2026-10-13)
 
 The prior network's reported 2.07–2.35-chip MAE was measured on 120 hand labels
@@ -99,3 +105,125 @@ The [hand-level diagnosis](../experiments/holdem_nfsp_diagnostic.json) and [face
 The [30,000-hand training record](../experiments/holdem_nfsp_30k.json) and [fixed evaluation](../experiments/holdem_nfsp_30k_fixed_eval.json) preserve the seed-11 longer-horizon test; its evaluation hash was likewise added afterward as factual provenance metadata. The same fixed evaluation seed, opponents, seats, and buttons were used for the original 10,000-hand policy, but per-hand paired returns were not saved, so no paired-difference interval is reported. One seed does not settle whether additional training is beneficial in general.
 
 Full-hand Hold'em CFR exploitability, depth-cutoff strategy error, and CPU-versus-GPU speedup have **not been measured**. The existing `.cu` snippets are not benchmark evidence.
+
+## Explicit-range river CFR analysis (2026-10-13)
+
+`python3 -m experiments.river_variants --checkpoints 20 100 500 1000 2000` compared three synchronous regret updates on the same five-card board, two 3-hand ranges, 9 compatible joint deals, 8-chip dead pot, 10-chip effective stack, 2-chip minimum bet, and min/half-pot/pot/all-in targets with at most one raise. The exact finite-game best-response NashConv decreased at each recorded checkpoint:
+
+| Update | 20 iterations | 100 | 500 | 1,000 | 2,000 | Train seconds at 2,000 |
+|---|---:|---:|---:|---:|---:|---:|
+| Vanilla CFR | 2.0366 | 0.7513 | 0.3018 | 0.2032 | 0.1385 | 7.52 |
+| Synchronous CFR+ variant | 1.1958 | 0.3336 | 0.0827 | 0.0459 | 0.0184 | 7.81 |
+| DCFR (α=1.5, β=0, γ=2) | 1.7983 | 0.4505 | 0.1036 | 0.0509 | 0.0200 | 8.88 |
+
+NashConv is the sum of exact unilateral best-response gains in chips for this finite abstract game. At 2,000 iterations it remains nonzero for all updates; CFR+ and DCFR are still exploitable. On this one range pair, CFR+ had the lowest measured NashConv but was not faster than vanilla CFR. At the final checkpoint, the exact analysis report took 11.3–14.0 ms separately from training. Comparing each checkpoint's root action EVs under its own average continuation profile with the 2,000-iteration values, mean/max absolute differences were 0.0245/0.0951 chips for 500-iteration CFR, 0.0078/0.0146 for CFR+, and 0.0084/0.0187 for DCFR. These are policy-dependent values, not a fixed-policy prediction-error test. The action-EV path was tested against a separate brute-force traversal that forces each root action and enumerates every compatible deal; the solver also reports per-hand frequencies and action EVs. This is a convergence demonstration for one tiny restricted river game, not a reference result for full Hold'em.
+
+Raw output records Python 3.10.6, Apple `arm64`, revision `32d3fb353cc5338ac83e3e13a602762f5e2612f0`, and a dirty working tree in [river_variants.json](../experiments/river_variants.json). Training-only timing excludes NashConv and action report calculation; wall-clock variation across runs was material, and this is one run rather than a performance distribution. Adapter end-to-end latency includes exact best-response reporting, while `search_latency_ms` isolates the search budget; both can exceed the requested budget due to atomic iterations and exact diagnostics. It is not yet an interactive latency claim.
+
+The CPU adapter supports only an explicit, root-only river abstraction with supplied ranges and a matching action set. Live browser decisions still lack validated range inference; frequencies, EVs, and EV loss remain unavailable there. Prior river action histories, turn/flop/preflop states, neural continuation evaluation, and safe re-solving are unsupported.
+
+The separate [five-position weighted-range suite](../experiments/river_range_suite.json) used seed 729, five generated public boards, three hands per seat, nonuniform positive range weights, nine compatible deals per position, and 500 CFR+ iterations. Exact NashConv was 0.00559, 0.10842, 0.10353, 0.20381, and 0.04657 chips (0.0028–0.1019 BB). Training ranged from 0.78 to 2.11 seconds; exact analysis took 4.9–12.6 ms. This is evidence that the restricted solver runs on several real card/range inputs and that convergence depends on the position. It is still only five generated cases with no overlap between any private hands, and it is not a held-out strategic generalization estimate.
+
+The [10 ms adapter smoke](../experiments/river_adapter_budget.json) completed only 3 CFR+ iterations: search took 10.23 ms and the exact diagnostics brought total latency to 20.11 ms. NashConv was 5.432 chips and the acting-hand check EV gap was 1.255 chips. This confirms that a short time budget does not make the returned strategy useful; the API returns the residual exploitability so a caller can reject it. No browser advice is connected.
+
+## River Analysis UI smoke benchmark (2026-10-13)
+
+The dedicated trainer mode calls the same `analyze_river_position()` function tested by the server endpoint. The saved [raw request and response](../experiments/river_analysis_ui_baseline.json) use board `As Kh Qd 7c 2s`, hero hand `Jc Tc`, pot 20, stacks 100/100, a 2-chip big blind, and three weighted combos per player. CFR+ used 500 iterations, checking NashConv at 250 and 500. The exact restricted-game NashConv decreased from 0.828481 to 0.489393 chips. End-to-end solver latency was 2,722.8 ms in the saved run. Across three invocations latency ranged from 2,722.8 to 3,248.8 ms; this is not a latency distribution.
+
+At 500 iterations the hero-hand frequencies were check 0.140%, bet-to-2 0.097%, bet-to-10 1.548%, bet-to-20 10.837%, and bet-to-100 87.377%. Corresponding conditional action EVs were 13.6805, 14.2651, 19.0477, 24.6360, and 26.8015 chips; EV losses versus the best root action were 13.1211, 12.5364, 7.7539, 2.1656, and 0 chips. The EV values are conditional on the entered hero hand, opponent combo weights, blockers, and the final average CFR+ continuation policy. NashConv is exact best response only in this supplied-range finite game and action tree; a 0.489-chip residual remains and does not support an equilibrium-quality claim.
+
+The complete suite passed 53 tests in the final 5.827-second run (the prior 52-test run took 5.722 seconds). A local HTTP smoke returned 200 for both `GET /` and `POST /api/river-analysis`; the latest 20-iteration request returned five actions, normalized frequencies, action EVs/losses, and NashConv 10.0033 chips in 140.9 ms (an earlier call took 136.1 ms). This low-budget smoke also illustrates why the UI surfaces the residual NashConv instead of labeling the output as high quality. `node --check` on the embedded script, Python compileall, and `git diff --check` passed. Hardware for the saved 500-iteration sample was Apple arm64 / Darwin 23.5.0, Python runtime in this workspace; CUDA was not involved.
+
+The form limits each range to eight entries and the backend supports only the first river action, no prior river actions, and a 2-chip big blind. User ranges must already reflect earlier betting. The interface exposes no outputs for unsupported positions and does not present the manual ranges as observed history.
+
+## Solver Lab and public-card reference (2026-10-13)
+
+The UI now defaults to Play & Learn; Solver Lab holds the explicit-range CFR+ controls. The earlier first-action restriction in the preceding section describes the E032 implementation and the older `TinyRiverCFRBackend`. The new lab route replays up to two legal abstract river actions and solves from the resulting hero decision. It still requires at most eight range combos per seat and a pot measured before river betting. The 13×13 matrix generated 169 cells and all 1,326 distinct two-card combos in the [Node editor smoke](../tests/range_editor_smoke.js); the default three-combo ranges serialized without JSON entry. A local HTTP smoke returned 200 for the page, matrix script, range catalog, new hand, first river analysis, and post-bet river analysis.
+
+The reproducible command `python3 -m experiments.solver_lab_milestone` saved [raw requests and responses](../experiments/solver_lab_milestone_v2.json). All solves used the same three manually supplied combos per seat, board `As Kh Qd 7c 2s`, 20-chip pot before river betting, 100-chip effective stack, and 2-chip big blind. Measured Apple arm64 end-to-end times include CFR+ training and exact restricted-game best responses:
+
+| River root state | Iterations | NashConv (chips) | Latency (ms) |
+|---|---:|---:|---:|
+| Hero acts first | 500 | 0.489393 | 2,689.5 |
+| Hero checked; opponent bet to 10 | 500 | 0.850238 | 416.9 |
+| Hero checked; opponent bet to 10 | 2,000 | 0.111001 | 1,626.1 |
+| Opponent checked to hero | 500 | 0.452920 | 1,421.9 |
+
+The 2,000-iteration post-bet run measured halfway NashConv 0.363542 at 1,000 iterations. Frequencies and conditional EVs are in the raw file. The post-action requests reused the original manual ranges without conditioning them on the observed check/bet, so these are implementation/convergence measurements for finite abstract games, not evidence of realistic post-action recommendations. None of the NashConv values is zero. Latency is one run per condition and does not establish a distribution.
+
+`public_transition()` enumerated the 49 candidate turn card codes on the sampled flop in 3.049 ms, including blocked outcomes, and their probability sum was 1.0000000000000004. Tests checked fixed-hand flop/turn/river probabilities and a weighted-range turn sum. This validates chance and card-removal arithmetic for the tested cases; no turn/flop CFR search, earlier-street action EV benchmark, or human-range inference accuracy has been measured. The full Python suite passed 64 tests in 6.337 seconds, the Node matrix smoke passed, and Python compilation, JavaScript syntax, and diff checks passed. A real browser screenshot or interaction automation was unavailable in this environment; the HTTP and simulated DOM checks cover program behavior rather than visual layout.
+
+## Exact-runout one-street flop/turn reference (2026-10-13)
+
+`python3 -m experiments.one_street_baseline` saved the [raw result](../experiments/one_street_baseline.json). Each game used two private combos per seat, four compatible joint deals, an 8-chip pot, a 10-chip effective stack, a 2-chip big blind, and 200 synchronous CFR+ iterations. The solver allows betting only on the current street. If play reaches showdown, remaining public cards are enumerated exactly with **no later betting**. Timings are one Apple arm64 CPU run per street; equity precomputation, search, and exact finite-game best-response analysis are separate.
+
+| Current street | Future runouts per private deal | Equity precomputation | CFR+ search | Exact analysis | NashConv in this one-street game |
+|---|---:|---:|---:|---:|---:|
+| Turn | 44 | 68.66 ms | 337.36 ms | 5.12 ms | 0.08849 chips |
+| Flop | 990 | 1,535.41 ms | 339.60 ms | 4.73 ms | 0.06864 chips |
+
+The flop root's example hero hand mixed 14.60% check and 76.37% all-in under this continuation rule; these are **not** full Hold'em flop frequencies. The turn terminal payoff was cross-checked against 44 independently scored river showdowns. A post-bet turn-root test exercises the same CFR+ interface after an earlier current-street action. A separate test replayed real engine public events through range inference, but used assumed likelihoods. The complete Python suite passed 69 tests. Neither earlier-street result validates a DeepStack-style multi-street search, neural cutoff, preflop strategy, or automatic live feedback. The next benchmark needs tiny-range full flop→turn→river continuation games and paired root action EVs.
+
+## Shared postflop solver integration (2026-10-13)
+
+`python3 -m experiments.shared_solver_milestone` saved the [raw configuration and result](../experiments/shared_solver_milestone.json) on Apple arm64 / Python 3.10.6 with the working tree marked dirty. The shared API uses the same chance-aware CFR recursion for river, turn, and the research-only flop path. Its river output matched the preserved river reference exactly at 50 CFR+ iterations on one four-deal game: maximum acting-hand frequency difference **0.0**, maximum conditional action-EV difference **0.0 chips**, and both NashConv values **1.229164 chips**. Shared end-to-end latency was **139.68 ms**. This is numerical parity on one fixture, not broad strategic validation.
+
+The exact turn-to-river fixture had one private deal, an 8-chip pot, 4-chip effective stacks, 2-chip big blind, and min/all-in targets with one raise. River card chance was enumerated; river betting remained active. One run per variant at 100 iterations gave:
+
+| Update | Exact restricted NashConv | End-to-end CPU latency |
+|---|---:|---:|
+| CFR | 0.187533 chips | 2,394.35 ms |
+| CFR+ | 0.016962 chips | 2,403.65 ms |
+| DCFR | 0.001604 chips | 2,419.60 ms |
+
+The 10-iteration CFR+ turn profile had NashConv 1.407744 chips and took 629.71 ms. Its check and bet-to-2 conditional action EVs were −4.6656 and −6.1977 chips; the separate one-street no-future-betting reference produced −4.4045 and −5.8060 chips. Those strategies are trained in different finite games, so the EV differences are evidence that future betting changes the modeled decision, not a measured error against a common equilibrium. The three-variant result is one hand pair and board; it does not establish the best update across ranges. The app retains CFR+ as a measured river default while broader turn tests are pending.
+
+One exact flop-to-river run with one private deal, 1-chip effective stacks, no raises, and **one** CFR+ iteration took **8,766.32 ms** and left **2.426894-chip** restricted NashConv. It failed the interactive latency and convergence gates, so Solver Lab does not expose flop frequencies. The API marks this path experimental and requires an explicit flag. Preflop has no blueprint or search path. The full Python suite passed **81 tests**; the 13×13 Node smoke, Python compilation, and diff checks passed. A local HTTP smoke served the app and returned restricted river and turn reports from `/api/solve`. Automatic Play & Learn advice remains unavailable because betting-history ranges are not validated; no live decision-quality result has been measured.
+
+## Targeted stopping diagnostic (2026-10-14)
+
+The advanced Solver Lab can optionally stop after an exact NashConv checkpoint meets a user-entered chip target. On one three-combo-per-seat river fixture with a 40-iteration cap, targets 0.25 and 0.05 chips were not met: both runs completed 40 iterations and returned 4.314712 chips NashConv (end-to-end 525.89 ms and 499.52 ms). Checkpoints were non-monotonic (10.003315 at 20, 9.193891 at 24, 5.729797 at 28, 5.797374 at 32, 6.341446 at 36, 4.314712 at 40). A loose 1,000,000-chip target stopped at the halfway checkpoint, iteration 20, with 10.003315 chips NashConv in 282.52 ms. This verifies target reporting and early stopping; it is not a quality target. Each time is one Apple arm64 CPU run and includes CFR search plus finite-game best-response checkpoints. No multi-seed timing distribution was collected. [Raw fixture and outputs](../experiments/nashconv_target_followup.json).
+
+## Exact traversal cache and chance-sampling comparison (2026-10-14)
+
+The profile of one pre-change exact flop iteration attributed most search time to repeated seven-card evaluation: 27,720 evaluator calls and 582,120 five-card subset evaluations. On separate cold, unprofiled runs of the same one-deal flop state, baseline end-to-end/search was 7,466/5,844 ms; canonical board/hand rank caching gave 3,381/1,458 ms; adding exact all-in runout collapse gave 2,261/784 ms. The root check/bet action EVs and 2.426894-chip NashConv stayed the same to reported precision. These are single sequential observations, subject to system load and cache effects; they show a concrete bottleneck reduction, not a general throughput ratio.
+
+The reproducible [fixed-position experiment](../experiments/multistreet_scale.py) saved [raw results](../experiments/multistreet_scale.json). It used one private deal for flop and four for turn, an 8-chip pot, no raises, exact final best-response analysis, and a cold board/hand rank cache for each condition.
+
+| Position and method | Iterations | End-to-end | Exact restricted NashConv |
+|---|---:|---:|---:|
+| Flop, exact CFR+ | 20 | 6,256.68 ms | 0.102053 chips |
+| Flop, sampled CFR, seeds 17/23/41 | 1,000 each | 1,671–1,739 ms | 0.529049–0.534386 chips |
+| Turn, exact CFR+ | 100 | 5,610.77 ms | 0.210419 chips |
+| Turn, exact CFR+ deeper reference | 300 | 16,507.18 ms | 0.106631 chips |
+| Turn, sampled CFR, seeds 17/23/41 | 1,000 each | 2,098–2,316 ms | 0.658756–0.754197 chips |
+
+Maximum per-hand conditional action-EV delta against the deeper exact profile was 0.032338–0.080622 chips for sampled flop and 0.226397–0.517927 chips for sampled turn. The reference profiles still have nonzero NashConv, and different continuation policies contribute to these EV deltas. Sampling did not pass this quality comparison and is not used for app advice. The exact flop result remains too narrow for real-game feedback, despite the improved runtime.
+
+## Additional exact turn boards (2026-10-14)
+
+The [fixed-board suite](../experiments/turn_board_suite.json) reused the same four compatible private deals, 8-chip pot, 4-chip stacks, and no-raise abstraction. Boards were selected before solving. Each timing is one cold-rank-cache run and includes exact best response.
+
+| Turn board | 100-iteration NashConv / latency | 300-iteration NashConv / latency | Largest modal-action loss under deeper profile | Largest conditional action-EV delta |
+|---|---:|---:|---:|---:|
+| `2c 7h Jd Qs` | 0.145911 chips / 5.518 s | 0.064895 chips / 16.646 s | 0.013981 chips | 0.234463 chips |
+| `9c 6d 3s Th` | 0.006712 chips / 5.785 s | 0.000751 chips / 19.918 s | 0 chips | 0.002749 chips |
+| Earlier `As Kh Qd 7c` fixture | 0.210419 chips / 5.611 s | 0.106631 chips / 16.507 s | 0.040842 chips | 0.157285 chips |
+
+The modal-action metric evaluates the 100-iteration profile's most frequent move using the 300-iteration profile's root action EVs for each hero hand. It is a practical decision comparison under an approximate deeper continuation policy, not equilibrium action regret. Only three boards and one range/stack/action setting have been measured. The cost and narrow coverage keep automatic turn advice gated.
+
+## One-click river demo (2026-10-14)
+
+The [saved demo request and raw output](../experiments/demo_analysis_baseline.json) used board `As Kh Qd 7c 2s`, hero hand `8h 8s`, two equal-weight combos per seat, an 8-chip pot, 10-chip effective stacks, and 2,000 synchronous CFR+ iterations. One local CPU run took **3,689.11 ms end to end** and returned **0.080251-chip exact restricted-game NashConv** (0.040126 BB). The five hero-hand conditional action EVs were check −4.000022, bet-to-2 −6.001050, bet-to-4 −6.130421, bet-to-8 −4.315231, and bet-to-10 −3.955995 chips. The corresponding best-action gaps are in the raw response. These numbers are from the real solver, not UI constants; the position is a four-joint-deal finite abstraction with assumed priors.
+
+The headless Chrome end-to-end run observed a separate **3,728.87 ms** solve through `/api/demo-analysis`, checked every displayed frequency and chip/BB EV against the HTTP response, selected two actions, confirmed one solver request, checked the 169-cell range grid and diagnostics, and resumed a playable hand. The [screenshot](../artifacts/solver_demo.png) records the rendered page after selecting bet-to-10. These two timings are single runs, not a latency distribution.
+
+## Experimental saved-hand river review (2026-10-14)
+
+The [seeded gameplay run](../experiments/live_review_baseline.json) used 100-chip stacks, 1/2 blinds, a passive check/call opponent, and seed 29. The saved hero decision was a check after the opponent checked the river `5s 4h Js Qh 2s` with hero `8s Qc`, four chips in the pot, and 98 chips per stack. The opt-in review used the observed hero hand against **three equally weighted illustrative opponent combinations** (`Ac Ad`, `Kd Kh`, `9h 9s`); these were not inferred from the opponent's actions. Its 1,000-iteration CFR+ run took **838.75 ms** and returned **0.00007175-chip exact NashConv inside that three-deal game**. The selected check had 99.9995% frequency, −0.666667-chip conditional EV, and zero estimated action loss. Bet sizes and other EVs are saved in the raw result. This one hand establishes request capture and solver plumbing, not range accuracy or meaningful player advice. The latest isolated Chrome demo rerun took 3,821.81 ms after a test-startup polling fix; the saved 3,728.87 ms was the earlier passing run.
+
+A further headless Chrome run played the seeded hand using table controls, clicked its river review, and verified that the displayed selected-action loss, action EV, and restricted NashConv matched the `/api/review-decision` response. That run took **849.26 ms** for the review solve and **4,567.55 ms** for the separate demo solve. These browser timings are individual samples and should not be treated as p50/p95 latency.
+
+## Four-street live pipeline diagnosis (2026-10-14)
+
+The [seeded trace](../experiments/live_pipeline_diagnosis.json) and [diagnostic report](LIVE_SOLVER_DIAGNOSIS.md) use one complete 100-chip-stack hand with hero `8s Qc` and three disclosed, unconditioned opponent combinations. Preflop had no solver. Exact full flop rejected three deals before search. Exact full turn took **13,454.3 ms for one CFR+ iteration** and left **43.5924 chips restricted NashConv**. The same turn decision under the existing exact-showdown, no-future-betting cutoff took **466.7 ms for 500 iterations** and had **0.0002181-chip NashConv within that cutoff game**. Flop cutoff took **1,532.0 ms for 500 iterations** and had **0.0003649-chip cutoff-game NashConv**. River full restricted CFR+ took **850.3 ms for 1,000 iterations** and had **0.00007175-chip restricted NashConv**. These are one-run latencies, not speedup claims for the same game: full turn and cutoff turn have different continuation rules. The cutoff's root action EV error versus deeper multi-street solving is unmeasured.

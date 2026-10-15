@@ -72,14 +72,14 @@ def encode(obs):
     return torch.tensor(features, dtype=torch.float32)
 
 
-def network():
-    return nn.Sequential(
-        nn.Linear(INPUT_DIM, 128),
-        nn.ReLU(),
-        nn.Linear(128, 128),
-        nn.ReLU(),
-        nn.Linear(128, ACTION_COUNT),
-    )
+def network(hidden=(128, 128)):
+    sizes = (INPUT_DIM, *hidden, ACTION_COUNT)
+    layers = []
+    for index, (source, target) in enumerate(zip(sizes, sizes[1:])):
+        layers.append(nn.Linear(source, target))
+        if index < len(sizes) - 2:
+            layers.append(nn.ReLU())
+    return nn.Sequential(*layers)
 
 
 class Reservoir:
@@ -102,16 +102,22 @@ class Reservoir:
 
 
 class HoldemNFSPAgent:
-    def __init__(self, eta=0.3, epsilon=0.1, lr=0.001):
+    def __init__(self, eta=0.3, epsilon=0.1, lr=0.001,
+                 hidden=(128, 128), rl_capacity=100000, sl_capacity=100000,
+                 target_update_interval=200, validation_fraction=0.0):
         self.eta, self.epsilon = eta, epsilon
-        self.q = network()
-        self.target = network()
+        self.hidden = tuple(hidden)
+        self.target_update_interval = target_update_interval
+        self.validation_fraction = validation_fraction
+        self.q = network(self.hidden)
+        self.target = network(self.hidden)
         self.target.load_state_dict(self.q.state_dict())
-        self.policy = network()
+        self.policy = network(self.hidden)
         self.q_optimizer = torch.optim.Adam(self.q.parameters(), lr=lr)
         self.policy_optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr)
-        self.rl = deque(maxlen=100000)
-        self.sl = Reservoir()
+        self.rl = deque(maxlen=rl_capacity)
+        self.sl = Reservoir(sl_capacity)
+        self.sl_validation = Reservoir(max(1, int(sl_capacity * validation_fraction)))
         self.q_updates = 0
         self.mode = "average"
 
@@ -131,7 +137,8 @@ class HoldemNFSPAgent:
                     index = max(available, key=lambda i: scores[i].item())
                 if record:
                     mask = torch.tensor([i in indexed for i in range(ACTION_COUNT)])
-                    self.sl.add((state.clone(), index, mask))
+                    reservoir = self.sl_validation if random.random() < self.validation_fraction else self.sl
+                    reservoir.add((state.clone(), index, mask))
             else:
                 logits = self.policy(state)
                 mask = torch.tensor([i in indexed for i in range(ACTION_COUNT)])
@@ -167,7 +174,7 @@ class HoldemNFSPAgent:
             self.q_optimizer.step()
             q_loss = loss.item()
             self.q_updates += 1
-            if self.q_updates % 200 == 0:
+            if self.q_updates % self.target_update_interval == 0:
                 self.target.load_state_dict(self.q.state_dict())
         if len(self.sl.data) >= batch_size:
             batch = self.sl.sample(batch_size)
@@ -181,6 +188,18 @@ class HoldemNFSPAgent:
             self.policy_optimizer.step()
             sl_loss = loss.item()
         return q_loss, sl_loss
+
+    def validation_policy_loss(self, max_samples=1024):
+        rows = self.sl_validation.data
+        if not rows:
+            return None
+        sample = rows if len(rows) <= max_samples else random.sample(rows, max_samples)
+        with torch.no_grad():
+            states = torch.stack([row[0] for row in sample])
+            actions = torch.tensor([row[1] for row in sample], dtype=torch.long)
+            masks = torch.stack([row[2] for row in sample])
+            logits = self.policy(states).masked_fill(~masks, -1e9)
+            return F.cross_entropy(logits, actions).item()
 
 
 def play_self_play_hand(agents, seed, button):

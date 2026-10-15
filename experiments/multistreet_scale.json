@@ -1,0 +1,773 @@
+{
+  "experiment": "multistreet_exact_collapse_and_chance_sampling",
+  "date": "2026-10-14",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree": "dirty",
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "methodology": "Sequential single-process cold rank-cache runs; each run clears only the global board/hand rank cache. Per-game state caches are new. Total time includes setup, search and exact best-response analysis. Each sampled seed uses the true public-card distribution with an exact all-in payoff collapse. EV deltas compare each candidate's average continuation policy with a deeper exact CFR+ profile, so they are descriptive and not true equilibrium errors.",
+  "references": {
+    "flop_exact_20": {
+      "street": "flop",
+      "board": [
+        "As",
+        "Kh",
+        "Qd"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "Tc"
+          ]
+        ],
+        [
+          [
+            "9h",
+            "9s"
+          ]
+        ]
+      ],
+      "pot": 8,
+      "stack": 1,
+      "bet_fractions": [],
+      "max_raises": 0,
+      "variant": "cfr+",
+      "chance_sampling": false,
+      "seed": null,
+      "iterations": 20,
+      "joint_deals": 1,
+      "search_ms": 5423.867125005927,
+      "total_ms": 6256.680292019155,
+      "nash_conv_chips": 0.1020531126727744,
+      "rank_cache": {
+        "hits": 21780,
+        "misses": 1980
+      },
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.7877209555192163,
+              "conditional_ev_chips": 4.031187412760021
+            },
+            {
+              "kind": "bet",
+              "amount": 1,
+              "frequency": 0.2122790444807837,
+              "conditional_ev_chips": 4.001599326599327
+            }
+          ]
+        }
+      ]
+    },
+    "turn_exact_300": {
+      "street": "turn",
+      "board": [
+        "As",
+        "Kh",
+        "Qd",
+        "7c"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "Tc"
+          ],
+          [
+            "8h",
+            "8s"
+          ]
+        ],
+        [
+          [
+            "9h",
+            "9s"
+          ],
+          [
+            "Ac",
+            "Ad"
+          ]
+        ]
+      ],
+      "pot": 8,
+      "stack": 4,
+      "bet_fractions": [],
+      "max_raises": 0,
+      "variant": "cfr+",
+      "chance_sampling": false,
+      "seed": null,
+      "iterations": 300,
+      "joint_deals": 4,
+      "search_ms": 16323.948917037342,
+      "total_ms": 16507.183792011347,
+      "nash_conv_chips": 0.1066312912005658,
+      "rank_cache": {
+        "hits": 4392,
+        "misses": 184
+      },
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.3629634348889492,
+              "conditional_ev_chips": 5.110568853296355
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.592213960633418,
+              "conditional_ev_chips": 5.098532518965506
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.04482260447763279,
+              "conditional_ev_chips": 5.018712942710478
+            }
+          ]
+        },
+        {
+          "hand": [
+            "8h",
+            "8s"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.7599472331234298,
+              "conditional_ev_chips": -3.9584750917779923
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.2248391510566371,
+              "conditional_ev_chips": -3.917633288633969
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.015213615819932996,
+              "conditional_ev_chips": -4.287997569186259
+            }
+          ]
+        }
+      ]
+    },
+    "turn_exact_100": {
+      "street": "turn",
+      "board": [
+        "As",
+        "Kh",
+        "Qd",
+        "7c"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "Tc"
+          ],
+          [
+            "8h",
+            "8s"
+          ]
+        ],
+        [
+          [
+            "9h",
+            "9s"
+          ],
+          [
+            "Ac",
+            "Ad"
+          ]
+        ]
+      ],
+      "pot": 8,
+      "stack": 4,
+      "bet_fractions": [],
+      "max_raises": 0,
+      "variant": "cfr+",
+      "chance_sampling": false,
+      "seed": null,
+      "iterations": 100,
+      "joint_deals": 4,
+      "search_ms": 5431.681666988879,
+      "total_ms": 5610.765625024214,
+      "nash_conv_chips": 0.21041913497175146,
+      "rank_cache": {
+        "hits": 4392,
+        "misses": 184
+      },
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.36648721613433216,
+              "conditional_ev_chips": 5.183281518755305
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.3943866723537142,
+              "conditional_ev_chips": 5.175510926881024
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.23912611151195362,
+              "conditional_ev_chips": 5.122067590518556
+            }
+          ]
+        },
+        {
+          "hand": [
+            "8h",
+            "8s"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.7524430595370007,
+              "conditional_ev_chips": -4.008909706207266
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.16688326391821398,
+              "conditional_ev_chips": -4.074918658307567
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.0806736765447854,
+              "conditional_ev_chips": -4.37622406699691
+            }
+          ]
+        }
+      ],
+      "max_action_ev_delta_to_deeper_exact_reference_chips": 0.15728536967359785
+    }
+  },
+  "sampled": [
+    {
+      "street": "flop",
+      "board": [
+        "As",
+        "Kh",
+        "Qd"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "Tc"
+          ]
+        ],
+        [
+          [
+            "9h",
+            "9s"
+          ]
+        ]
+      ],
+      "pot": 8,
+      "stack": 1,
+      "bet_fractions": [],
+      "max_raises": 0,
+      "variant": "cfr",
+      "chance_sampling": true,
+      "seed": 17,
+      "iterations": 1000,
+      "joint_deals": 1,
+      "search_ms": 744.2588750272989,
+      "total_ms": 1671.1341250338592,
+      "nash_conv_chips": 0.5313203159358983,
+      "rank_cache": {
+        "hits": 21780,
+        "misses": 1980
+      },
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.14645608042643588,
+              "conditional_ev_chips": 3.9505654444600298
+            },
+            {
+              "kind": "bet",
+              "amount": 1,
+              "frequency": 0.8535439195735641,
+              "conditional_ev_chips": 4.000335858585859
+            }
+          ]
+        }
+      ],
+      "max_action_ev_delta_to_deeper_exact_reference_chips": 0.08062196829999113
+    },
+    {
+      "street": "flop",
+      "board": [
+        "As",
+        "Kh",
+        "Qd"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "Tc"
+          ]
+        ],
+        [
+          [
+            "9h",
+            "9s"
+          ]
+        ]
+      ],
+      "pot": 8,
+      "stack": 1,
+      "bet_fractions": [],
+      "max_raises": 0,
+      "variant": "cfr",
+      "chance_sampling": true,
+      "seed": 23,
+      "iterations": 1000,
+      "joint_deals": 1,
+      "search_ms": 786.2713329959661,
+      "total_ms": 1696.914582978934,
+      "nash_conv_chips": 0.5343862051857866,
+      "rank_cache": {
+        "hits": 21780,
+        "misses": 1980
+      },
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.16838911117515626,
+              "conditional_ev_chips": 3.965635980800788
+            },
+            {
+              "kind": "bet",
+              "amount": 1,
+              "frequency": 0.8316108888248438,
+              "conditional_ev_chips": 4.000335858585859
+            }
+          ]
+        }
+      ],
+      "max_action_ev_delta_to_deeper_exact_reference_chips": 0.06555143195923296
+    },
+    {
+      "street": "flop",
+      "board": [
+        "As",
+        "Kh",
+        "Qd"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "Tc"
+          ]
+        ],
+        [
+          [
+            "9h",
+            "9s"
+          ]
+        ]
+      ],
+      "pot": 8,
+      "stack": 1,
+      "bet_fractions": [],
+      "max_raises": 0,
+      "variant": "cfr",
+      "chance_sampling": true,
+      "seed": 41,
+      "iterations": 1000,
+      "joint_deals": 1,
+      "search_ms": 801.88341694884,
+      "total_ms": 1738.5277079883963,
+      "nash_conv_chips": 0.5290490375628281,
+      "rank_cache": {
+        "hits": 21780,
+        "misses": 1980
+      },
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.2525851592063944,
+              "conditional_ev_chips": 3.998849053069607
+            },
+            {
+              "kind": "bet",
+              "amount": 1,
+              "frequency": 0.7474148407936057,
+              "conditional_ev_chips": 4.000335858585859
+            }
+          ]
+        }
+      ],
+      "max_action_ev_delta_to_deeper_exact_reference_chips": 0.0323383596904141
+    },
+    {
+      "street": "turn",
+      "board": [
+        "As",
+        "Kh",
+        "Qd",
+        "7c"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "Tc"
+          ],
+          [
+            "8h",
+            "8s"
+          ]
+        ],
+        [
+          [
+            "9h",
+            "9s"
+          ],
+          [
+            "Ac",
+            "Ad"
+          ]
+        ]
+      ],
+      "pot": 8,
+      "stack": 4,
+      "bet_fractions": [],
+      "max_raises": 0,
+      "variant": "cfr",
+      "chance_sampling": true,
+      "seed": 17,
+      "iterations": 1000,
+      "joint_deals": 4,
+      "search_ms": 2127.5937499594875,
+      "total_ms": 2316.437874978874,
+      "nash_conv_chips": 0.7541968057687534,
+      "rank_cache": {
+        "hits": 4392,
+        "misses": 184
+      },
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.6011842544389361,
+              "conditional_ev_chips": 5.105643739390704
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.31502018923252467,
+              "conditional_ev_chips": 5.299923096561848
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.08379555632853919,
+              "conditional_ev_chips": 5.080095242813755
+            }
+          ]
+        },
+        {
+          "hand": [
+            "8h",
+            "8s"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.7901022731206122,
+              "conditional_ev_chips": -4.1594924575897885
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.17473806952827445,
+              "conditional_ev_chips": -4.435560576179078
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.035159657351113364,
+              "conditional_ev_chips": -4.528764279334632
+            }
+          ]
+        }
+      ],
+      "max_action_ev_delta_to_deeper_exact_reference_chips": 0.5179272875451093
+    },
+    {
+      "street": "turn",
+      "board": [
+        "As",
+        "Kh",
+        "Qd",
+        "7c"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "Tc"
+          ],
+          [
+            "8h",
+            "8s"
+          ]
+        ],
+        [
+          [
+            "9h",
+            "9s"
+          ],
+          [
+            "Ac",
+            "Ad"
+          ]
+        ]
+      ],
+      "pot": 8,
+      "stack": 4,
+      "bet_fractions": [],
+      "max_raises": 0,
+      "variant": "cfr",
+      "chance_sampling": true,
+      "seed": 23,
+      "iterations": 1000,
+      "joint_deals": 4,
+      "search_ms": 1909.6548339584842,
+      "total_ms": 2098.205959016923,
+      "nash_conv_chips": 0.7067174908243976,
+      "rank_cache": {
+        "hits": 4392,
+        "misses": 184
+      },
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.6218273857020956,
+              "conditional_ev_chips": 5.055512333855747
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.3417361838127214,
+              "conditional_ev_chips": 5.408236187744777
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.036436430485182955,
+              "conditional_ev_chips": 5.065218033477555
+            }
+          ]
+        },
+        {
+          "hand": [
+            "8h",
+            "8s"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.8612990502989541,
+              "conditional_ev_chips": -4.192202018142028
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.12637748995237913,
+              "conditional_ev_chips": -4.41016723098293
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.012323459748666638,
+              "conditional_ev_chips": -4.486837598478067
+            }
+          ]
+        }
+      ],
+      "max_action_ev_delta_to_deeper_exact_reference_chips": 0.492533942348961
+    },
+    {
+      "street": "turn",
+      "board": [
+        "As",
+        "Kh",
+        "Qd",
+        "7c"
+      ],
+      "ranges": [
+        [
+          [
+            "Jc",
+            "Tc"
+          ],
+          [
+            "8h",
+            "8s"
+          ]
+        ],
+        [
+          [
+            "9h",
+            "9s"
+          ],
+          [
+            "Ac",
+            "Ad"
+          ]
+        ]
+      ],
+      "pot": 8,
+      "stack": 4,
+      "bet_fractions": [],
+      "max_raises": 0,
+      "variant": "cfr",
+      "chance_sampling": true,
+      "seed": 41,
+      "iterations": 1000,
+      "joint_deals": 4,
+      "search_ms": 1959.4227079651318,
+      "total_ms": 2148.3477499568835,
+      "nash_conv_chips": 0.6587562107579168,
+      "rank_cache": {
+        "hits": 4392,
+        "misses": 184
+      },
+      "per_hand": [
+        {
+          "hand": [
+            "Jc",
+            "Tc"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.277155670186637,
+              "conditional_ev_chips": 5.093594826556776
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.5163283625752625,
+              "conditional_ev_chips": 5.179590819193885
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.20651596723810034,
+              "conditional_ev_chips": 4.9591577996106615
+            }
+          ]
+        },
+        {
+          "hand": [
+            "8h",
+            "8s"
+          ],
+          "actions": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.7136919222305914,
+              "conditional_ev_chips": -4.142241669489229
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.22668540140923382,
+              "conditional_ev_chips": -4.1440303477482905
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.05962267636017466,
+              "conditional_ev_chips": -4.187940575762275
+            }
+          ]
+        }
+      ],
+      "max_action_ev_delta_to_deeper_exact_reference_chips": 0.2263970591143214
+    }
+  ],
+  "limitations": [
+    "one flop hand pair and one four-deal turn position",
+    "no full-game exploitability",
+    "sampled CFR uses vanilla CFR while exact uses CFR+",
+    "one timing per condition",
+    "flop exact 20 is itself approximate"
+  ]
+}

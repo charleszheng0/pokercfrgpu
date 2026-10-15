@@ -1,0 +1,782 @@
+{
+  "experiment": "solver_lab_matrix_post_action_and_public_chance",
+  "date": "2026-10-13",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree": "dirty; current Solver Lab and range-inference work not committed",
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "methodology": "Direct analyze_river_position calls on four explicitly supplied river states, 500 or 2000 CFR+ iterations with exact finite-game NashConv at half/final checkpoints. Post-action requests deliberately reuse the root manual ranges without action conditioning; they test root-state mechanics, not advice quality. The chance check enumerates all turn cards from one weighted three-hand-per-seat flop state and sums exact card-removal probabilities. No random sampling.",
+  "runs": [
+    {
+      "name": "first_river_action",
+      "request": {
+        "board": "As Kh Qd 7c 2s",
+        "hero_hand": "Jc Tc",
+        "pot": 20,
+        "stacks": [
+          100,
+          100
+        ],
+        "ranges": [
+          {
+            "hands": [
+              [
+                "Jc",
+                "Tc"
+              ],
+              [
+                "9c",
+                "8c"
+              ],
+              [
+                "4c",
+                "4d"
+              ]
+            ],
+            "weights": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "hands": [
+              [
+                "Ac",
+                "Ad"
+              ],
+              [
+                "Jd",
+                "Jh"
+              ],
+              [
+                "8h",
+                "8s"
+              ]
+            ],
+            "weights": [
+              0.5,
+              1,
+              0.5
+            ]
+          }
+        ],
+        "iterations": 500,
+        "first_actor": 0,
+        "river_actions": []
+      },
+      "response": {
+        "status": "restricted_river_analysis",
+        "label": "Restricted river game \u00b7 supplied ranges \u00b7 CFR+",
+        "validation_status": "exact NashConv for this finite restricted game",
+        "board": [
+          "As",
+          "Kh",
+          "Qd",
+          "7c",
+          "2s"
+        ],
+        "hero_hand": [
+          "Jc",
+          "Tc"
+        ],
+        "pot": 20,
+        "effective_stack": 100,
+        "first_actor": 0,
+        "river_actions": [],
+        "river_paid": [
+          0,
+          0
+        ],
+        "iterations": 500,
+        "latency_ms": 2689.5190840004943,
+        "nash_conv": 0.48939258145031284,
+        "nash_conv_halfway": 0.8284811043589655,
+        "nash_conv_trend": "decreased",
+        "nash_conv_delta": -0.33908852290865266,
+        "frequencies": [
+          {
+            "action": {
+              "kind": "check",
+              "amount": 0
+            },
+            "frequency": 0.0014022293020507217
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 2
+            },
+            "frequency": 0.0009699223712556043
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 10
+            },
+            "frequency": 0.015483888185822312
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 20
+            },
+            "frequency": 0.10837371495777182
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 100
+            },
+            "frequency": 0.8737702451830996
+          }
+        ],
+        "action_evs": [
+          {
+            "action": {
+              "kind": "check",
+              "amount": 0
+            },
+            "ev": 13.68049765364065,
+            "ev_loss": 13.121052043939912
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 2
+            },
+            "ev": 14.265146481477004,
+            "ev_loss": 12.536403216103558
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 10
+            },
+            "ev": 19.04766340368851,
+            "ev_loss": 7.753886293892052
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 20
+            },
+            "ev": 24.63598879023361,
+            "ev_loss": 2.1655609073469506
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 100
+            },
+            "ev": 26.801549697580562,
+            "ev_loss": 0.0
+          }
+        ],
+        "ev_basis": "conditional chip EV for the entered hero hand; opponent hands are weighted by supplied range and blockers; average CFR+ continuation policy",
+        "range_note": "Manual ranges are user-supplied beliefs. They are not inferred from betting history.",
+        "supported_state": "River decision after the supplied abstract action history; pot is the amount before river betting, and supplied ranges must already reflect observed actions. Restricted bet sizes and one raise maximum."
+      }
+    },
+    {
+      "name": "after_hero_check_opponent_bet_10",
+      "request": {
+        "board": "As Kh Qd 7c 2s",
+        "hero_hand": "Jc Tc",
+        "pot": 20,
+        "stacks": [
+          100,
+          100
+        ],
+        "ranges": [
+          {
+            "hands": [
+              [
+                "Jc",
+                "Tc"
+              ],
+              [
+                "9c",
+                "8c"
+              ],
+              [
+                "4c",
+                "4d"
+              ]
+            ],
+            "weights": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "hands": [
+              [
+                "Ac",
+                "Ad"
+              ],
+              [
+                "Jd",
+                "Jh"
+              ],
+              [
+                "8h",
+                "8s"
+              ]
+            ],
+            "weights": [
+              0.5,
+              1,
+              0.5
+            ]
+          }
+        ],
+        "iterations": 500,
+        "first_actor": 0,
+        "river_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 10
+          }
+        ]
+      },
+      "response": {
+        "status": "restricted_river_analysis",
+        "label": "Restricted river game \u00b7 supplied ranges \u00b7 CFR+",
+        "validation_status": "exact NashConv for this finite restricted game",
+        "board": [
+          "As",
+          "Kh",
+          "Qd",
+          "7c",
+          "2s"
+        ],
+        "hero_hand": [
+          "Jc",
+          "Tc"
+        ],
+        "pot": 20,
+        "effective_stack": 100,
+        "first_actor": 0,
+        "river_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 10
+          }
+        ],
+        "river_paid": [
+          0,
+          10
+        ],
+        "iterations": 500,
+        "latency_ms": 416.90012501203455,
+        "nash_conv": 0.8502375302449332,
+        "nash_conv_halfway": 1.4331152954845088,
+        "nash_conv_trend": "decreased",
+        "nash_conv_delta": -0.5828777652395756,
+        "frequencies": [
+          {
+            "action": {
+              "kind": "fold",
+              "amount": 0
+            },
+            "frequency": 1.3306719893546253e-06
+          },
+          {
+            "action": {
+              "kind": "call",
+              "amount": 0
+            },
+            "frequency": 1.3306719893546253e-06
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 20
+            },
+            "frequency": 0.00391687596163521
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 30
+            },
+            "frequency": 0.038619703927598684
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 50
+            },
+            "frequency": 0.1751794264614209
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 100
+            },
+            "frequency": 0.7822813323053665
+          }
+        ],
+        "action_evs": [
+          {
+            "action": {
+              "kind": "fold",
+              "amount": 0
+            },
+            "ev": -10.0,
+            "ev_loss": 50.87511470185218
+          },
+          {
+            "action": {
+              "kind": "call",
+              "amount": 0
+            },
+            "ev": 20.0,
+            "ev_loss": 20.875114701852183
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 20
+            },
+            "ev": 27.642627044593517,
+            "ev_loss": 13.232487657258666
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 30
+            },
+            "ev": 33.325555808065516,
+            "ev_loss": 7.549558893786667
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 50
+            },
+            "ev": 39.141618801114774,
+            "ev_loss": 1.7334959007374096
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 100
+            },
+            "ev": 40.87511470185218,
+            "ev_loss": 0.0
+          }
+        ],
+        "ev_basis": "conditional chip EV for the entered hero hand; opponent hands are weighted by supplied range and blockers; average CFR+ continuation policy",
+        "range_note": "Manual ranges are user-supplied beliefs. They are not inferred from betting history.",
+        "supported_state": "River decision after the supplied abstract action history; pot is the amount before river betting, and supplied ranges must already reflect observed actions. Restricted bet sizes and one raise maximum."
+      }
+    },
+    {
+      "name": "after_hero_check_opponent_bet_10_deeper",
+      "request": {
+        "board": "As Kh Qd 7c 2s",
+        "hero_hand": "Jc Tc",
+        "pot": 20,
+        "stacks": [
+          100,
+          100
+        ],
+        "ranges": [
+          {
+            "hands": [
+              [
+                "Jc",
+                "Tc"
+              ],
+              [
+                "9c",
+                "8c"
+              ],
+              [
+                "4c",
+                "4d"
+              ]
+            ],
+            "weights": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "hands": [
+              [
+                "Ac",
+                "Ad"
+              ],
+              [
+                "Jd",
+                "Jh"
+              ],
+              [
+                "8h",
+                "8s"
+              ]
+            ],
+            "weights": [
+              0.5,
+              1,
+              0.5
+            ]
+          }
+        ],
+        "iterations": 2000,
+        "first_actor": 0,
+        "river_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 10
+          }
+        ]
+      },
+      "response": {
+        "status": "restricted_river_analysis",
+        "label": "Restricted river game \u00b7 supplied ranges \u00b7 CFR+",
+        "validation_status": "exact NashConv for this finite restricted game",
+        "board": [
+          "As",
+          "Kh",
+          "Qd",
+          "7c",
+          "2s"
+        ],
+        "hero_hand": [
+          "Jc",
+          "Tc"
+        ],
+        "pot": 20,
+        "effective_stack": 100,
+        "first_actor": 0,
+        "river_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 10
+          }
+        ],
+        "river_paid": [
+          0,
+          10
+        ],
+        "iterations": 2000,
+        "latency_ms": 1626.1049169988837,
+        "nash_conv": 0.11100055185226321,
+        "nash_conv_halfway": 0.3635422554512884,
+        "nash_conv_trend": "decreased",
+        "nash_conv_delta": -0.25254170359902517,
+        "frequencies": [
+          {
+            "action": {
+              "kind": "fold",
+              "amount": 0
+            },
+            "frequency": 8.329168748958838e-08
+          },
+          {
+            "action": {
+              "kind": "call",
+              "amount": 0
+            },
+            "frequency": 8.329168748958838e-08
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 20
+            },
+            "frequency": 0.0002911912415703191
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 30
+            },
+            "frequency": 0.0037971130605433897
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 50
+            },
+            "frequency": 0.03459481855809839
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 100
+            },
+            "frequency": 0.961316710556413
+          }
+        ],
+        "action_evs": [
+          {
+            "action": {
+              "kind": "fold",
+              "amount": 0
+            },
+            "ev": -10.0,
+            "ev_loss": 50.77571928433899
+          },
+          {
+            "action": {
+              "kind": "call",
+              "amount": 0
+            },
+            "ev": 20.0,
+            "ev_loss": 20.77571928433899
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 20
+            },
+            "ev": 27.313288912498386,
+            "ev_loss": 13.462430371840604
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 30
+            },
+            "ev": 32.15022631108821,
+            "ev_loss": 8.625492973250779
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 50
+            },
+            "ev": 36.82146562225756,
+            "ev_loss": 3.9542536620814275
+          },
+          {
+            "action": {
+              "kind": "raise",
+              "amount": 100
+            },
+            "ev": 40.77571928433899,
+            "ev_loss": 0.0
+          }
+        ],
+        "ev_basis": "conditional chip EV for the entered hero hand; opponent hands are weighted by supplied range and blockers; average CFR+ continuation policy",
+        "range_note": "Manual ranges are user-supplied beliefs. They are not inferred from betting history.",
+        "supported_state": "River decision after the supplied abstract action history; pot is the amount before river betting, and supplied ranges must already reflect observed actions. Restricted bet sizes and one raise maximum."
+      }
+    },
+    {
+      "name": "after_opponent_check",
+      "request": {
+        "board": "As Kh Qd 7c 2s",
+        "hero_hand": "Jc Tc",
+        "pot": 20,
+        "stacks": [
+          100,
+          100
+        ],
+        "ranges": [
+          {
+            "hands": [
+              [
+                "Jc",
+                "Tc"
+              ],
+              [
+                "9c",
+                "8c"
+              ],
+              [
+                "4c",
+                "4d"
+              ]
+            ],
+            "weights": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "hands": [
+              [
+                "Ac",
+                "Ad"
+              ],
+              [
+                "Jd",
+                "Jh"
+              ],
+              [
+                "8h",
+                "8s"
+              ]
+            ],
+            "weights": [
+              0.5,
+              1,
+              0.5
+            ]
+          }
+        ],
+        "iterations": 500,
+        "first_actor": 1,
+        "river_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          }
+        ]
+      },
+      "response": {
+        "status": "restricted_river_analysis",
+        "label": "Restricted river game \u00b7 supplied ranges \u00b7 CFR+",
+        "validation_status": "exact NashConv for this finite restricted game",
+        "board": [
+          "As",
+          "Kh",
+          "Qd",
+          "7c",
+          "2s"
+        ],
+        "hero_hand": [
+          "Jc",
+          "Tc"
+        ],
+        "pot": 20,
+        "effective_stack": 100,
+        "first_actor": 1,
+        "river_actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          }
+        ],
+        "river_paid": [
+          0,
+          0
+        ],
+        "iterations": 500,
+        "latency_ms": 1421.9278749951627,
+        "nash_conv": 0.45291971786210783,
+        "nash_conv_halfway": 0.9103580412700849,
+        "nash_conv_trend": "decreased",
+        "nash_conv_delta": -0.4574383234079771,
+        "frequencies": [
+          {
+            "action": {
+              "kind": "check",
+              "amount": 0
+            },
+            "frequency": 1.596806387225546e-06
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 2
+            },
+            "frequency": 0.0010854402749579275
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 10
+            },
+            "frequency": 0.016045718027959417
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 20
+            },
+            "frequency": 0.11286483863589739
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 100
+            },
+            "frequency": 0.8700024062547981
+          }
+        ],
+        "action_evs": [
+          {
+            "action": {
+              "kind": "check",
+              "amount": 0
+            },
+            "ev": 10.0,
+            "ev_loss": 16.671090099537373
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 2
+            },
+            "ev": 14.270146126408742,
+            "ev_loss": 12.400943973128632
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 10
+            },
+            "ev": 18.957392935288134,
+            "ev_loss": 7.71369716424924
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 20
+            },
+            "ev": 24.670603648352106,
+            "ev_loss": 2.0004864511852674
+          },
+          {
+            "action": {
+              "kind": "bet",
+              "amount": 100
+            },
+            "ev": 26.671090099537373,
+            "ev_loss": 0.0
+          }
+        ],
+        "ev_basis": "conditional chip EV for the entered hero hand; opponent hands are weighted by supplied range and blockers; average CFR+ continuation policy",
+        "range_note": "Manual ranges are user-supplied beliefs. They are not inferred from betting history.",
+        "supported_state": "River decision after the supplied abstract action history; pot is the amount before river betting, and supplied ranges must already reflect observed actions. Restricted bet sizes and one raise maximum."
+      }
+    }
+  ],
+  "chance_check": {
+    "board": [
+      "As",
+      "Kh",
+      "Qd"
+    ],
+    "outcomes": 49,
+    "probability_sum": 1.0000000000000004,
+    "elapsed_ms": 3.049374994589016
+  }
+}

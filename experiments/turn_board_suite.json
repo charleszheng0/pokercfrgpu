@@ -1,0 +1,290 @@
+{
+  "experiment": "fixed_turn_board_exact_reference_suite",
+  "date": "2026-10-14",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree": "dirty",
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "config": {
+    "ranges": [
+      [
+        [
+          "Jc",
+          "Tc"
+        ],
+        [
+          "8h",
+          "8s"
+        ]
+      ],
+      [
+        [
+          "9h",
+          "9s"
+        ],
+        [
+          "Ac",
+          "Ad"
+        ]
+      ]
+    ],
+    "boards_selected_before_solving": [
+      [
+        "2c",
+        "7h",
+        "Jd",
+        "Qs"
+      ],
+      [
+        "9c",
+        "6d",
+        "3s",
+        "Th"
+      ]
+    ],
+    "pot": 8,
+    "stack": 4,
+    "button": 1,
+    "bet_fractions": [],
+    "max_raises": 0,
+    "variant": "synchronous CFR+",
+    "candidate_iterations": 100,
+    "deeper_reference_iterations": 300
+  },
+  "methodology": "Exact public chance and final finite-game best response for both profiles. One cold-rank-cache run per board/budget. Candidate modal action is scored under the deeper profile's root conditional action EVs; both profiles are approximate and this is not full-game action regret.",
+  "results": [
+    {
+      "board": [
+        "2c",
+        "7h",
+        "Jd",
+        "Qs"
+      ],
+      "candidate": {
+        "iterations": 100,
+        "joint_deals": 4,
+        "latency_ms": 5517.997499962803,
+        "nash_conv_chips": 0.14591058489230857,
+        "per_hand": {
+          "Jc Tc": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.5184035059246833,
+              "conditional_ev_chips": -0.0427477075487106
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.4504512958636063,
+              "conditional_ev_chips": 0.0012235357347569753
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.031145198211710457,
+              "conditional_ev_chips": -0.13100977449654572
+            }
+          ],
+          "8h 8s": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.8198634919689334,
+              "conditional_ev_chips": -3.9064084829721923
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.16931297679034887,
+              "conditional_ev_chips": -4.236808520939759
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.010823531240717768,
+              "conditional_ev_chips": -4.940389274583907
+            }
+          ]
+        }
+      },
+      "deeper_reference": {
+        "iterations": 300,
+        "joint_deals": 4,
+        "latency_ms": 16646.318874962162,
+        "nash_conv_chips": 0.06489534417696952,
+        "per_hand": {
+          "Jc Tc": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.4828410244021091,
+              "conditional_ev_chips": -0.058329007411922706
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.5132537642195595,
+              "conditional_ev_chips": -0.04434802710757246
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.0039052113783314916,
+              "conditional_ev_chips": -0.19967113152770466
+            }
+          ],
+          "8h 8s": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.8354013394452864,
+              "conditional_ev_chips": -3.8900416216353397
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.1633880551778448,
+              "conditional_ev_chips": -4.086995063166846
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.0012106053768687652,
+              "conditional_ev_chips": -4.70592666606927
+            }
+          ]
+        }
+      },
+      "comparison": {
+        "Jc Tc": {
+          "modal_action": "check 0",
+          "modal_action_loss_under_deeper_profile_chips": 0.013980980304350243,
+          "max_abs_action_ev_delta_chips": 0.06866135703115894
+        },
+        "8h 8s": {
+          "modal_action": "check 0",
+          "modal_action_loss_under_deeper_profile_chips": 0.0,
+          "max_abs_action_ev_delta_chips": 0.23446260851463752
+        }
+      }
+    },
+    {
+      "board": [
+        "9c",
+        "6d",
+        "3s",
+        "Th"
+      ],
+      "candidate": {
+        "iterations": 100,
+        "joint_deals": 4,
+        "latency_ms": 5785.281499964185,
+        "nash_conv_chips": 0.006712446867631172,
+        "per_hand": {
+          "Jc Tc": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.998652668583927,
+              "conditional_ev_chips": -4.0030948881234405
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.0012478597644261873,
+              "conditional_ev_chips": -5.6245768032272005
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 9.947165164688569e-05,
+              "conditional_ev_chips": -7.089810981098109
+            }
+          ],
+          "8h 8s": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.9969726640302232,
+              "conditional_ev_chips": -3.999449753953874
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.002894732804999968,
+              "conditional_ev_chips": -4.965057724469734
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 0.0001326031647767629,
+              "conditional_ev_chips": -6.180810081008101
+            }
+          ]
+        }
+      },
+      "deeper_reference": {
+        "iterations": 300,
+        "joint_deals": 4,
+        "latency_ms": 19917.665583023336,
+        "nash_conv_chips": 0.0007507830937214521,
+        "per_hand": {
+          "Jc Tc": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.9998493018017459,
+              "conditional_ev_chips": -4.000345529780669
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.00013957235460359348,
+              "conditional_ev_chips": -5.624369908020183
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 1.112584365042686e-05,
+              "conditional_ev_chips": -7.09078626799557
+            }
+          ],
+          "8h 8s": [
+            {
+              "kind": "check",
+              "amount": 0,
+              "frequency": 0.9996613943156728,
+              "conditional_ev_chips": -3.9999375256943845
+            },
+            {
+              "kind": "bet",
+              "amount": 2,
+              "frequency": 0.0003237741011129532,
+              "conditional_ev_chips": -4.966806587202456
+            },
+            {
+              "kind": "bet",
+              "amount": 4,
+              "frequency": 1.4831583214233723e-05,
+              "conditional_ev_chips": -6.18170542635659
+            }
+          ]
+        }
+      },
+      "comparison": {
+        "Jc Tc": {
+          "modal_action": "check 0",
+          "modal_action_loss_under_deeper_profile_chips": 0.0,
+          "max_abs_action_ev_delta_chips": 0.0027493583427711243
+        },
+        "8h 8s": {
+          "modal_action": "check 0",
+          "modal_action_loss_under_deeper_profile_chips": 0.0,
+          "max_abs_action_ev_delta_chips": 0.0017488627327217898
+        }
+      }
+    }
+  ]
+}

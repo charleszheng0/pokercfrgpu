@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Heads-Up Hold'em Trainer</title>
+  <link rel="stylesheet" href="/demo.css">
   <style>
     :root {
       color-scheme: dark;
@@ -104,7 +105,74 @@
     .muted { color: var(--muted); }
     .warning { color: #f2c48b; }
     .empty { color: var(--muted); font-size: .8rem; }
-    @media (max-width: 900px) { .play-layout { grid-template-columns: minmax(0, 1fr); } .table { min-height: 465px; } }
+    .mode-nav { display: flex; gap: 8px; }
+    #game-mode { display: grid; gap: 16px; }
+    .mode-tab { padding: 10px 16px; border: 1px solid #465150; color: #edf0ea; background: #222929; font-weight: 700; }
+    .mode-tab.active { color: #201b11; background: var(--gold); border-color: var(--gold); }
+    .analysis-panel { padding: 18px; display: grid; gap: 15px; }
+    .analysis-grid { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 12px; }
+    .analysis-grid label, .range-grid label { display: grid; gap: 6px; color: var(--muted); font-size: .78rem; }
+    .analysis-grid select { width: 100%; min-width: 0; }
+    .analysis-grid input, .range-card input { width: 100%; padding: 10px; border: 1px solid #465150; border-radius: 7px; background: #141919; color: #edf0ea; font: inherit; }
+    .range-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .range-card { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; align-content: start; gap: 10px; background: #1a2020; }
+    .range-card label { display: grid; gap: 6px; color: var(--muted); font-size: .78rem; }
+    .range-card select { width: 100%; }
+    .matrix-grid { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 3px; width: 100%; }
+    .matrix-cell { min-width: 0; aspect-ratio: 1.08; border: 1px solid #42524a; border-radius: 4px; color: #f2f3ed; background: #293330; font-size: clamp(.55rem, .78vw, .73rem); font-weight: 750; padding: 0; }
+    .matrix-cell.suited { border-color: #476862; }
+    .matrix-cell.offsuited { border-color: #625642; }
+    .matrix-cell.selected { outline: 2px solid var(--gold); outline-offset: 1px; }
+    .matrix-cell.blocked { color: #68716d; background: #202526; cursor: not-allowed; }
+    .strategy-cell { display: grid; place-items: center; text-align: center; font-size: clamp(.49rem, .68vw, .64rem); }
+    .combo-editor { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 8px; }
+    .combo-row { display: grid; grid-template-columns: 68px minmax(70px, 1fr) 58px; align-items: center; gap: 8px; font-size: .79rem; }
+    .combo-row input[type=range] { padding: 0; accent-color: var(--green-light); }
+    .combo-row output { text-align: right; font-variant-numeric: tabular-nums; }
+    .class-controls { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; }
+    .class-controls input { width: 86px; }
+    .class-controls button, .plain-button { padding: 8px 10px; background: #26322e; color: #dce9df; border: 1px solid #50685a; }
+    .solver-details { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+    .solver-details summary { cursor: pointer; color: var(--gold); font-size: .83rem; }
+    .solver-details .analysis-grid { margin-top: 12px; }
+    .analysis-results { display: grid; gap: 12px; }
+    .analysis-diagnostics { display: flex; flex-wrap: wrap; gap: 8px; }
+    .diagnostic { padding: 7px 10px; border: 1px solid #394443; border-radius: 7px; background: #202627; font-size: .8rem; font-variant-numeric: tabular-nums; }
+    .analysis-result-row { display: grid; grid-template-columns: minmax(120px, 1fr) 1fr 60px minmax(160px, 1.2fr); align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #303839; font-size: .82rem; }
+    .analysis-result-row select { min-width: 0; }
+    .analysis-error { color: #f2c48b; }
+    .demo-panel { display: grid; gap: 15px; }
+    .demo-intro { padding: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+    .demo-intro p { max-width: 780px; }
+    .demo-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(370px, .9fr); gap: 16px; align-items: start; }
+    .demo-left { display: grid; gap: 14px; }
+    .demo-analysis { display: grid; gap: 14px; }
+    .demo-choice { padding: 12px; border: 1px solid #627e69; border-radius: 9px; background: #20362c; line-height: 1.55; }
+    .demo-choice strong { color: #f2d69c; }
+    .demo-range-note { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #202728; }
+    .demo-range-note p { margin: 5px 0; }
+    .demo-action-row { display: grid; grid-template-columns: minmax(88px, .65fr) minmax(75px, 1fr) minmax(75px, .7fr) minmax(160px, 1.3fr); gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: .8rem; }
+    .demo-action-row.selected { background: #294136; }
+    .demo-action-row .frequency-track { display: block; }
+    #demo-actions .action-button.selected { outline: 2px solid var(--gold); background: #3d4b3d; }
+    [hidden] { display: none !important; }
+    @media (max-width: 960px) { .range-grid { grid-template-columns: 1fr; } .matrix-cell { font-size: .75rem; } }
+    @media (max-width: 700px) { .analysis-grid { grid-template-columns: 1fr 1fr; } .analysis-result-row { grid-template-columns: 1fr 1fr; } }
+    .training-head { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-top:16px; }
+    .training-head h2, .training-form h2, .training-results h2 { margin:0 0 8px; }
+    .training-layout { display:grid; grid-template-columns:minmax(280px,360px) minmax(0,1fr); gap:16px; margin-top:16px; }
+    .training-results { display:grid; gap:16px; align-content:start; }
+    .training-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .training-fields label { display:grid; gap:4px; color:#cbd4cc; font-size:.76rem; }
+    .training-fields input { min-width:0; width:100%; box-sizing:border-box; padding:8px; border:1px solid #4b5d58; border-radius:7px; color:#fff; background:#192522; }
+    .training-curve { min-height:160px; display:flex; align-items:end; gap:4px; padding:14px 0 4px; overflow-x:auto; }
+    .training-bar { min-width:16px; flex:1; max-width:36px; background:#58b69b; border-radius:4px 4px 0 0; }
+    .training-history { display:grid; gap:10px; }
+    .training-run { border:1px solid #40504a; border-radius:9px; padding:11px; background:#1b2925; }
+    .training-run strong { color:#f4e4bd; }
+    .training-metrics { display:flex; gap:14px; flex-wrap:wrap; font-size:.84rem; margin-top:7px; }
+    @media (max-width: 900px) { .play-layout,.training-layout { grid-template-columns: minmax(0, 1fr); } .table { min-height: 465px; } }
+    @media (max-width: 900px) { .demo-layout { grid-template-columns: 1fr; } }
     @media (max-width: 600px) { header { padding: 11px 14px; } main { padding: 12px; } .rules { width: 100%; margin: 0; } .setup { gap: 9px; } .table { min-height: 430px; padding: 14px; border-radius: 14px; } .seat { padding: 9px; } .card { width: 39px; height: 56px; } .below-grid { grid-template-columns: 1fr; } .study-panel { padding: 13px; } }
   </style>
 </head>
@@ -114,14 +182,46 @@
     <span id="status" class="muted">Start a hand</span>
   </header>
   <main>
+    <nav class="mode-nav" aria-label="Application mode">
+      <button id="play-tab" class="mode-tab active" type="button">Play &amp; Learn</button>
+      <button id="analysis-tab" class="mode-tab" type="button">Solver Lab</button>
+      <button id="training-tab" class="mode-tab" type="button">ML Training</button>
+    </nav>
+    <div id="game-mode">
     <section class="setup panel">
       <label for="opponent">Opponent</label>
-      <select id="opponent"><option value="heuristic">Heuristic</option><option value="random">Random</option><option value="nfsp">NFSP · experimental, preset-trained</option></select>
+      <select id="opponent"><option value="heuristic">Heuristic</option><option value="nfsp">NFSP · experimental checkpoint</option></select>
       <button id="new-hand" class="new-hand">New hand</button>
+      <button id="try-solver-demo" class="plain-button" type="button">Try Solver Demo</button>
       <span id="rules" class="rules">100-chip stacks · 1/2 blinds · preset sizes plus any legal integer wager</span>
     </section>
 
-    <div class="play-layout">
+    <section id="demo-mode" class="demo-panel" aria-label="Solver demo" hidden>
+      <div class="demo-intro panel">
+        <div class="demo-title-group"><h2>River analysis</h2><span class="demo-badge">Restricted CFR+</span><span class="demo-badge">Manual ranges</span></div>
+        <button id="leave-solver-demo" class="plain-button" type="button">Back to game</button>
+      </div>
+      <div class="demo-layout">
+        <section class="table demo-table" aria-label="Solver demo poker table">
+          <div class="seat"><div><div class="seat-name">Opponent <span class="muted">· BTN / SB</span></div><div id="demo-opponent-stack" class="seat-meta">Stack —</div></div><div id="demo-opponent-cards" class="cards"></div></div>
+          <div class="center-table"><div class="street-label">River · you act</div><div id="demo-board" class="cards board"></div><div id="demo-pot" class="pot">Pot —</div></div>
+          <div class="seat active"><div><div class="seat-name">You <span class="muted">· BB</span></div><div id="demo-hero-stack" class="seat-meta">Stack —</div></div><div id="demo-hero-cards" class="cards"></div></div>
+        </section>
+        <aside class="study-panel panel demo-analysis" aria-label="Solver demo analysis">
+          <div class="study-heading"><h2>Strategy &amp; EV</h2><span class="demo-small-label">YOUR HAND</span></div>
+          <p id="demo-status" class="study-note" role="status">Ready to calculate</p>
+          <div id="demo-diagnostics" class="analysis-diagnostics"></div>
+          <div id="demo-action-values" class="demo-value-list"></div>
+        </aside>
+      </div>
+      <div class="demo-bottom">
+        <section class="panel demo-decision"><div class="demo-section-head"><h2>Choose an action</h2><button id="demo-sample-cached" class="plain-button" type="button">Sample cached strategy</button></div><div id="demo-actions" class="actions"></div><div id="demo-choice" class="demo-choice" hidden></div></section>
+        <section class="panel demo-range-section"><div class="demo-section-head"><h2 id="demo-matrix-title">Range strategy</h2><span class="demo-small-label">HERO RANGE</span></div><div id="demo-range-matrix" class="matrix-grid" role="grid" aria-label="Solver demo strategy by hand class"></div><div class="demo-legend"><span>0%</span><span class="demo-legend-gradient"></span><span>100%</span></div></section>
+      </div>
+      <details class="demo-details panel"><summary>Assumptions &amp; solver info</summary><div id="demo-range-assumptions" class="demo-range-note study-note" hidden></div><p class="study-note">EVs are conditional estimates under the average continuation policy. NashConv measures only this finite restricted game; ranges are illustrative, not inferred from play.</p></details>
+    </section>
+
+    <div id="play-layout" class="play-layout">
       <div class="play-column">
         <section class="table" aria-label="Poker table">
           <div id="opponent-seat" class="seat">
@@ -152,11 +252,14 @@
         </section>
       </div>
 
-      <aside class="study-panel panel" aria-label="Strategy study panel">
-        <div class="study-heading"><h2>Strategy study</h2><span class="tag">Model output</span></div>
+      <aside class="study-panel panel" aria-label="Practice insights panel">
+        <div class="study-heading"><h2>Practice insights</h2><span class="tag">Experimental</span></div>
         <p class="study-note">The NFSP average policy is an experimental reference. Frequencies show what this saved model chooses in this state; they are not GTO frequencies. It was trained on preset wager sizes, so custom human wagers are outside its training distribution.</p>
         <div id="frequency-list" class="frequencies"><span class="empty">Start a hand to see available model frequencies.</span></div>
-        <div id="ev-box" class="ev-box"><strong>Action EV unavailable</strong><p>No validated full-hand Hold'em solver produces per-action EV or EV loss yet. The current CFR reference covers a tiny fixed-range river game only.</p></div>
+        <div id="ev-box" class="ev-box"><strong>Solver feedback unavailable</strong><p>Live solver analysis has not passed its range and state validation gates.</p></div>
+        <button id="open-lab" class="plain-button" type="button">Study this decision with manual ranges</button>
+        <div class="divider"></div>
+        <div><div class="eyebrow">Experimental post-action review</div><p class="study-note">Flop/turn use exact showdown runouts with no later betting; river uses full restricted betting. Opponent ranges are illustrative, not inferred.</p><div id="solver-review-list" class="review-list"></div></div>
         <div class="divider"></div>
         <div><div class="eyebrow">Your decision review</div><div id="review-list" class="review-list"><span class="empty">Your decisions and the model's frequencies will appear here.</span></div></div>
         <div class="divider"></div>
@@ -164,11 +267,68 @@
       </aside>
     </div>
 
-    <div class="below-grid">
+    <div id="play-below" class="below-grid">
       <section class="history panel"><h2>Recent hands</h2><div id="history-list" class="history-list">No completed hands yet.</div></section>
       <section class="history results panel"><h2>Measured research results</h2><p class="study-note">Small-game NashConv uses exact best responses under the stated rules. Hold'em chips per hand is a noisy baseline result.</p><table><thead><tr><th>Method</th><th>Condition</th><th>Metric</th><th>Value</th><th>Raw file</th></tr></thead><tbody id="results-body"></tbody></table></section>
     </div>
+    </div>
+    <section id="training-mode" class="training-mode" hidden aria-label="ML Training Dashboard">
+      <div class="training-head panel"><div><h2>ML Training</h2><p class="muted">Offline NFSP self-play · 20-chip restricted Hold'em</p></div><div><span id="training-state" class="tag">Idle</span> <button id="training-start" type="button">Start schedule</button> <button id="training-stop" type="button" class="plain-button">Stop</button></div></div>
+      <div class="training-layout">
+        <form id="training-form" class="panel training-form">
+          <h2>Run configuration</h2>
+          <div id="training-fields" class="training-fields"></div>
+          <p class="study-note">A run is one self-play cycle. The held-out split measures average-policy imitation loss only; strength uses separate seeded games. CFR+ iterations control a separate fixed river cache job.</p>
+          <button type="submit">Save settings</button><span id="training-save-status" class="muted"></span>
+        </form>
+        <div class="training-results">
+          <section class="panel"><h2>Current run</h2><div id="training-progress" class="study-note">No run yet.</div><div id="training-curve" class="training-curve" role="img" aria-label="Training curves"></div></section>
+          <section class="panel"><h2>Restricted river cache</h2><div id="blueprint-status" class="study-note">No promoted river cache yet.</div></section>
+          <section class="panel"><h2>Checkpoint history</h2><div id="training-history" class="training-history">No completed runs yet.</div></section>
+        </div>
+      </div>
+    </section>
+    <section id="analysis-mode" class="analysis-panel panel" hidden>
+      <div class="study-heading"><h2>Solver Lab · postflop</h2><span class="tag">Advanced · CPU CFR+</span></div>
+      <details class="solver-details"><summary>Range and solver limitations</summary><p class="study-note">Choose a preset or edit hands below. Presets are illustrative assumptions, not measured human ranges or solved GTO charts. Click a matrix square to edit individual suit combinations and their frequencies. Known board cards remove blocked combos; your entered hand also removes impossible opponent combos. River is the validated finite-game reference; exact turn-to-river search is limited to tiny ranges. Flop search is experimental and disabled in this interface. Preflop solving is unavailable. If you enter earlier actions, adjust the ranges yourself to reflect those actions.</p></details>
+      <div class="analysis-grid">
+        <label>Street<select id="lab-street"><option value="river">River · restricted solve</option><option value="turn">Turn · tiny-range exact chance</option><option value="flop">Flop · experimental, unavailable here</option><option value="preflop">Preflop · unavailable</option></select></label>
+        <label><span id="board-hint">Public board (five cards on river)</span><input id="river-board" value="As Kh Qd 7c 2s" autocomplete="off"></label>
+        <label>Hero hand<input id="river-hero" value="Jc Tc" autocomplete="off"></label>
+        <label id="pot-label">Pot before this street's betting (chips)<input id="river-pot" type="number" min="0" step="1" value="20"></label>
+        <label>Hero / opponent stacks<input id="river-stacks" value="100, 100" autocomplete="off"></label>
+      </div>
+      <div class="range-grid">
+        <section class="range-card" aria-label="Hero hand range">
+          <label>Hero range assumption<select id="hero-preset"></select></label>
+          <p id="hero-preset-note" class="study-note"></p>
+          <div id="hero-range-summary" class="study-note"></div>
+          <button id="hero-clear-range" class="plain-button" type="button">Clear range to build a small solve</button>
+          <button id="include-hero-hand" class="plain-button" type="button">Include entered hero hand at 100%</button>
+          <div id="hero-matrix" class="matrix-grid" role="grid" aria-label="Hero 13 by 13 hand matrix"></div>
+          <div id="hero-combos" class="combo-editor"><span class="empty">Select a hand class to edit its suit combinations.</span></div>
+        </section>
+        <section class="range-card" aria-label="Opponent hand range">
+          <label>Opponent range assumption<select id="opponent-preset"></select></label>
+          <p id="opponent-preset-note" class="study-note"></p>
+          <div id="opponent-range-summary" class="study-note"></div>
+          <button id="opponent-clear-range" class="plain-button" type="button">Clear range to build a small solve</button>
+          <div id="opponent-matrix" class="matrix-grid" role="grid" aria-label="Opponent 13 by 13 hand matrix"></div>
+          <div id="opponent-combos" class="combo-editor"><span class="empty">Select a hand class to edit its suit combinations.</span></div>
+        </section>
+      </div>
+      <details class="solver-details"><summary>Action state and solver budget</summary><div class="analysis-grid">
+        <label>Current-street decision<select id="river-spot"><option value="opening">You act first</option><option value="checked_to_hero">Opponent checked to you</option><option value="facing_bet">You checked, opponent bet</option><option value="facing_bet_first">Opponent bet to you</option><option value="facing_raise">You bet, opponent raised</option></select></label>
+        <label id="river-prior-bet-wrap" hidden>First bet target<select id="river-prior-bet"></select></label>
+        <label id="river-prior-raise-wrap" hidden>Opponent raise target<select id="river-prior-raise"></select></label>
+        <label><span id="iteration-hint">Iterations (river: 20–5000)</span><input id="river-iterations" type="number" min="20" max="5000" step="1" value="500"></label>
+        <label>Stop at NashConv (chips, optional)<input id="river-nashconv-target" type="number" min="0" step="0.1" placeholder="No target"></label>
+      </div><p class="study-note">Bet targets are generated from this restricted tree. Earlier action likelihoods are not inferred; ranges must reflect the selected history. Turn search enumerates river cards and betting, so it is capped at four compatible private deals and 100 iterations. A target is checked against measured exact NashConv within this finite abstraction; best-response diagnostics add runtime and can exceed the time budget.</p></details>
+      <div><button id="run-river-analysis" class="new-hand" type="button">Run CFR+ analysis</button> <span id="analysis-status" class="muted">Ready. A 500-iteration request is the default.</span></div>
+      <div id="river-output" class="analysis-results"><span class="empty">Enter a supported river state and run the solver to see computed frequencies and conditional action EVs.</span></div>
+    </section>
   </main>
+  <script src="/ranges.js"></script>
   <script>
     const $ = id => document.getElementById(id);
     const suit = {c: '♣', d: '♦', h: '♥', s: '♠'};
@@ -303,7 +463,7 @@
       $('opponent').value = s.opponent;
       $('opponent').disabled = !s.done;
       $('rules').textContent = `${s.starting_stack}-chip stacks · ${s.blinds[0]}/${s.blinds[1]} blinds · preset sizes plus any legal integer wager`;
-      $('status').textContent = `Hand ${s.hand} · ${streets[s.street]}`;
+      if ($('analysis-mode').hidden) $('status').textContent = `Hand ${s.hand} · ${streets[s.street]}`;
       $('street-label').textContent = streets[s.street];
       $('opponent-label').firstChild.textContent = `${s.opponent.toUpperCase()} opponent `;
       $('opponent-role').textContent = s.button === 1 ? '· BUTTON / SMALL BLIND' : '· BIG BLIND';
@@ -315,6 +475,7 @@
       $('your-stack').textContent = `Stack ${s.stacks[0]}`;
       $('opponent-bet').textContent = `Bet ${s.street_bets[1]}`;
       $('your-bet').textContent = `Bet ${s.street_bets[0]}`;
+      $('ev-box').querySelector('p').textContent = s.solver_feedback?.reason || 'Solver feedback is unavailable for this decision.';
       $('pot').textContent = `Pot ${s.pot}`;
       $('opponent-seat').classList.toggle('active', !s.done && s.current_player === 1);
       $('hero-seat').classList.toggle('active', !s.done && s.current_player === 0);
@@ -355,6 +516,7 @@
         renderFrequencies(last.legal_actions, last.action_probabilities, last.to_call, last.chosen_action);
       } else renderFrequencies([], [], 0);
       renderReviews(s.decision_reviews);
+      renderSolverReviews(s.solver_reviews || []);
       renderActionLog(s.events, s.actions);
       const history = $('history-list'); history.replaceChildren();
       const recent = [...s.hands].reverse();
@@ -382,7 +544,423 @@
         render(data);
       } catch (error) { $('message').textContent = error.message; $('message').className = 'warning'; }
     }
+    function renderSolverReviews(reviews) {
+      const list = $('solver-review-list'); list.replaceChildren();
+      if (!reviews.length) { list.textContent = 'Take an action to enable an optional review.'; return; }
+      [...reviews].reverse().forEach(review => {
+        const item = document.createElement('div'); item.className = 'review-item';
+        const title = document.createElement('div'); title.className = 'review-title';
+        title.textContent = `${review.street} · ${review.board.join(' ')} · chose ${actionLabel(review.chosen_action)}`;
+        item.append(title);
+        if (!review.analysis) {
+          if (review.street !== 'preflop') {
+            const button = document.createElement('button'); button.className = 'plain-button';
+            button.textContent = 'Analyze with illustrative ranges';
+            button.onclick = async () => {
+              button.disabled = true; button.textContent = 'Calculating restricted CFR+…';
+              try {
+                const response = await fetch('/api/review-decision', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({hand: review.hand, index: review.index})});
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Analysis failed');
+                review.analysis = data.analysis;
+                renderSolverReviews(window.currentPokerState.solver_reviews);
+              } catch (error) { button.textContent = `Analysis unavailable: ${error.message}`; }
+            };
+            item.append(button);
+          } else { const note = document.createElement('p'); note.className = 'study-note'; note.textContent = 'Unsupported: preflop betting and continuation are not represented by the current solver.'; item.append(note); }
+        } else if (review.analysis.status === 'unsupported') {
+          const note = document.createElement('p'); note.className = 'study-note'; note.textContent = `Unsupported: ${review.analysis.reason}`; item.append(note);
+        } else {
+          const result = review.analysis;
+          const note = document.createElement('p'); note.className = 'study-note';
+          note.textContent = `${result.label}. ${result.range_note} ${result.solver_scope_note || ''} Opponent combos: ${result.opponent_range.map(demoHandLabel).join(', ')}.`; item.append(note);
+          const diagnostics = document.createElement('p'); diagnostics.className = 'study-note';
+          diagnostics.textContent = `${review.street === 'river' ? 'Restricted' : 'Cutoff-game'} NashConv ${result.nash_conv_chips.toFixed(3)} chips · ${result.iterations} iterations · ${result.latency_ms.toFixed(0)} ms · ${result.validation_status}`; item.append(diagnostics);
+          result.actions.forEach(row => {
+            const line = document.createElement('p'); line.className = 'review-sub';
+            line.textContent = `${actionLabel(row)}: ${(100 * row.frequency).toFixed(1)}% · EV ${row.ev_chips.toFixed(2)} chips (${row.ev_bb.toFixed(2)} BB) · loss ${row.ev_loss_bb.toFixed(2)} BB`;
+            item.append(line);
+          });
+          const selected = document.createElement('p'); selected.className = 'review-choice';
+          selected.textContent = `Your action estimated EV loss: ${result.selected_action_ev_loss_bb.toFixed(2)} BB (${result.selected_action_ev_loss_chips.toFixed(2)} chips)`; item.append(selected);
+        }
+        list.append(item);
+      });
+    }
+    function demoHandLabel(cards) {
+      return cards.map(code => code[0] + suit[code[1]]).join(' ');
+    }
+    function demoActionColor(action, position) {
+      if (action.kind === 'check' || action.kind === 'call') return '#87aec7';
+      if (action.amount >= Math.min(...position.stacks)) return '#dc7772';
+      if (action.amount <= position.pot / 2) return '#65bc9a';
+      if (action.amount <= position.pot) return '#d4bc71';
+      return '#df9d6d';
+    }
+    function renderDemo(data) {
+      const position = data.position, result = data.analysis;
+      showCards('demo-board', position.board);
+      showCards('demo-hero-cards', position.hero_hand);
+      showCards('demo-opponent-cards', [], 2, true);
+      $('demo-status').className = 'study-note';
+      $('demo-pot').textContent = `Pot ${position.pot} chips / ${(position.pot / position.big_blind).toFixed(1)} BB`;
+      $('demo-hero-stack').textContent = `Stack ${position.stacks[0]} chips`;
+      $('demo-opponent-stack').textContent = `Stack ${position.stacks[1]} chips`;
+      $('demo-status').textContent = 'Select an action to compare its estimated EV.';
+      const assumptions = $('demo-range-assumptions'); assumptions.replaceChildren(); assumptions.hidden = false;
+      const description = document.createElement('p'); description.textContent = position.description; assumptions.append(description);
+      ['Your assumed range', 'Opponent assumed range'].forEach((label, seat) => {
+        const line = document.createElement('p');
+        line.textContent = `${label}: ${position.range_assumptions[seat].map(row => `${demoHandLabel(row.hand)} ${row.weight_percent.toFixed(0)}%`).join(' · ')}`;
+        assumptions.append(line);
+      });
+      const diagnostics = $('demo-diagnostics'); diagnostics.replaceChildren();
+      [
+        `${result.iterations.toLocaleString()} iters`,
+        `${result.latency_ms.toFixed(1)} ms`,
+        `NashConv ${result.nash_conv.toFixed(4)} chips`,
+      ].forEach(value => {
+        const badge = document.createElement('span'); badge.className = 'diagnostic'; badge.textContent = value;
+        badge.title = `Restricted game · ${result.joint_deals} compatible deals · NashConv ${(result.nash_conv / result.big_blind).toFixed(4)} BB`;
+        diagnostics.append(badge);
+      });
+      const controls = $('demo-actions'), values = $('demo-action-values');
+      controls.replaceChildren(); values.replaceChildren(); $('demo-choice').hidden = true;
+      const buttons = [], valueRows = [];
+      const bestEV = Math.max(...result.action_evs.map(row => row.ev));
+      const choose = index => {
+        const estimate = result.action_evs[index];
+        buttons.forEach((button, i) => {
+          button.classList.toggle('selected', i === index);
+          button.setAttribute('aria-pressed', String(i === index));
+        });
+        valueRows.forEach((row, i) => row.classList.toggle('selected', i === index));
+        const choice = $('demo-choice'); choice.hidden = false;
+        choice.replaceChildren();
+        const metrics = [
+          ['Selected', actionLabel(estimate.action), ''],
+          ['Frequency', `${(result.frequencies[index].frequency * 100).toFixed(1)}%`, 'your hand'],
+          ['Estimated EV', `${estimate.ev_bb.toFixed(3)} BB`, `${estimate.ev.toFixed(3)} chips`],
+          ['EV loss', `${estimate.ev_loss_bb.toFixed(3)} BB`, `${estimate.ev_loss.toFixed(3)} chips`],
+        ];
+        metrics.forEach(([label, value, secondary]) => {
+          const metric = document.createElement('div'); metric.className = 'demo-metric';
+          const heading = document.createElement('span'); heading.className = 'demo-metric-label'; heading.textContent = label;
+          const number = document.createElement('span'); number.className = 'demo-metric-value'; number.textContent = value;
+          metric.append(heading, number);
+          if (secondary) { const small = document.createElement('span'); small.className = 'demo-metric-sub'; small.textContent = secondary; metric.append(small); }
+          choice.append(metric);
+        });
+        $('demo-matrix-title').textContent = `Range strategy · ${actionLabel(estimate.action)}`;
+        const color = demoActionColor(estimate.action, position);
+        $('demo-mode').style.setProperty('--legend-color', color);
+        RangeEditor.renderStrategyMatrix($('demo-range-matrix'), result.per_hand, estimate.action, color);
+      };
+      $('demo-sample-cached').onclick = async () => {
+        try {
+          const response = await fetch('/api/cached-demo-action', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+          const sampled = await response.json();
+          if (!response.ok) throw Error(sampled.error);
+          const index = result.action_evs.findIndex(row => row.action.kind === sampled.action.kind && row.action.amount === sampled.action.amount);
+          if (index < 0) throw Error('Cached action is not in the displayed solution');
+          choose(index);
+        } catch (error) { $('demo-status').textContent = error.message; }
+      };
+      result.action_evs.forEach((estimate, index) => {
+        const frequency = result.frequencies[index].frequency;
+        const button = document.createElement('button'); button.type = 'button';
+        button.className = `action-button ${estimate.action.kind}`;
+        button.textContent = actionLabel(estimate.action);
+        const color = demoActionColor(estimate.action, position);
+        button.style.setProperty('--action-color', color);
+        button.title = `${(frequency * 100).toFixed(1)}% · EV ${estimate.ev_bb.toFixed(3)} BB (${estimate.ev.toFixed(3)} chips)`;
+        button.setAttribute('aria-pressed', 'false');
+        button.onclick = () => choose(index); controls.append(button); buttons.push(button);
+        const row = document.createElement('div'); row.className = 'demo-action-row';
+        row.style.setProperty('--action-color', color);
+        row.classList.toggle('best', Math.abs(estimate.ev - bestEV) < 1e-9);
+        row.setAttribute('role', 'button'); row.setAttribute('tabindex', '0');
+        row.setAttribute('aria-label', `${actionLabel(estimate.action)}, ${(frequency * 100).toFixed(1)} percent, EV ${estimate.ev_bb.toFixed(3)} big blinds`);
+        row.onclick = () => choose(index);
+        row.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(index); } };
+        const name = document.createElement('span'); name.className = 'demo-action-name'; name.textContent = actionLabel(estimate.action);
+        if (Math.abs(estimate.ev - bestEV) < 1e-9) { const best = document.createElement('small'); best.textContent = 'Best EV'; name.append(best); }
+        const track = document.createElement('span'); track.className = 'frequency-track';
+        const fill = document.createElement('span'); fill.className = 'frequency-fill';
+        fill.style.width = `${Math.max(0, Math.min(100, frequency * 100))}%`; track.append(fill);
+        const percentage = document.createElement('span'); percentage.className = 'demo-action-percent'; percentage.textContent = `${(frequency * 100).toFixed(1)}%`;
+        const ev = document.createElement('span'); ev.className = 'demo-ev';
+        const evMain = document.createElement('span'); evMain.className = 'demo-ev-main'; evMain.textContent = `${estimate.ev_bb.toFixed(3)} BB`;
+        const evSub = document.createElement('span'); evSub.className = 'demo-ev-sub'; evSub.textContent = `${estimate.ev.toFixed(3)} chips`;
+        ev.append(evMain, evSub);
+        row.append(name, track, percentage, ev); values.append(row); valueRows.push(row);
+      });
+      const preview = result.frequencies.reduce((best, row, index) => row.frequency > result.frequencies[best].frequency ? index : best, 0);
+      $('demo-matrix-title').textContent = `Range strategy · ${actionLabel(result.action_evs[preview].action)}`;
+      const previewColor = demoActionColor(result.action_evs[preview].action, position);
+      $('demo-mode').style.setProperty('--legend-color', previewColor);
+      RangeEditor.renderStrategyMatrix($('demo-range-matrix'), result.per_hand, result.action_evs[preview].action, previewColor);
+    }
+    $('try-solver-demo').onclick = async () => {
+      $('play-layout').hidden = true; $('play-below').hidden = true; $('demo-mode').hidden = false;
+      $('status').textContent = 'Solver Demo · calculating';
+      $('demo-status').textContent = 'Running the real CFR+ solve on this restricted river game…';
+      $('demo-actions').replaceChildren(); $('demo-action-values').replaceChildren();
+      $('demo-diagnostics').replaceChildren(); $('demo-range-matrix').replaceChildren();
+      $('demo-choice').hidden = true; $('demo-range-assumptions').hidden = true;
+      const button = $('try-solver-demo'); button.disabled = true;
+      try {
+        const response = await fetch('/api/demo-analysis', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Demo analysis failed');
+        renderDemo(data);
+        if (!$('demo-mode').hidden) $('status').textContent = 'Solver Demo · restricted river decision';
+      } catch (error) {
+        $('demo-status').textContent = `Analysis unavailable: ${error.message}`;
+        $('demo-status').className = 'analysis-error';
+      } finally { button.disabled = false; }
+    };
+    $('leave-solver-demo').onclick = () => {
+      $('demo-mode').hidden = true; $('play-layout').hidden = false; $('play-below').hidden = false;
+      $('status').textContent = window.currentPokerState?.started ? `Hand ${window.currentPokerState.hand} · ${streets[window.currentPokerState.street]}` : 'Play Hold’em';
+    };
+    $('play-tab').onclick = () => {
+      $('game-mode').hidden = false; $('analysis-mode').hidden = true; $('training-mode').hidden = true;
+      $('play-tab').classList.add('active'); $('analysis-tab').classList.remove('active'); $('training-tab').classList.remove('active');
+      $('status').textContent = !$('demo-mode').hidden ? 'Solver Demo · restricted river decision' : window.currentPokerState?.started ? `Hand ${window.currentPokerState.hand} · ${streets[window.currentPokerState.street]}` : 'Play Hold’em';
+    };
+    $('analysis-tab').onclick = () => {
+      $('game-mode').hidden = true; $('analysis-mode').hidden = false; $('training-mode').hidden = true;
+      $('analysis-tab').classList.add('active'); $('play-tab').classList.remove('active'); $('training-tab').classList.remove('active');
+      $('status').textContent = 'Solver Lab · explicit river ranges';
+    };
+    $('open-lab').onclick = () => {
+      const position = window.currentPokerState?.study_position;
+      $('analysis-tab').click();
+      if (!position) {
+        $('analysis-status').textContent = 'A current hero decision is required to copy a live position. You can still enter a manual spot.';
+        return;
+      }
+      $('lab-street').value = position.street;
+      $('lab-street').dispatchEvent(new Event('change'));
+      $('river-board').value = position.board.join(' ');
+      $('river-hero').value = position.hero_hand.join(' ');
+      if ($('include-hero-hand').onclick) $('include-hero-hand').click();
+      $('river-pot').value = String(position.pot_before_street);
+      $('river-stacks').value = position.stacks_at_street_start.join(', ');
+      const actions = position.street_actions;
+      const kinds = actions.map(action => action.kind).join(',');
+      const spot = !actions.length && position.first_actor === 0 ? 'opening' :
+        kinds === 'check' && position.first_actor === 1 ? 'checked_to_hero' :
+        kinds === 'check,bet' && position.first_actor === 0 ? 'facing_bet' :
+        kinds === 'bet' && position.first_actor === 1 ? 'facing_bet_first' :
+        kinds === 'bet,raise' && position.first_actor === 0 ? 'facing_raise' : null;
+      if (spot) $('river-spot').value = spot;
+      updateRiverActionControls(); RangeEditor.refresh();
+      let representable = Boolean(spot);
+      const priorBet = actions.find(action => action.kind === 'bet');
+      const priorRaise = actions.find(action => action.kind === 'raise');
+      if (priorBet) {
+        $('river-prior-bet').value = String(priorBet.amount);
+        if ($('river-prior-bet').value !== String(priorBet.amount)) representable = false;
+        updateRiverActionControls();
+      }
+      if (priorRaise) {
+        $('river-prior-raise').value = String(priorRaise.amount);
+        if ($('river-prior-raise').value !== String(priorRaise.amount)) representable = false;
+      }
+      $('analysis-status').textContent = position.street === 'river' || position.street === 'turn' ?
+        (representable ? 'Public position copied. Select ranges that reflect the actual betting history before solving.' :
+          'Public position copied, but its action sequence or wager size is outside the lab abstraction.') :
+        `${position.street} position copied. Solver feedback is unavailable for this street.`;
+      $('analysis-status').className = representable ? 'muted' : 'analysis-error';
+    };
+    function renderRiverAnalysis(result) {
+      const output = $('river-output'); output.replaceChildren();
+      const diagnostics = document.createElement('div'); diagnostics.className = 'analysis-diagnostics';
+      const chips = [
+        result.label, `${result.iterations.toLocaleString()} iters`,
+        `${result.latency_ms.toFixed(1)} ms`, `NashConv ${result.nash_conv.toFixed(4)} chips`,
+        ...(result.target_nash_conv_chips === null ? [] : [`Target ${result.target_nash_conv_chips} · ${result.solver_quality_status === 'restricted_target_met' ? 'met' : 'unmet'}`]),
+      ];
+      chips.forEach(text => { const item = document.createElement('span'); item.className = 'diagnostic'; item.textContent = text; diagnostics.append(item); });
+      output.append(diagnostics);
+      const details = document.createElement('details'); details.className = 'solver-details lab-solver-info';
+      const summary = document.createElement('summary'); summary.textContent = 'Assumptions & solver info'; details.append(summary);
+      const quality = document.createElement('p'); quality.className = 'study-note';
+      quality.textContent = `Measured convergence: NashConv ${result.nash_conv_trend} from ${result.nash_conv_halfway.toFixed(4)} to ${result.nash_conv.toFixed(4)} chips. ${result.joint_deals} compatible deals. ${result.supported_state}`;
+      details.append(quality);
+      if (result.convergence_trace && result.convergence_trace.length > 1) {
+        const checkpoints = document.createElement('p'); checkpoints.className = 'study-note';
+        checkpoints.textContent = `Measured NashConv checkpoints: ${result.convergence_trace.map(point => `${point.iterations} iterations: ${point.nash_conv_chips.toFixed(4)} chips`).join(' · ')}.`;
+        details.append(checkpoints);
+      }
+      const lossBasis = document.createElement('p'); lossBasis.className = 'study-note';
+      lossBasis.textContent = 'Selected-action EV loss is the difference between the best root action EV and the selected action EV for your entered hand, with later play following the final average CFR+ strategy.';
+      details.append(lossBasis);
+      const note = document.createElement('p'); note.className = 'study-note'; note.textContent = `${result.ev_basis}. ${result.range_note}`; details.append(note);
+      if (result.solver_assumptions) {
+        result.solver_assumptions.forEach(assumption => {
+          const line = document.createElement('p'); line.className = 'study-note'; line.textContent = assumption; details.append(line);
+        });
+      }
+      const heading = document.createElement('div'); heading.className = 'eyebrow'; heading.textContent = 'Your hand · strategy & EV'; output.append(heading);
+      const select = document.createElement('select'); select.id = 'river-chosen-action';
+      const evMap = new Map(result.action_evs.map(row => [JSON.stringify(row.action), row]));
+      result.frequencies.forEach(row => {
+        const option = document.createElement('option'); option.value = JSON.stringify(row.action);
+        option.textContent = `${actionLabel(row.action)} · ${(row.frequency * 100).toFixed(1)}%`; select.append(option);
+      });
+      const loss = document.createElement('span'); loss.className = 'diagnostic';
+      const matrix = document.createElement('div'); matrix.className = 'matrix-grid';
+      matrix.setAttribute('role', 'grid'); matrix.setAttribute('aria-label', 'Solved range action frequency by hand class');
+      const actionRows = [];
+      const updateLoss = () => {
+        const chosen = evMap.get(select.value);
+        loss.textContent = `EV loss ${chosen.ev_loss_bb.toFixed(3)} BB · ${chosen.ev_loss.toFixed(3)} chips`;
+        actionRows.forEach(row => row.classList.toggle('selected', row.dataset.action === select.value));
+        if (result.per_hand) RangeEditor.renderStrategyMatrix(matrix, result.per_hand, chosen.action,
+          demoActionColor(chosen.action, {pot: result.pot, stacks: [result.effective_stack, result.effective_stack]}));
+      };
+      select.onchange = updateLoss;
+      const choiceLine = document.createElement('div'); choiceLine.className = 'analysis-diagnostics';
+      const label = document.createElement('span'); label.className = 'diagnostic'; label.textContent = 'Selected action';
+      choiceLine.append(label, select, loss); output.append(choiceLine);
+      const bestEV = Math.max(...result.action_evs.map(row => row.ev));
+      result.frequencies.forEach(row => {
+        const estimate = evMap.get(JSON.stringify(row.action));
+        const line = document.createElement('div'); line.className = 'analysis-result-row lab-action-row';
+        line.dataset.action = JSON.stringify(row.action);
+        line.style.setProperty('--action-color', demoActionColor(row.action, {pot: result.pot, stacks: [result.effective_stack, result.effective_stack]}));
+        line.classList.toggle('best', Math.abs(estimate.ev - bestEV) < 1e-9);
+        line.setAttribute('role', 'button'); line.setAttribute('tabindex', '0');
+        line.onclick = () => { select.value = line.dataset.action; updateLoss(); };
+        line.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); line.click(); } };
+        const action = document.createElement('span'); action.className = 'demo-action-name'; action.textContent = actionLabel(row.action);
+        if (Math.abs(estimate.ev - bestEV) < 1e-9) { const best = document.createElement('small'); best.textContent = 'Best EV'; action.append(best); }
+        const track = document.createElement('span'); track.className = 'frequency-track';
+        const fill = document.createElement('span'); fill.className = 'frequency-fill'; fill.style.width = `${Math.max(0, Math.min(100, row.frequency * 100))}%`; track.append(fill);
+        const freq = document.createElement('span'); freq.className = 'demo-action-percent'; freq.textContent = `${(row.frequency * 100).toFixed(1)}%`;
+        const evText = document.createElement('span'); evText.className = 'demo-ev';
+        const main = document.createElement('span'); main.className = 'demo-ev-main'; main.textContent = `${estimate.ev_bb.toFixed(3)} BB`;
+        const sub = document.createElement('span'); sub.className = 'demo-ev-sub'; sub.textContent = `${estimate.ev.toFixed(3)} chips`;
+        evText.append(main, sub); line.append(action, track, freq, evText); output.append(line); actionRows.push(line);
+      });
+      updateLoss();
+      if (result.per_hand) {
+        const title = document.createElement('strong'); title.textContent = 'Range strategy · selected action';
+        output.append(title, matrix);
+      }
+      output.append(details);
+    }
+    function replaceTargets(id, targets) {
+      const select = $(id); const prior = select.value;
+      select.replaceChildren();
+      targets.forEach(target => {
+        const option = document.createElement('option'); option.value = String(target);
+        option.textContent = `To ${target} chips`; select.append(option);
+      });
+      if (targets.includes(Number(prior))) select.value = prior;
+    }
+    function riverOpeningTargets() {
+      const pot = Number($('river-pot').value);
+      const stacks = $('river-stacks').value.split(',').map(value => Number(value.trim()));
+      const cap = Math.min(...stacks);
+      if (!Number.isInteger(pot) || pot < 0 || stacks.length !== 2 || !Number.isInteger(cap) || cap < 1) return [];
+      if (cap < 2) return [cap];
+      return [...new Set([2, Math.min(cap, Math.max(2, Math.floor(pot / 2))), Math.min(cap, Math.max(2, pot)), cap])].sort((a, b) => a - b);
+    }
+    function updateRiverActionControls() {
+      const spot = $('river-spot').value;
+      $('river-prior-bet-wrap').hidden = spot === 'opening' || spot === 'checked_to_hero';
+      $('river-prior-raise-wrap').hidden = spot !== 'facing_raise';
+      replaceTargets('river-prior-bet', riverOpeningTargets());
+      const first = Number($('river-prior-bet').value);
+      const pot = Number($('river-pot').value);
+      const cap = Math.min(...$('river-stacks').value.split(',').map(value => Number(value.trim())));
+      const minimum = first * 2;
+      const potAfterCall = pot + first * 2;
+      const raises = !first || !Number.isInteger(cap) || cap <= first ? [] : cap < minimum ? [cap] :
+        [...new Set([minimum, Math.min(cap, first + Math.max(first, Math.floor(potAfterCall / 2))), Math.min(cap, first + Math.max(first, potAfterCall)), cap])].filter(value => value > first).sort((a, b) => a - b);
+      replaceTargets('river-prior-raise', raises);
+    }
+    $('run-river-analysis').onclick = async () => {
+      const button = $('run-river-analysis');
+      const status = $('analysis-status');
+      const output = $('river-output'); output.replaceChildren();
+      status.textContent = 'Solving this restricted game on CPU…'; status.className = 'muted'; button.disabled = true;
+      try {
+        const street = $('lab-street').value;
+        if (street === 'preflop') throw new Error('Preflop analysis is unavailable: no validated blueprint or full-hand CFR solve exists.');
+        if (street === 'flop') throw new Error('Flop-to-river search is experimental and not enabled for trainer feedback yet.');
+        const stacks = $('river-stacks').value.split(',').map(value => Number(value.trim()));
+        const payload = {
+          street,
+          board: $('river-board').value.trim(), hero_hand: $('river-hero').value.trim(),
+          pot: Number($('river-pot').value), stacks, iterations: Number($('river-iterations').value),
+          ranges: RangeEditor.payloadRanges(),
+        };
+        const targetText = $('river-nashconv-target').value.trim();
+        if (targetText !== '') payload.target_nash_conv_chips = Number(targetText);
+        if ($('river-spot').value === 'checked_to_hero') {
+          payload.first_actor = 1;
+          payload.river_actions = [{kind: 'check', amount: 0}];
+        }
+        if ($('river-spot').value === 'facing_bet') payload.river_actions = [
+          {kind: 'check', amount: 0}, {kind: 'bet', amount: Number($('river-prior-bet').value)},
+        ];
+        if ($('river-spot').value === 'facing_bet_first') {
+          payload.first_actor = 1;
+          payload.river_actions = [{kind: 'bet', amount: Number($('river-prior-bet').value)}];
+        }
+        if ($('river-spot').value === 'facing_raise') payload.river_actions = [
+          {kind: 'bet', amount: Number($('river-prior-bet').value)}, {kind: 'raise', amount: Number($('river-prior-raise').value)},
+        ];
+        const response = await fetch('/api/solve', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Analysis request failed');
+        renderRiverAnalysis(data);
+        status.textContent = `Analysis complete · restricted ${street} game`;
+      } catch (error) {
+        const message = document.createElement('p'); message.className = 'analysis-error'; message.textContent = error.message;
+        output.append(message); status.textContent = 'Analysis unavailable for this input'; status.className = 'analysis-error';
+      } finally { button.disabled = false; }
+    };
     $('new-hand').onclick = () => post('/api/new', {opponent: $('opponent').value});
+    function invalidateRiverAnalysis() {
+      $('river-output').textContent = 'Inputs changed. Run CFR+ analysis to see results for this position.';
+      $('analysis-status').textContent = 'Ready to analyze the edited position.';
+      $('analysis-status').className = 'muted';
+    }
+    RangeEditor.init(invalidateRiverAnalysis).catch(error => {
+      $('analysis-status').textContent = error.message;
+      $('analysis-status').className = 'analysis-error';
+      $('run-river-analysis').disabled = true;
+    });
+    for (const id of ['river-board', 'river-hero']) $(id).addEventListener('input', () => RangeEditor.refresh());
+    $('lab-street').addEventListener('change', () => {
+      const street = $('lab-street').value;
+      const cards = $('river-board').value.trim().split(/\s+/).filter(Boolean);
+      const count = {preflop: 0, flop: 3, turn: 4, river: 5}[street];
+      if (cards.length > count) $('river-board').value = cards.slice(0, count).join(' ');
+      $('board-hint').textContent = `Public board (${count} card${count === 1 ? '' : 's'} on ${street})`;
+      $('river-iterations').min = street === 'river' ? '20' : '1';
+      $('river-iterations').max = street === 'turn' ? '100' : street === 'flop' ? '3' : '5000';
+      $('river-iterations').value = street === 'turn' ? '20' : street === 'river' ? '500' : '1';
+      $('iteration-hint').textContent = street === 'turn' ? 'Iterations (turn: 1–100)' : street === 'river' ? 'Iterations (river: 20–5000)' : 'Experimental street unavailable';
+      if (street === 'turn') {
+        if (RangeEditor.currentPreset('hero') === 'river_demo_hero') RangeEditor.usePreset('hero', 'turn_mechanics_hero');
+        if (RangeEditor.currentPreset('opponent') === 'river_demo_opponent') RangeEditor.usePreset('opponent', 'turn_mechanics_opponent');
+      } else if (street === 'river') {
+        if (RangeEditor.currentPreset('hero') === 'turn_mechanics_hero') RangeEditor.usePreset('hero', 'river_demo_hero');
+        if (RangeEditor.currentPreset('opponent') === 'turn_mechanics_opponent') RangeEditor.usePreset('opponent', 'river_demo_opponent');
+      }
+      updateRiverActionControls(); RangeEditor.refresh();
+    });
+    for (const id of ['river-pot', 'river-stacks']) $(id).addEventListener('input', () => { updateRiverActionControls(); invalidateRiverAnalysis(); });
+    $('river-prior-bet').addEventListener('change', () => { updateRiverActionControls(); invalidateRiverAnalysis(); });
+    for (const id of ['river-spot', 'river-prior-raise', 'river-iterations', 'river-nashconv-target']) $(id).addEventListener('change', () => { updateRiverActionControls(); invalidateRiverAnalysis(); });
+    updateRiverActionControls();
     $('submit-wager').onclick = () => {
       const s = window.currentPokerState;
       const limits = s && s.betting_limits;
@@ -406,5 +984,6 @@
       });
     });
   </script>
+  <script src="/training.js"></script>
 </body>
 </html>

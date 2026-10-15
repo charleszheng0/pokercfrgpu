@@ -1,0 +1,83 @@
+{
+  "experiment": "short_budget_tiny_river_adapter_smoke",
+  "budget_ms_search_only": 10,
+  "board": "As Kh Qd 7c 2s",
+  "ranges": [
+    {
+      "hands": [
+        [
+          "Jc",
+          "Tc"
+        ],
+        [
+          "9h",
+          "9s"
+        ],
+        [
+          "3c",
+          "3d"
+        ]
+      ],
+      "weights": [
+        0.5,
+        0.25,
+        0.25
+      ]
+    },
+    {
+      "hands": [
+        [
+          "Jd",
+          "Td"
+        ],
+        [
+          "8h",
+          "8s"
+        ],
+        [
+          "4c",
+          "4d"
+        ]
+      ],
+      "weights": [
+        0.25,
+        0.25,
+        0.5
+      ]
+    }
+  ],
+  "pot": 8,
+  "effective_stack": 10,
+  "action_abstraction": [
+    "Action(kind='check', amount=0)",
+    "Action(kind='bet', amount=2)",
+    "Action(kind='bet', amount=4)",
+    "Action(kind='bet', amount=8)",
+    "Action(kind='bet', amount=10)"
+  ],
+  "status": "river_abstracted",
+  "validation_status": "tested_restricted_implementation",
+  "iterations": 3,
+  "search_latency_ms": 10.229584004264325,
+  "end_to_end_latency_ms": 20.11241699801758,
+  "acting_hand_action_frequencies": [
+    0.12294887642071987,
+    0.12180276949517466,
+    0.15907229811768742,
+    0.17478262861367364,
+    0.4213934273527445
+  ],
+  "acting_hand_action_evs_chips": [
+    6.959564642622909,
+    5.79268198073132,
+    7.599095355172462,
+    8.214362794062083,
+    3.708333333333333
+  ],
+  "acting_hand_check_ev_gap_chips": 1.2547981514391742,
+  "nash_conv_chips": 5.432092328735412,
+  "python": "3.10.6",
+  "machine": "arm64",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree_dirty": true
+}

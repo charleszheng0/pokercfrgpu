@@ -1,0 +1,123 @@
+{
+  "experiment": "seeded_experimental_gameplay_review",
+  "seed": 29,
+  "rules": {
+    "stacks": [
+      100,
+      100
+    ],
+    "blinds": [
+      1,
+      2
+    ],
+    "button": 0,
+    "opponent": "passive_call_check"
+  },
+  "decision": {
+    "hand": 1,
+    "index": 3,
+    "street": "river",
+    "board": [
+      "5s",
+      "4h",
+      "Js",
+      "Qh",
+      "2s"
+    ],
+    "hero_hand": [
+      "8s",
+      "Qc"
+    ],
+    "pot_before_street": 4,
+    "stacks_at_street_start": [
+      98,
+      98
+    ],
+    "street_actions": [
+      {
+        "kind": "check",
+        "amount": 0
+      }
+    ],
+    "chosen_action": {
+      "kind": "check",
+      "amount": 0
+    }
+  },
+  "result": {
+    "status": "experimental_assumed_range",
+    "label": "Experimental restricted river review \u00b7 assumed ranges",
+    "range_note": "Hero's observed hand versus three equally weighted illustrative opponent combinations. The opponent range is not inferred from betting history or calibrated to this opponent.",
+    "opponent_range": [
+      [
+        "Ac",
+        "Ad"
+      ],
+      [
+        "Kd",
+        "Kh"
+      ],
+      [
+        "9h",
+        "9s"
+      ]
+    ],
+    "actions": [
+      {
+        "kind": "check",
+        "amount": 0,
+        "frequency": 0.9999948556501822,
+        "ev_chips": -0.6666666666666666,
+        "ev_bb": -0.3333333333333333,
+        "ev_loss_chips": 0.0,
+        "ev_loss_bb": 0.0
+      },
+      {
+        "kind": "bet",
+        "amount": 2,
+        "frequency": 3.6752812525188047e-06,
+        "ev_chips": -5.606100629603356,
+        "ev_bb": -2.803050314801678,
+        "ev_loss_chips": 4.939433962936689,
+        "ev_loss_bb": 2.4697169814683444
+      },
+      {
+        "kind": "bet",
+        "amount": 4,
+        "frequency": 9.695680657800022e-07,
+        "ev_chips": -15.663906214292723,
+        "ev_bb": -7.8319531071463615,
+        "ev_loss_chips": 14.997239547626057,
+        "ev_loss_bb": 7.4986197738130285
+      },
+      {
+        "kind": "bet",
+        "amount": 98,
+        "frequency": 4.995004995004995e-07,
+        "ev_chips": -65.99989943389943,
+        "ev_bb": -32.999949716949715,
+        "ev_loss_chips": 65.33323276723276,
+        "ev_loss_bb": 32.66661638361638
+      }
+    ],
+    "selected_action_ev_loss_chips": 0.0,
+    "selected_action_ev_loss_bb": 0.0,
+    "nash_conv_chips": 7.175495411448907e-05,
+    "iterations": 1000,
+    "latency_ms": 838.7480829842389,
+    "joint_deals": 3,
+    "validation_status": "experimental_assumed_range_residual_measured",
+    "assumptions": [
+      "experimental_illustrative_prior: supplied priors must already reflect earlier public actions",
+      "Exact best response only inside this small abstract game",
+      "No safe re-solving or opponent counterfactual-value constraints",
+      "Bet fractions (0.5, 1.0); at most 1 raise(s) per street",
+      "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+      "Training enumerates public-card chance exactly"
+    ]
+  },
+  "hardware": "macOS-14.5-arm64-arm-64bit",
+  "python": "3.10.6",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "dirty_tree": true
+}

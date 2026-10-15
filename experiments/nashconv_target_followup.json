@@ -1,0 +1,158 @@
+{
+  "experiment": "nashconv_target_followup",
+  "date": "2026-10-14",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree_dirty": true,
+  "hardware": "macOS-14.5-arm64-arm-64bit",
+  "python": "3.10.6",
+  "method": "single local CPU run per target; Solver Lab analyzer; exact finite-game best-response NashConv checkpoints; CFR+",
+  "fixture": {
+    "board": [
+      "As",
+      "Kh",
+      "Qd",
+      "7c",
+      "2s"
+    ],
+    "hero_hand": [
+      "Jc",
+      "Tc"
+    ],
+    "pot": 20,
+    "stacks": [
+      100,
+      100
+    ],
+    "iterations_cap": 40,
+    "ranges": [
+      {
+        "hands": [
+          [
+            "Jc",
+            "Tc"
+          ],
+          [
+            "9c",
+            "8c"
+          ],
+          [
+            "4c",
+            "4d"
+          ]
+        ],
+        "weights": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "hands": [
+          [
+            "Ac",
+            "Ad"
+          ],
+          [
+            "Jh",
+            "Jd"
+          ],
+          [
+            "8h",
+            "8s"
+          ]
+        ],
+        "weights": [
+          1,
+          2,
+          1
+        ]
+      }
+    ]
+  },
+  "runs": [
+    {
+      "target_nash_conv_chips": 0.25,
+      "iterations": 40,
+      "nash_conv_chips": 4.314712234456257,
+      "status": "restricted_residual_measured",
+      "latency_ms": 525.89,
+      "trace": [
+        [
+          20,
+          10.00331488092125
+        ],
+        [
+          24,
+          9.193890079633654
+        ],
+        [
+          28,
+          5.729796459823679
+        ],
+        [
+          32,
+          5.797373959634039
+        ],
+        [
+          36,
+          6.341445199147774
+        ],
+        [
+          40,
+          4.314712234456257
+        ]
+      ]
+    },
+    {
+      "target_nash_conv_chips": 0.05,
+      "iterations": 40,
+      "nash_conv_chips": 4.314712234456257,
+      "status": "restricted_residual_measured",
+      "latency_ms": 499.52,
+      "trace": [
+        [
+          20,
+          10.00331488092125
+        ],
+        [
+          24,
+          9.193890079633654
+        ],
+        [
+          28,
+          5.729796459823679
+        ],
+        [
+          32,
+          5.797373959634039
+        ],
+        [
+          36,
+          6.341445199147774
+        ],
+        [
+          40,
+          4.314712234456257
+        ]
+      ]
+    },
+    {
+      "target_nash_conv_chips": 1000000,
+      "iterations": 20,
+      "nash_conv_chips": 10.00331488092125,
+      "status": "restricted_target_met",
+      "latency_ms": 282.52,
+      "trace": [
+        [
+          20,
+          10.00331488092125
+        ]
+      ]
+    }
+  ],
+  "limitations": [
+    "single run per condition",
+    "loose target verifies plumbing only",
+    "not representative of broader ranges or multi-street quality"
+  ]
+}

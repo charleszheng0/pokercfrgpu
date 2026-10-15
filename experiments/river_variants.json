@@ -1,0 +1,419 @@
+{
+  "experiment": "fixed_tiny_range_river_cfr_update_comparison",
+  "board": "As Kh Qd 7c 2s",
+  "ranges": [
+    [
+      [
+        "Jc",
+        "Tc"
+      ],
+      [
+        "9h",
+        "9s"
+      ],
+      [
+        "3c",
+        "3d"
+      ]
+    ],
+    [
+      [
+        "Jd",
+        "Td"
+      ],
+      [
+        "8h",
+        "8s"
+      ],
+      [
+        "4c",
+        "4d"
+      ]
+    ]
+  ],
+  "pot_chips": 8,
+  "effective_stack_chips": 10,
+  "abstraction": "min/half-pot/pot/all-in; one raise maximum",
+  "compatible_joint_deals": 9,
+  "checkpoints": [
+    {
+      "variant": "cfr",
+      "iterations": 20,
+      "cumulative_train_seconds": 0.0643359590030741,
+      "analysis_seconds_including_exact_nash_conv": 0.010178833006648347,
+      "nash_conv_chips": 2.0366267726712484,
+      "seat0_ev_chips": 0.016090527967878576,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.19943375804165242,
+        "Action(kind='bet', amount=2)": 0.12930099084813632,
+        "Action(kind='bet', amount=4)": 0.17047204991375017,
+        "Action(kind='bet', amount=8)": 0.1717159402235229,
+        "Action(kind='bet', amount=10)": 0.3290772609729382
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": -0.11888968523457336,
+        "Action(kind='bet', amount=2)": 0.1247763552588679,
+        "Action(kind='bet', amount=4)": 0.013371368705530354,
+        "Action(kind='bet', amount=8)": -0.013178517046411379,
+        "Action(kind='bet', amount=10)": -0.19600570721819893
+      },
+      "range_average_check_gap_chips": 0.24366604049344126,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.13524246518213942,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.174863972926892
+    },
+    {
+      "variant": "cfr",
+      "iterations": 100,
+      "cumulative_train_seconds": 0.323521541984519,
+      "analysis_seconds_including_exact_nash_conv": 0.009818040998652577,
+      "nash_conv_chips": 0.7512666195613515,
+      "seat0_ev_chips": 0.04727231907402896,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.22679522317438056,
+        "Action(kind='bet', amount=2)": 0.1877300464027336,
+        "Action(kind='bet', amount=4)": 0.21228535778233654,
+        "Action(kind='bet', amount=8)": 0.21526686664070627,
+        "Action(kind='bet', amount=10)": 0.15792250599984306
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": -0.04563064631322434,
+        "Action(kind='bet', amount=2)": 0.15868749045294053,
+        "Action(kind='bet', amount=4)": 0.13979093310186633,
+        "Action(kind='bet', amount=8)": -0.1499565690025784,
+        "Action(kind='bet', amount=10)": -0.34405863143976895
+      },
+      "range_average_check_gap_chips": 0.20431813676616487,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.03299149395666211,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.06316121333208248
+    },
+    {
+      "variant": "cfr",
+      "iterations": 500,
+      "cumulative_train_seconds": 1.8460089169966523,
+      "analysis_seconds_including_exact_nash_conv": 0.011211832985281944,
+      "nash_conv_chips": 0.3018106859502307,
+      "seat0_ev_chips": 0.10987742222336294,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.25312394837633007,
+        "Action(kind='bet', amount=2)": 0.29684095994577525,
+        "Action(kind='bet', amount=4)": 0.2879345740934277,
+        "Action(kind='bet', amount=8)": 0.09162580651069792,
+        "Action(kind='bet', amount=10)": 0.07047471107376906
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": -0.07755467542184925,
+        "Action(kind='bet', amount=2)": 0.19479092457353292,
+        "Action(kind='bet', amount=4)": 0.14632083320980918,
+        "Action(kind='bet', amount=8)": -0.18990062703520488,
+        "Action(kind='bet', amount=10)": -0.33306387903561757
+      },
+      "range_average_check_gap_chips": 0.27234559999538216,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.024515938240868132,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.09508524244070739
+    },
+    {
+      "variant": "cfr",
+      "iterations": 1000,
+      "cumulative_train_seconds": 3.6995121670188382,
+      "analysis_seconds_including_exact_nash_conv": 0.016091292025521398,
+      "nash_conv_chips": 0.20317379517421952,
+      "seat0_ev_chips": 0.1340220919107562,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.24959438671833442,
+        "Action(kind='bet', amount=2)": 0.3527772808280531,
+        "Action(kind='bet', amount=4)": 0.29657639796253826,
+        "Action(kind='bet', amount=8)": 0.06187013985663621,
+        "Action(kind='bet', amount=10)": 0.03918179463443805
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.036578727815482555,
+        "Action(kind='bet', amount=2)": 0.1864906165765521,
+        "Action(kind='bet', amount=4)": 0.15837978260416932,
+        "Action(kind='bet', amount=8)": -0.2204408053447509,
+        "Action(kind='bet', amount=10)": -0.32758464532938475
+      },
+      "range_average_check_gap_chips": 0.14991188876106956,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.015614592714187308,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.03239831537144755
+    },
+    {
+      "variant": "cfr",
+      "iterations": 2000,
+      "cumulative_train_seconds": 7.523480834031943,
+      "analysis_seconds_including_exact_nash_conv": 0.01129087500157766,
+      "nash_conv_chips": 0.138546260179379,
+      "seat0_ev_chips": 0.14889610194197467,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.24063656677902368,
+        "Action(kind='bet', amount=2)": 0.39152553665118817,
+        "Action(kind='bet', amount=4)": 0.3100803641224705,
+        "Action(kind='bet', amount=8)": 0.03770941023951216,
+        "Action(kind='bet', amount=10)": 0.02004812220780554
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.017530567018858138,
+        "Action(kind='bet', amount=2)": 0.1944257162696726,
+        "Action(kind='bet', amount=4)": 0.1641801134845833,
+        "Action(kind='bet', amount=8)": -0.18804248997330336,
+        "Action(kind='bet', amount=10)": -0.34047570215871487
+      },
+      "range_average_check_gap_chips": 0.17689514925081445,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.0,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.0
+    },
+    {
+      "variant": "cfr+",
+      "iterations": 20,
+      "cumulative_train_seconds": 0.07367520799743943,
+      "analysis_seconds_including_exact_nash_conv": 0.011494000005768612,
+      "nash_conv_chips": 1.1957953998998145,
+      "seat0_ev_chips": -0.02220423758922563,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.15327738348388908,
+        "Action(kind='bet', amount=2)": 0.15106881588632926,
+        "Action(kind='bet', amount=4)": 0.21306464412656964,
+        "Action(kind='bet', amount=8)": 0.23489737995461316,
+        "Action(kind='bet', amount=10)": 0.24769177654859892
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.023172005548000477,
+        "Action(kind='bet', amount=2)": -0.011051073878822539,
+        "Action(kind='bet', amount=4)": -0.005088392647492058,
+        "Action(kind='bet', amount=8)": -0.1514033267078523,
+        "Action(kind='bet', amount=10)": -0.2675955900298291
+      },
+      "range_average_check_gap_chips": 0.0,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.10305828656131226,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.19685454835307506
+    },
+    {
+      "variant": "cfr+",
+      "iterations": 100,
+      "cumulative_train_seconds": 0.37790495800436474,
+      "analysis_seconds_including_exact_nash_conv": 0.01127479100250639,
+      "nash_conv_chips": 0.3335780382929731,
+      "seat0_ev_chips": 0.10444138478707932,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.21874554075929964,
+        "Action(kind='bet', amount=2)": 0.25472826022055706,
+        "Action(kind='bet', amount=4)": 0.3252938655385658,
+        "Action(kind='bet', amount=8)": 0.15608588008691665,
+        "Action(kind='bet', amount=10)": 0.045146453394660814
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.042455179069686995,
+        "Action(kind='bet', amount=2)": 0.17928080969218743,
+        "Action(kind='bet', amount=4)": 0.14849786211216556,
+        "Action(kind='bet', amount=8)": -0.1485009257980663,
+        "Action(kind='bet', amount=10)": -0.3440180654604557
+      },
+      "range_average_check_gap_chips": 0.13682563062250044,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.023427278695347914,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.04256895735910063
+    },
+    {
+      "variant": "cfr+",
+      "iterations": 500,
+      "cumulative_train_seconds": 1.9207444580097217,
+      "analysis_seconds_including_exact_nash_conv": 0.010008832992753014,
+      "nash_conv_chips": 0.08269924714990806,
+      "seat0_ev_chips": 0.17104251200418374,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.1869119838508569,
+        "Action(kind='bet', amount=2)": 0.4671965103000111,
+        "Action(kind='bet', amount=4)": 0.3197771388470748,
+        "Action(kind='bet', amount=8)": 0.024156849616231255,
+        "Action(kind='bet', amount=10)": 0.0019575173858260623
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.011862090498695025,
+        "Action(kind='bet', amount=2)": 0.1962099619112581,
+        "Action(kind='bet', amount=4)": 0.1637999950495768,
+        "Action(kind='bet', amount=8)": -0.17644625205286138,
+        "Action(kind='bet', amount=10)": -0.35617538188282155
+      },
+      "range_average_check_gap_chips": 0.1843478714125631,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.007754301700530075,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.014623631104305562
+    },
+    {
+      "variant": "cfr+",
+      "iterations": 1000,
+      "cumulative_train_seconds": 3.828865666000638,
+      "analysis_seconds_including_exact_nash_conv": 0.011438041023211554,
+      "nash_conv_chips": 0.04592009136420516,
+      "seat0_ev_chips": 0.17885087979083908,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.1834567158760299,
+        "Action(kind='bet', amount=2)": 0.5474579928979866,
+        "Action(kind='bet', amount=4)": 0.25950826862144055,
+        "Action(kind='bet', amount=8)": 0.008923207643161738,
+        "Action(kind='bet', amount=10)": 0.0006538149613811653
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.019972584262186514,
+        "Action(kind='bet', amount=2)": 0.1923381836924239,
+        "Action(kind='bet', amount=4)": 0.16790643905764727,
+        "Action(kind='bet', amount=8)": -0.18753912975751091,
+        "Action(kind='bet', amount=10)": -0.35971117804083735
+      },
+      "range_average_check_gap_chips": 0.17236559943023738,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.0041051899240074855,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.0065347092181713695
+    },
+    {
+      "variant": "cfr+",
+      "iterations": 2000,
+      "cumulative_train_seconds": 7.806978416017955,
+      "analysis_seconds_including_exact_nash_conv": 0.013835957972332835,
+      "nash_conv_chips": 0.018383399691879077,
+      "seat0_ev_chips": 0.18080870114337283,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.18600082762655748,
+        "Action(kind='bet', amount=2)": 0.6271664012893867,
+        "Action(kind='bet', amount=4)": 0.1831608854809538,
+        "Action(kind='bet', amount=8)": 0.0034311839736813183,
+        "Action(kind='bet', amount=10)": 0.0002407016294205978
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.013736668776962228,
+        "Action(kind='bet', amount=2)": 0.18580347447425252,
+        "Action(kind='bet', amount=4)": 0.1719604895960876,
+        "Action(kind='bet', amount=8)": -0.19106988315716694,
+        "Action(kind='bet', amount=10)": -0.3598816990193828
+      },
+      "range_average_check_gap_chips": 0.1720668056972903,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.0,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.0
+    },
+    {
+      "variant": "dcfr",
+      "iterations": 20,
+      "cumulative_train_seconds": 0.08682458300609142,
+      "analysis_seconds_including_exact_nash_conv": 0.012455499992938712,
+      "nash_conv_chips": 1.7983463067649874,
+      "seat0_ev_chips": 0.16947194069260246,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.16359381649923718,
+        "Action(kind='bet', amount=2)": 0.10249659302638077,
+        "Action(kind='bet', amount=4)": 0.1775123701644129,
+        "Action(kind='bet', amount=8)": 0.2105390479725253,
+        "Action(kind='bet', amount=10)": 0.34585817233744387
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": -0.14619961551796415,
+        "Action(kind='bet', amount=2)": -0.11802406252727174,
+        "Action(kind='bet', amount=4)": 0.09971052989882415,
+        "Action(kind='bet', amount=8)": -0.10417795004997646,
+        "Action(kind='bet', amount=10)": -0.2287073680342933
+      },
+      "range_average_check_gap_chips": 0.2459101454167883,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.1523569976216777,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.30668895867079515
+    },
+    {
+      "variant": "dcfr",
+      "iterations": 100,
+      "cumulative_train_seconds": 0.42320070799905807,
+      "analysis_seconds_including_exact_nash_conv": 0.011992707994068041,
+      "nash_conv_chips": 0.45046336125245,
+      "seat0_ev_chips": 0.08774343331562051,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.2329680995816798,
+        "Action(kind='bet', amount=2)": 0.19687379157501433,
+        "Action(kind='bet', amount=4)": 0.3223513208178724,
+        "Action(kind='bet', amount=8)": 0.17192272012994703,
+        "Action(kind='bet', amount=10)": 0.07588406789548645
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.028470756403158777,
+        "Action(kind='bet', amount=2)": 0.19814633997456227,
+        "Action(kind='bet', amount=4)": 0.15835786259354093,
+        "Action(kind='bet', amount=8)": -0.12779687177831603,
+        "Action(kind='bet', amount=10)": -0.3358933357311365
+      },
+      "range_average_check_gap_chips": 0.1696755835714035,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.020524036980454862,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.05666047420726805
+    },
+    {
+      "variant": "dcfr",
+      "iterations": 500,
+      "cumulative_train_seconds": 2.1648156240116805,
+      "analysis_seconds_including_exact_nash_conv": 0.014065584022318944,
+      "nash_conv_chips": 0.10355368819743893,
+      "seat0_ev_chips": 0.17182743342606244,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.19056382687991116,
+        "Action(kind='bet', amount=2)": 0.48996222369493303,
+        "Action(kind='bet', amount=4)": 0.29461458394933665,
+        "Action(kind='bet', amount=8)": 0.024119489105919482,
+        "Action(kind='bet', amount=10)": 0.0007398763698996363
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.021081544928354127,
+        "Action(kind='bet', amount=2)": 0.18497386672683994,
+        "Action(kind='bet', amount=4)": 0.16828140482320222,
+        "Action(kind='bet', amount=8)": -0.16575203784618278,
+        "Action(kind='bet', amount=10)": -0.35013877054067605
+      },
+      "range_average_check_gap_chips": 0.1638923217984858,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.008357010348288313,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.0187053081394013
+    },
+    {
+      "variant": "dcfr",
+      "iterations": 1000,
+      "cumulative_train_seconds": 4.424036915006582,
+      "analysis_seconds_including_exact_nash_conv": 0.01180475001456216,
+      "nash_conv_chips": 0.05085556650924894,
+      "seat0_ev_chips": 0.18096441527801516,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.18491455158743939,
+        "Action(kind='bet', amount=2)": 0.5572131209855848,
+        "Action(kind='bet', amount=4)": 0.2538689966488129,
+        "Action(kind='bet', amount=8)": 0.003863682096600634,
+        "Action(kind='bet', amount=10)": 0.00013964868156231196
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.021953637300013543,
+        "Action(kind='bet', amount=2)": 0.18902703752609434,
+        "Action(kind='bet', amount=4)": 0.1655977193611158,
+        "Action(kind='bet', amount=8)": -0.1947722473244587,
+        "Action(kind='bet', amount=10)": -0.35736096523201827
+      },
+      "range_average_check_gap_chips": 0.1670734002260808,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.004559927349087418,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.01031490133887461
+    },
+    {
+      "variant": "dcfr",
+      "iterations": 2000,
+      "cumulative_train_seconds": 8.883302414993523,
+      "analysis_seconds_including_exact_nash_conv": 0.013973499997518957,
+      "nash_conv_chips": 0.019968585037927422,
+      "seat0_ev_chips": 0.18427162988989026,
+      "root_action_frequencies": {
+        "Action(kind='check', amount=0)": 0.1884361521106834,
+        "Action(kind='bet', amount=2)": 0.6610641545113861,
+        "Action(kind='bet', amount=4)": 0.1493518765126257,
+        "Action(kind='bet', amount=8)": 0.0011185294391029617,
+        "Action(kind='bet', amount=10)": 2.9287426201835698e-05
+      },
+      "root_conditional_action_evs_chips": {
+        "Action(kind='check', amount=0)": 0.027388103565826556,
+        "Action(kind='bet', amount=2)": 0.1886648961435234,
+        "Action(kind='bet', amount=4)": 0.1673536455429772,
+        "Action(kind='bet', amount=8)": -0.18445734598558408,
+        "Action(kind='bet', amount=10)": -0.3622931668083354
+      },
+      "range_average_check_gap_chips": 0.16127679257769684,
+      "mean_action_ev_abs_diff_vs_deepest_chips": 0.0,
+      "max_action_ev_abs_diff_vs_deepest_chips": 0.0
+    }
+  ],
+  "python": "3.10.6",
+  "machine": "arm64",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree_dirty": true
+}

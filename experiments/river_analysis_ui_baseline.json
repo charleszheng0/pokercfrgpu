@@ -1,0 +1,170 @@
+{
+  "experiment": "river_analysis_panel_smoke_benchmark",
+  "date": "2026-10-13",
+  "revision": "32d3fb353cc5338ac83e3e13a602762f5e2612f0",
+  "working_tree": "dirty; River Analysis implementation and docs not committed",
+  "platform": "macOS-14.5-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "methodology": "Single direct invocation of analyze_river_position(), the function used by POST /api/river-analysis; three supplied hands per seat, fixed river position, CFR+ trained to 250 and 500 iteration checkpoints; exact restricted-tree NashConv by best response. No random sampling in the solver.",
+  "request": {
+    "board": "As Kh Qd 7c 2s",
+    "hero_hand": "Jc Tc",
+    "pot": 20,
+    "stacks": [
+      100,
+      100
+    ],
+    "iterations": 500,
+    "ranges": [
+      {
+        "hands": [
+          [
+            "Jc",
+            "Tc"
+          ],
+          [
+            "9c",
+            "8c"
+          ],
+          [
+            "4c",
+            "4d"
+          ]
+        ],
+        "weights": [
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "hands": [
+          [
+            "Ac",
+            "Ad"
+          ],
+          [
+            "Jh",
+            "Jd"
+          ],
+          [
+            "8h",
+            "8s"
+          ]
+        ],
+        "weights": [
+          1,
+          2,
+          1
+        ]
+      }
+    ]
+  },
+  "result": {
+    "status": "restricted_river_analysis",
+    "label": "Restricted river game \u00b7 supplied ranges \u00b7 CFR+",
+    "validation_status": "exact NashConv for this finite restricted game",
+    "board": [
+      "As",
+      "Kh",
+      "Qd",
+      "7c",
+      "2s"
+    ],
+    "hero_hand": [
+      "Jc",
+      "Tc"
+    ],
+    "pot": 20,
+    "effective_stack": 100,
+    "iterations": 500,
+    "latency_ms": 2722.831207996933,
+    "nash_conv": 0.48939258145031284,
+    "nash_conv_halfway": 0.8284811043589655,
+    "nash_conv_trend": "decreased",
+    "nash_conv_delta": -0.33908852290865266,
+    "frequencies": [
+      {
+        "action": {
+          "kind": "check",
+          "amount": 0
+        },
+        "frequency": 0.0014022293020507217
+      },
+      {
+        "action": {
+          "kind": "bet",
+          "amount": 2
+        },
+        "frequency": 0.0009699223712556043
+      },
+      {
+        "action": {
+          "kind": "bet",
+          "amount": 10
+        },
+        "frequency": 0.015483888185822312
+      },
+      {
+        "action": {
+          "kind": "bet",
+          "amount": 20
+        },
+        "frequency": 0.10837371495777182
+      },
+      {
+        "action": {
+          "kind": "bet",
+          "amount": 100
+        },
+        "frequency": 0.8737702451830996
+      }
+    ],
+    "action_evs": [
+      {
+        "action": {
+          "kind": "check",
+          "amount": 0
+        },
+        "ev": 13.68049765364065,
+        "ev_loss": 13.121052043939912
+      },
+      {
+        "action": {
+          "kind": "bet",
+          "amount": 2
+        },
+        "ev": 14.265146481477004,
+        "ev_loss": 12.536403216103558
+      },
+      {
+        "action": {
+          "kind": "bet",
+          "amount": 10
+        },
+        "ev": 19.04766340368851,
+        "ev_loss": 7.753886293892052
+      },
+      {
+        "action": {
+          "kind": "bet",
+          "amount": 20
+        },
+        "ev": 24.63598879023361,
+        "ev_loss": 2.1655609073469506
+      },
+      {
+        "action": {
+          "kind": "bet",
+          "amount": 100
+        },
+        "ev": 26.801549697580562,
+        "ev_loss": 0.0
+      }
+    ],
+    "ev_basis": "conditional chip EV for the entered hero hand; opponent hands are weighted by supplied range and blockers; average CFR+ continuation policy",
+    "range_note": "Manual ranges are user-supplied beliefs. They are not inferred from betting history.",
+    "supported_state": "First-to-act on the river with no prior river actions; fixed board, supplied ranges, restricted bet sizes, one raise maximum."
+  }
+}
