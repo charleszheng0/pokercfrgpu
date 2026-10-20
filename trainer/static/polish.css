@@ -377,3 +377,52 @@ button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-v
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* Scenario-first shell: the poker table lives in the secondary game mode. */
+header .brand h1 { font-size: .76rem; letter-spacing: .035em; }
+.mode-nav { align-items: center; gap: 7px; }
+.mode-nav > #analysis-tab { min-height: 36px; padding-inline: 15px; }
+.mode-overflow { position: relative; }
+.mode-overflow > summary { min-height: 34px; padding: 8px 12px; border: 1px solid #343d50; border-radius: 6px; color: #aebbc8; background: #1b2232; cursor: pointer; font-size: .8rem; }
+.mode-overflow[open] { display: flex; align-items: center; gap: 3px; padding: 3px; border: 1px solid #343d50; border-radius: 8px; background: #1b2232; }
+.mode-overflow[open] > summary { border: 0; padding-inline: 8px; }
+.mode-overflow .mode-tab { padding: 7px 10px; font-size: .76rem; }
+#analysis-mode { width: min(1120px, 100%); justify-self: center; padding: 15px; gap: 10px; }
+#analysis-mode > .study-heading { align-items: center; margin-bottom: 0; }
+#analysis-mode > .study-heading h2 { font-size: 1rem; }
+#analysis-mode > .study-heading .tag { margin-left: auto; }
+#analysis-mode .lab-position-grid { grid-template-columns: 1.15fr 1.3fr .8fr .65fr .7fr 1fr; gap: 8px; }
+#analysis-mode .lab-position-grid label:first-child { grid-column: auto; }
+#analysis-mode .analysis-grid input, #analysis-mode .analysis-grid select, #analysis-mode .range-preset-row select { min-height: 36px; padding: 7px 9px; font-size: .82rem; }
+#analysis-mode .analysis-grid label { gap: 4px; font-size: .72rem; }
+#lab-street-support { margin: 0; font-size: .73rem; }
+#lab-range-source { display: inline-flex; width: fit-content; margin: 0; padding: 0; border: 0; background: transparent; color: #aebbc8; font-size: .73rem; }
+.range-preset-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 760px; }
+.range-preset-row label { display: grid; gap: 4px; color: #aebbc8; font-size: .73rem; }
+.range-preset-row small { color: #8f9eac; font: 11px ui-monospace, SFMono-Regular, Menlo, monospace; }
+#analysis-mode .lab-run { gap: 10px; margin-top: 0; }
+#analysis-mode .lab-run .new-hand { min-height: 38px; padding: 8px 22px; }
+#analysis-mode #analysis-status { font-size: .76rem; }
+#river-output { display: grid; gap: 7px; }
+#river-output .analysis-diagnostics { gap: 5px; }
+#river-output .diagnostic { padding: 5px 8px; font-size: .69rem; }
+#river-output .lab-action-row { min-height: 42px; grid-template-columns: minmax(100px, 1fr) minmax(70px, 2fr) 56px 100px; padding: 6px 10px; }
+#river-output .lab-range-result { padding: 10px; }
+#lab-advanced { margin-top: 2px; }
+#lab-advanced > summary { font-size: .75rem; }
+#analysis-mode .range-card { display: block; max-width: none; padding: 8px 0; border: 0; background: transparent; }
+#analysis-mode .range-card > .matrix-grid { width: min(560px, 100%); }
+#analysis-mode .combo-editor { max-width: 560px; }
+
+@media (max-width: 980px) {
+  #analysis-mode .lab-position-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #analysis-mode .lab-position-grid label:first-child { grid-column: span 2; }
+}
+@media (max-width: 700px) {
+  #analysis-mode { padding: 11px; }
+  #analysis-mode .lab-position-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #analysis-mode .lab-position-grid label:first-child { grid-column: span 2; }
+  .range-preset-row { grid-template-columns: 1fr; }
+  #river-output .lab-action-row { grid-template-columns: minmax(75px, 1fr) 56px 90px; }
+  #river-output .frequency-track { grid-column: 1 / -1; grid-row: 2; }
+}

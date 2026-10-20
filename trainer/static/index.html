@@ -179,16 +179,18 @@
 </head>
 <body>
   <header>
-    <div class="brand"><h1>HOLD’EM <span>STUDY TABLE</span></h1></div>
-    <span id="status" class="muted">Start a hand</span>
+    <div class="brand"><h1>POSTFLOP <span>SCENARIO LAB</span></h1></div>
+    <span id="status" class="muted">Enter a postflop spot</span>
   </header>
   <main>
     <nav class="mode-nav" aria-label="Application mode">
-      <button id="play-tab" class="mode-tab active" type="button">Play &amp; Learn</button>
-      <button id="analysis-tab" class="mode-tab" type="button">Solver Lab</button>
-      <button id="training-tab" class="mode-tab" type="button">ML Training</button>
+      <button id="analysis-tab" class="mode-tab active" type="button">Scenario Lab</button>
+      <details class="mode-overflow"><summary>Other</summary>
+        <button id="play-tab" class="mode-tab" type="button">Play &amp; Learn</button>
+        <button id="training-tab" class="mode-tab" type="button">ML Training</button>
+      </details>
     </nav>
-    <div id="game-mode">
+    <div id="game-mode" hidden>
     <section class="setup panel">
       <label for="opponent">Opponent</label>
       <select id="opponent"><option value="heuristic">Heuristic</option><option value="nfsp">NFSP · experimental checkpoint</option></select>
@@ -294,8 +296,8 @@
         </div>
       </div>
     </section>
-    <section id="analysis-mode" class="analysis-panel panel" hidden>
-      <div class="study-heading"><div><h2>Solver Lab</h2><p class="study-note">Set a river spot. Run CFR+.</p></div><span class="tag">Restricted river CFR+</span></div>
+    <section id="analysis-mode" class="analysis-panel panel">
+      <div class="study-heading"><h2>Scenario Lab</h2><span class="tag">Postflop · CPU CFR</span></div>
       <div class="analysis-grid lab-position-grid">
         <label>Scenario<select id="lab-quick-position"><option value="river_example">River · action unopened</option><option value="river_checked">River · checked to you</option><option value="river_bet">River · facing a bet</option><option value="fixed_demo">Saved river example</option><option value="turn_example">Turn · mechanics example</option><option value="custom">My scenario</option></select></label>
         <label><span id="board-hint">Public board (five cards on river)</span><input id="river-board" value="As Kh Qd 7c 2s" autocomplete="off"></label>
@@ -307,10 +309,14 @@
         <label id="river-prior-raise-wrap" hidden>Raise target<select id="river-prior-raise"></select></label>
       </div>
       <p id="lab-street-support" class="study-note">River · restricted bet sizes · assumed ranges</p>
-      <p id="lab-range-source" class="study-note">Illustrative ranges · not inferred from betting.</p>
+      <p id="lab-range-source" class="study-note">Assumed ranges · not inferred</p>
+      <div class="range-preset-row">
+        <label>Your range<select id="hero-preset"></select><small id="hero-range-summary"></small><span id="hero-preset-note" hidden></span></label>
+        <label>Opponent range<select id="opponent-preset"></select><small id="opponent-range-summary"></small><span id="opponent-preset-note" hidden></span></label>
+      </div>
       <div class="lab-run"><button id="run-river-analysis" class="new-hand" type="button" disabled>Analyze</button> <span id="analysis-status" class="muted">Ready</span></div>
-      <div id="river-output" class="analysis-results"><span class="empty">Choose a supported position and click Analyze to see action frequencies, EVs, and the range strategy map.</span></div>
-      <details id="lab-advanced" class="solver-details lab-advanced"><summary>Advanced · ranges and solver settings</summary>
+      <div id="river-output" class="analysis-results"><span class="empty">Action frequencies and EVs appear here.</span></div>
+      <details id="lab-advanced" class="solver-details lab-advanced"><summary>Edit ranges · solver settings</summary>
       <div class="analysis-grid lab-solver-settings">
         <label>Street<select id="lab-street"><option value="river">River · restricted solve</option><option value="turn">Turn · tiny-range exact chance</option><option value="flop">Flop · experimental, unavailable here</option><option value="preflop">Preflop · unavailable</option></select></label>
         <label>Stacks (chips)<input id="river-stacks" value="100, 100" autocomplete="off"></label>
@@ -320,17 +326,11 @@
       <div class="range-switch" role="group" aria-label="Range to edit"><button id="range-view-hero" class="active" type="button">Your range</button><button id="range-view-opponent" type="button">Opponent range</button><span class="muted">Select multiple cells · set one frequency</span></div>
       <div class="range-grid">
         <section id="hero-range-card" class="range-card" aria-label="Hero hand range">
-          <label>Assumed range<select id="hero-preset"></select></label>
-          <p id="hero-preset-note" class="study-note"></p>
-          <div id="hero-range-summary" class="study-note"></div>
           <div class="range-card-actions"><button id="hero-clear-range" class="plain-button" type="button">Clear range</button><button id="include-hero-hand" class="plain-button" type="button">Add my hand</button></div>
           <div id="hero-matrix" class="matrix-grid" role="grid" aria-label="Hero 13 by 13 hand matrix"></div>
           <div id="hero-combos" class="combo-editor"><span class="empty">Select a hand class to edit its suit combinations.</span></div>
         </section>
         <section id="opponent-range-card" class="range-card" aria-label="Opponent hand range" hidden>
-          <label>Assumed range<select id="opponent-preset"></select></label>
-          <p id="opponent-preset-note" class="study-note"></p>
-          <div id="opponent-range-summary" class="study-note"></div>
           <div class="range-card-actions"><button id="opponent-clear-range" class="plain-button" type="button">Clear range</button></div>
           <div id="opponent-matrix" class="matrix-grid" role="grid" aria-label="Opponent 13 by 13 hand matrix"></div>
           <div id="opponent-combos" class="combo-editor"><span class="empty">Select a hand class to edit its suit combinations.</span></div>
@@ -1045,8 +1045,8 @@
       } finally { button.disabled = false; button.textContent = 'Estimate action EVs'; }
     };
     function invalidateRiverAnalysis() {
-      $('river-output').textContent = 'Inputs changed. Run CFR+ analysis to see results for this position.';
-      $('analysis-status').textContent = 'Ready to analyze the edited position.';
+      $('river-output').textContent = 'Action frequencies and EVs appear here.';
+      $('analysis-status').textContent = 'Ready to analyze.';
       $('analysis-status').className = 'muted';
     }
     const labPositions = {
@@ -1067,7 +1067,7 @@
       $('lab-range-source').textContent = `${source} · ${hero} / ${opponent}`;
       $('lab-range-source').title = 'Ranges are supplied assumptions. Earlier bets do not update them automatically.';
     }
-    function loadLabPosition(id) {
+    function loadLabPosition(id, initial = false) {
       const position = labPositions[id];
       if (!position || !labRangesReady) return;
       loadingLabPosition = true;
@@ -1091,7 +1091,7 @@
         RangeEditor.refresh();
       } finally { loadingLabPosition = false; }
       updateLabRangeSource();
-      invalidateRiverAnalysis();
+      if (!initial) invalidateRiverAnalysis();
     }
     function markLabCustom() {
       if (loadingLabPosition || !labRangesReady) return;
@@ -1108,7 +1108,7 @@
     RangeEditor.init(() => {
       if (labRangesReady && !loadingLabPosition) markLabCustom();
       updateLabRangeSource(); invalidateRiverAnalysis();
-    }).then(() => { labRangesReady = true; loadLabPosition('river_example'); }).catch(error => {
+    }).then(() => { labRangesReady = true; loadLabPosition('river_example', true); }).catch(error => {
       $('analysis-status').textContent = error.message;
       $('analysis-status').className = 'analysis-error';
       $('run-river-analysis').disabled = true;

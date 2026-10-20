@@ -1,2 +1,3 @@
 # Optional manager/editor/reviewer orchestration for the poker project.
 openai-agents>=0.24.0,<0.25
+pytest>=8.0,<10

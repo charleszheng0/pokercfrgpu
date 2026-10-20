@@ -21,7 +21,7 @@ The manager is prompted to perform one edit, one review, and at most one correct
 Use Python 3.10 or newer and install the optional SDK dependency:
 
 ```bash
-python3 -m pip install -r requirements-agents.txt
+python -m pip install -r requirements-agents.txt
 export OPENAI_API_KEY="your-api-key"
 ```
 
@@ -62,3 +62,23 @@ Use `--keep-workspace` to retain the temporary copy for inspection. Do not put t
 The editor and reviewer do not share a spontaneous side conversation. The SDK manager sends each a task input, receives the tool result, and decides the next call. The reviewer sees the diff through read-only workspace tools; if it finds a blocker, the manager can pass that feedback to the editor for one revision. The final answer is still produced by the manager.
 
 The first useful learning exercise is a dry run, followed by one small task with `--keep-workspace`. Inspect the generated patch and trace before increasing autonomy or widening the available tools.
+
+## Postflop solver manager
+
+The repository now has an ordered manager queue dedicated to the heads-up postflop Scenario Lab. It deliberately excludes preflop and gameplay work. The queue covers: a compact street/action-specific tree and references, chance-aware flop/turn/river coverage, convergence and independent validation, measured study-spot selection, the minimal Scenario Lab UI, and a final release gate. It keeps range, chance, and tree limits until measured profiling supports increasing them. See `agent_workflow/postflop_plan.py` for the exact objectives and acceptance criteria.
+
+Run a no-API dry run first:
+
+```bash
+python -m agent_workflow.cli --repo . --postflop-manager --dry-run
+```
+
+After installing `requirements-agents.txt` and setting `OPENAI_API_KEY` in the launching terminal, start a bounded run:
+
+```bash
+python -m agent_workflow.cli --repo . --postflop-manager --max-cycles 6 --hours 2 --keep-workspace
+```
+
+Each cycle uses the manager to direct the editor and independent read-only reviewer. The CLI then runs Python and browser checks itself. It advances only when both checks pass and the manager reports explicit completion and reviewer approval markers. A failed check, missing approval, API error, cycle limit, or time limit stops the run and writes a report under `artifacts/agent_runs/`. Proposed source edits stay in the isolated workspace and are exported as one reviewable patch; the manager never applies them to the user's checkout. This is software-development orchestration, not CFR/NFSP training, and it cannot run while this computer is asleep.
+
+The model/API key was not present when this workflow was implemented, so only its offline dry-run and local tests can be verified here. A live manager/editor/reviewer cycle requires the user to install the optional SDK and provide the key in their own terminal.

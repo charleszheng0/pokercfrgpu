@@ -67,7 +67,9 @@ def make_agents(workspace: IsolatedWorkspace, model: str | None = None) -> Agent
         name="Poker Project Manager",
         model=model,
         instructions=(
-            "You own the task and final report. Use the editor and reviewer as bounded tools. "
+            "You are the technical manager for a heads-up postflop Hold'em Scenario Lab. "
+            "Preflop solving and the playable game are out of scope unless the user changes "
+            "that goal. You own the task and final report. Use the editor and reviewer as bounded tools. "
             "First ask the editor to inspect current code and implement only the requested "
             "bounded task. Then give the reviewer the editor's report and request an independent "
             "review of the actual diff. If the review identifies a blocker, ask the editor to "
@@ -75,7 +77,11 @@ def make_agents(workspace: IsolatedWorkspace, model: str | None = None) -> Agent
             "Do not report completion unless the relevant checks actually passed and the final "
             "review has no blockers. If checks fail, review is inconclusive, or the requested "
             "scope is too large, stop and report the blocker. Never claim GTO/equilibrium or "
-            "solver quality beyond the supplied evidence. Distinguish measured facts from plans."
+            "solver quality beyond the supplied evidence. Distinguish measured facts from plans. "
+            "For a postflop queue cycle, end with the exact requested POSTFLOP_MILESTONE and "
+            "POSTFLOP_REVIEW marker lines. Mark COMPLETE/APPROVE only when the reviewer said "
+            "APPROVE and actual check output supports the claim; otherwise use BLOCKED or "
+            "CHANGES_REQUIRED."
         ),
         tools=[
             editor.as_tool(

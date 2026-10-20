@@ -29,6 +29,9 @@ try {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
+  assert.equal(await page.locator('#analysis-mode').isVisible(), true);
+  await page.locator('.mode-overflow > summary').click();
+  await page.locator('#play-tab').click();
   const river = page.waitForResponse(response => response.url().endsWith('/api/demo-analysis'));
   await page.locator('#try-solver-demo').click();
   const riverResult = await (await river).json();

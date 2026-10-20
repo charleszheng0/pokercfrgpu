@@ -49,11 +49,19 @@ try {
     if (request.url().endsWith('/api/demo-analysis')) solveRequests++;
   });
   await page.goto(base + '/', {waitUntil: 'networkidle'});
-  assert.equal(await page.locator('#play-layout').isVisible(), true);
+  assert.equal(await page.locator('#analysis-mode').isVisible(), true);
+  assert.equal(await page.locator('#play-layout').isVisible(), false);
+  assert.equal(await page.locator('#analysis-tab').innerText(), 'Scenario Lab');
+  assert.equal(await page.locator('#hero-preset').isVisible(), true);
+  assert.equal(await page.locator('#river-output').isVisible(), true);
+  await page.locator('.mode-overflow > summary').click();
   await page.locator('#training-tab').click();
   assert.equal(await page.locator('#training-mode').isVisible(), true);
   assert.equal(await page.locator('#train-learning_rate').inputValue(), '0.001');
+  await page.locator('.mode-overflow > summary').click();
+  await page.locator('.mode-overflow > summary').click();
   await page.locator('#play-tab').click();
+  assert.equal(await page.locator('#play-layout').isVisible(), true);
   const responsePromise = page.waitForResponse(response =>
     response.url().endsWith('/api/demo-analysis') && response.request().method() === 'POST');
   await page.getByRole('button', {name: 'Try Solver Demo'}).click();
@@ -172,7 +180,7 @@ try {
       latency_ms: responseData.analysis.latency_ms};
   }
   assert.ok((await page.locator('#solver-review-list').innerText()).includes('Unsupported: preflop'));
-  await page.getByRole('button', {name: 'Solver Lab', exact: true}).click();
+  await page.getByRole('button', {name: 'Scenario Lab', exact: true}).click();
   assert.equal(await page.locator('#lab-advanced').evaluate(node => node.open), false);
   assert.equal(await page.locator('#lab-quick-position').isVisible(), true);
   assert.equal(await page.locator('#lab-effective-stack').inputValue(), '100');

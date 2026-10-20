@@ -1,0 +1,822 @@
+{
+  "experiment": "same_game_bet_tree_menu_probe",
+  "date": "2026-10-20",
+  "revision": "33f7750da43aacf9cbfa5461335dd157b8a74c81",
+  "working_tree": "dirty",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "python": "3.14.6 | packaged by Anaconda, Inc. | (main, Jul  9 2026, 14:30:20) [Clang 20.1.8 ]",
+  "methodology": "One fixed river request, equal-weight explicit two-combo ranges, exact joint deals, 100 CFR+ iterations, exact finite-game NashConv; three sequential runs per menu with rank cache cleared before each. This compares two abstractions, so NashConv values are not expected to certify the same game or imply full no-limit quality.",
+  "summary": {
+    "baseline": {
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 10
+        },
+        {
+          "kind": "bet",
+          "amount": 20
+        },
+        {
+          "kind": "bet",
+          "amount": 40
+        }
+      ],
+      "root_action_count": 5,
+      "median_wall_latency_ms": 339.58191599231213,
+      "nash_conv_chips_by_run": [
+        2.1470689143149864,
+        2.1470689143149864,
+        2.1470689143149864
+      ],
+      "selected_hand_action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.010763139049626995,
+          "ev_chips": 16.629793493140912
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00029702707258584575,
+          "ev_chips": 13.909991386532639
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.017994048711222278,
+          "ev_chips": 19.98569948825802
+        },
+        {
+          "kind": "bet",
+          "amount": 20,
+          "frequency": 0.32586364544393026,
+          "ev_chips": 23.457227434885738
+        },
+        {
+          "kind": "bet",
+          "amount": 40,
+          "frequency": 0.6450821397226346,
+          "ev_chips": 23.693942326244
+        }
+      ]
+    },
+    "shark_inspired": {
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 6
+        },
+        {
+          "kind": "bet",
+          "amount": 13
+        },
+        {
+          "kind": "bet",
+          "amount": 20
+        },
+        {
+          "kind": "bet",
+          "amount": 40
+        }
+      ],
+      "root_action_count": 5,
+      "median_wall_latency_ms": 214.35916604241356,
+      "nash_conv_chips_by_run": [
+        2.0344217489081347,
+        2.0344217489081347,
+        2.0344217489081347
+      ],
+      "selected_hand_action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.006305816790763848,
+          "ev_chips": 17.634200794992747
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0011588031155544414,
+          "ev_chips": 16.05540577131532
+        },
+        {
+          "kind": "bet",
+          "amount": 13,
+          "frequency": 0.06858986696938832,
+          "ev_chips": 22.32576664028928
+        },
+        {
+          "kind": "bet",
+          "amount": 20,
+          "frequency": 0.30501290601334896,
+          "ev_chips": 23.39817690828616
+        },
+        {
+          "kind": "bet",
+          "amount": 40,
+          "frequency": 0.6189326071109446,
+          "ev_chips": 23.71241832357255
+        }
+      ]
+    }
+  },
+  "runs": {
+    "baseline": [
+      {
+        "status": "supported_restricted_game",
+        "iterations": 100,
+        "compatible_joint_deals": 4,
+        "action_count": 5,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 2
+          },
+          {
+            "kind": "bet",
+            "amount": 10
+          },
+          {
+            "kind": "bet",
+            "amount": 20
+          },
+          {
+            "kind": "bet",
+            "amount": 40
+          }
+        ],
+        "restricted_nash_conv_chips": 2.1470689143149864,
+        "solver_latency_ms": 415.0574579834938,
+        "wall_latency_ms": 415.0877919746563,
+        "selected_hand": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.010763139049626995,
+            "ev_chips": 16.629793493140912
+          },
+          {
+            "kind": "bet",
+            "amount": 2,
+            "frequency": 0.00029702707258584575,
+            "ev_chips": 13.909991386532639
+          },
+          {
+            "kind": "bet",
+            "amount": 10,
+            "frequency": 0.017994048711222278,
+            "ev_chips": 19.98569948825802
+          },
+          {
+            "kind": "bet",
+            "amount": 20,
+            "frequency": 0.32586364544393026,
+            "ev_chips": 23.457227434885738
+          },
+          {
+            "kind": "bet",
+            "amount": 40,
+            "frequency": 0.6450821397226346,
+            "ev_chips": 23.693942326244
+          }
+        ],
+        "request": {
+          "board": [
+            "As",
+            "Kh",
+            "Qd",
+            "7c",
+            "2s"
+          ],
+          "pot_chips": 20,
+          "stacks": [
+            40,
+            40
+          ],
+          "ranges": [
+            {
+              "hands": [
+                [
+                  "Jc",
+                  "Tc"
+                ],
+                [
+                  "8h",
+                  "8s"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            },
+            {
+              "hands": [
+                [
+                  "9h",
+                  "9s"
+                ],
+                [
+                  "Ac",
+                  "Ad"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            }
+          ],
+          "iterations": 100
+        }
+      },
+      {
+        "status": "supported_restricted_game",
+        "iterations": 100,
+        "compatible_joint_deals": 4,
+        "action_count": 5,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 2
+          },
+          {
+            "kind": "bet",
+            "amount": 10
+          },
+          {
+            "kind": "bet",
+            "amount": 20
+          },
+          {
+            "kind": "bet",
+            "amount": 40
+          }
+        ],
+        "restricted_nash_conv_chips": 2.1470689143149864,
+        "solver_latency_ms": 319.3357920390554,
+        "wall_latency_ms": 319.36712499009445,
+        "selected_hand": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.010763139049626995,
+            "ev_chips": 16.629793493140912
+          },
+          {
+            "kind": "bet",
+            "amount": 2,
+            "frequency": 0.00029702707258584575,
+            "ev_chips": 13.909991386532639
+          },
+          {
+            "kind": "bet",
+            "amount": 10,
+            "frequency": 0.017994048711222278,
+            "ev_chips": 19.98569948825802
+          },
+          {
+            "kind": "bet",
+            "amount": 20,
+            "frequency": 0.32586364544393026,
+            "ev_chips": 23.457227434885738
+          },
+          {
+            "kind": "bet",
+            "amount": 40,
+            "frequency": 0.6450821397226346,
+            "ev_chips": 23.693942326244
+          }
+        ],
+        "request": {
+          "board": [
+            "As",
+            "Kh",
+            "Qd",
+            "7c",
+            "2s"
+          ],
+          "pot_chips": 20,
+          "stacks": [
+            40,
+            40
+          ],
+          "ranges": [
+            {
+              "hands": [
+                [
+                  "Jc",
+                  "Tc"
+                ],
+                [
+                  "8h",
+                  "8s"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            },
+            {
+              "hands": [
+                [
+                  "9h",
+                  "9s"
+                ],
+                [
+                  "Ac",
+                  "Ad"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            }
+          ],
+          "iterations": 100
+        }
+      },
+      {
+        "status": "supported_restricted_game",
+        "iterations": 100,
+        "compatible_joint_deals": 4,
+        "action_count": 5,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 2
+          },
+          {
+            "kind": "bet",
+            "amount": 10
+          },
+          {
+            "kind": "bet",
+            "amount": 20
+          },
+          {
+            "kind": "bet",
+            "amount": 40
+          }
+        ],
+        "restricted_nash_conv_chips": 2.1470689143149864,
+        "solver_latency_ms": 339.55833298387006,
+        "wall_latency_ms": 339.58191599231213,
+        "selected_hand": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.010763139049626995,
+            "ev_chips": 16.629793493140912
+          },
+          {
+            "kind": "bet",
+            "amount": 2,
+            "frequency": 0.00029702707258584575,
+            "ev_chips": 13.909991386532639
+          },
+          {
+            "kind": "bet",
+            "amount": 10,
+            "frequency": 0.017994048711222278,
+            "ev_chips": 19.98569948825802
+          },
+          {
+            "kind": "bet",
+            "amount": 20,
+            "frequency": 0.32586364544393026,
+            "ev_chips": 23.457227434885738
+          },
+          {
+            "kind": "bet",
+            "amount": 40,
+            "frequency": 0.6450821397226346,
+            "ev_chips": 23.693942326244
+          }
+        ],
+        "request": {
+          "board": [
+            "As",
+            "Kh",
+            "Qd",
+            "7c",
+            "2s"
+          ],
+          "pot_chips": 20,
+          "stacks": [
+            40,
+            40
+          ],
+          "ranges": [
+            {
+              "hands": [
+                [
+                  "Jc",
+                  "Tc"
+                ],
+                [
+                  "8h",
+                  "8s"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            },
+            {
+              "hands": [
+                [
+                  "9h",
+                  "9s"
+                ],
+                [
+                  "Ac",
+                  "Ad"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            }
+          ],
+          "iterations": 100
+        }
+      }
+    ],
+    "shark_inspired": [
+      {
+        "status": "supported_restricted_game",
+        "iterations": 100,
+        "compatible_joint_deals": 4,
+        "action_count": 5,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 6
+          },
+          {
+            "kind": "bet",
+            "amount": 13
+          },
+          {
+            "kind": "bet",
+            "amount": 20
+          },
+          {
+            "kind": "bet",
+            "amount": 40
+          }
+        ],
+        "restricted_nash_conv_chips": 2.0344217489081347,
+        "solver_latency_ms": 204.3192500132136,
+        "wall_latency_ms": 204.34300001943484,
+        "selected_hand": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.006305816790763848,
+            "ev_chips": 17.634200794992747
+          },
+          {
+            "kind": "bet",
+            "amount": 6,
+            "frequency": 0.0011588031155544414,
+            "ev_chips": 16.05540577131532
+          },
+          {
+            "kind": "bet",
+            "amount": 13,
+            "frequency": 0.06858986696938832,
+            "ev_chips": 22.32576664028928
+          },
+          {
+            "kind": "bet",
+            "amount": 20,
+            "frequency": 0.30501290601334896,
+            "ev_chips": 23.39817690828616
+          },
+          {
+            "kind": "bet",
+            "amount": 40,
+            "frequency": 0.6189326071109446,
+            "ev_chips": 23.71241832357255
+          }
+        ],
+        "request": {
+          "board": [
+            "As",
+            "Kh",
+            "Qd",
+            "7c",
+            "2s"
+          ],
+          "pot_chips": 20,
+          "stacks": [
+            40,
+            40
+          ],
+          "ranges": [
+            {
+              "hands": [
+                [
+                  "Jc",
+                  "Tc"
+                ],
+                [
+                  "8h",
+                  "8s"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            },
+            {
+              "hands": [
+                [
+                  "9h",
+                  "9s"
+                ],
+                [
+                  "Ac",
+                  "Ad"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            }
+          ],
+          "iterations": 100
+        }
+      },
+      {
+        "status": "supported_restricted_game",
+        "iterations": 100,
+        "compatible_joint_deals": 4,
+        "action_count": 5,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 6
+          },
+          {
+            "kind": "bet",
+            "amount": 13
+          },
+          {
+            "kind": "bet",
+            "amount": 20
+          },
+          {
+            "kind": "bet",
+            "amount": 40
+          }
+        ],
+        "restricted_nash_conv_chips": 2.0344217489081347,
+        "solver_latency_ms": 214.33695900486782,
+        "wall_latency_ms": 214.35916604241356,
+        "selected_hand": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.006305816790763848,
+            "ev_chips": 17.634200794992747
+          },
+          {
+            "kind": "bet",
+            "amount": 6,
+            "frequency": 0.0011588031155544414,
+            "ev_chips": 16.05540577131532
+          },
+          {
+            "kind": "bet",
+            "amount": 13,
+            "frequency": 0.06858986696938832,
+            "ev_chips": 22.32576664028928
+          },
+          {
+            "kind": "bet",
+            "amount": 20,
+            "frequency": 0.30501290601334896,
+            "ev_chips": 23.39817690828616
+          },
+          {
+            "kind": "bet",
+            "amount": 40,
+            "frequency": 0.6189326071109446,
+            "ev_chips": 23.71241832357255
+          }
+        ],
+        "request": {
+          "board": [
+            "As",
+            "Kh",
+            "Qd",
+            "7c",
+            "2s"
+          ],
+          "pot_chips": 20,
+          "stacks": [
+            40,
+            40
+          ],
+          "ranges": [
+            {
+              "hands": [
+                [
+                  "Jc",
+                  "Tc"
+                ],
+                [
+                  "8h",
+                  "8s"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            },
+            {
+              "hands": [
+                [
+                  "9h",
+                  "9s"
+                ],
+                [
+                  "Ac",
+                  "Ad"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            }
+          ],
+          "iterations": 100
+        }
+      },
+      {
+        "status": "supported_restricted_game",
+        "iterations": 100,
+        "compatible_joint_deals": 4,
+        "action_count": 5,
+        "actions": [
+          {
+            "kind": "check",
+            "amount": 0
+          },
+          {
+            "kind": "bet",
+            "amount": 6
+          },
+          {
+            "kind": "bet",
+            "amount": 13
+          },
+          {
+            "kind": "bet",
+            "amount": 20
+          },
+          {
+            "kind": "bet",
+            "amount": 40
+          }
+        ],
+        "restricted_nash_conv_chips": 2.0344217489081347,
+        "solver_latency_ms": 271.7860830016434,
+        "wall_latency_ms": 271.81245799874887,
+        "selected_hand": [
+          {
+            "kind": "check",
+            "amount": 0,
+            "frequency": 0.006305816790763848,
+            "ev_chips": 17.634200794992747
+          },
+          {
+            "kind": "bet",
+            "amount": 6,
+            "frequency": 0.0011588031155544414,
+            "ev_chips": 16.05540577131532
+          },
+          {
+            "kind": "bet",
+            "amount": 13,
+            "frequency": 0.06858986696938832,
+            "ev_chips": 22.32576664028928
+          },
+          {
+            "kind": "bet",
+            "amount": 20,
+            "frequency": 0.30501290601334896,
+            "ev_chips": 23.39817690828616
+          },
+          {
+            "kind": "bet",
+            "amount": 40,
+            "frequency": 0.6189326071109446,
+            "ev_chips": 23.71241832357255
+          }
+        ],
+        "request": {
+          "board": [
+            "As",
+            "Kh",
+            "Qd",
+            "7c",
+            "2s"
+          ],
+          "pot_chips": 20,
+          "stacks": [
+            40,
+            40
+          ],
+          "ranges": [
+            {
+              "hands": [
+                [
+                  "Jc",
+                  "Tc"
+                ],
+                [
+                  "8h",
+                  "8s"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            },
+            {
+              "hands": [
+                [
+                  "9h",
+                  "9s"
+                ],
+                [
+                  "Ac",
+                  "Ad"
+                ]
+              ],
+              "weights": [
+                0.5,
+                0.5
+              ]
+            }
+          ],
+          "iterations": 100
+        }
+      }
+    ]
+  },
+  "limitations": [
+    "single river position and tiny ranges",
+    "different abstractions define different finite games",
+    "100 iterations is a latency/tree probe, not a convergence gate",
+    "no external solver comparison"
+  ]
+}

@@ -23,7 +23,14 @@ IGNORED_DIRS = {
     ".venv",
     "venv",
     "node_modules",
+    # Large generated caches are intentionally omitted from agent inventories.
+    # A manager can still read a specific artifact by its known path.
+    "cfr_scenario_cache",
+    "cfr_scenario_worker",
+    "offline_training",
+    "solution_cache",
 }
+UNLISTED_SUFFIXES = {".pt", ".pyc", ".png", ".jpg", ".jpeg", ".webp"}
 BLOCKED_PARTS = {".git", ".ssh"}
 BLOCKED_NAMES = {".env", ".env.local", "id_rsa", "id_ed25519"}
 BLOCKED_SUFFIXES = {".pem", ".key", ".p12", ".pfx"}
@@ -104,8 +111,13 @@ class IsolatedWorkspace:
             return f"Not found: {subdirectory}"
         files: list[str] = []
         for directory, dirnames, filenames in os.walk(path):
-            dirnames[:] = sorted(name for name in dirnames if name not in IGNORED_DIRS)
+            if Path(subdirectory) == Path(".") and Path(directory) == path:
+                dirnames[:] = sorted(name for name in dirnames if name not in IGNORED_DIRS | {"artifacts"})
+            else:
+                dirnames[:] = sorted(name for name in dirnames if name not in IGNORED_DIRS)
             for filename in sorted(filenames):
+                if Path(filename).suffix.lower() in UNLISTED_SUFFIXES:
+                    continue
                 full_path = Path(directory) / filename
                 files.append(str(full_path.relative_to(self._snapshot_path)))
                 if len(files) >= 400:
@@ -176,7 +188,7 @@ class IsolatedWorkspace:
         result = self._git(["diff", "--cached", "--no-ext-diff", "--binary", "HEAD", "--"])
         return result.stdout or "(no changes)"
 
-    def run_check(self, check_id: str) -> str:
+    def run_check(self, check_id: str, timeout_seconds: float = MAX_COMMAND_SECONDS) -> str:
         commands: dict[str, list[str]] = {
             "python_tests": [sys.executable, "-m", "pytest", "-q"],
             "browser_demo": ["npm", "run", "test:browser"],
@@ -185,6 +197,9 @@ class IsolatedWorkspace:
         command = commands.get(check_id)
         if command is None:
             return "Unknown check. Allowed IDs: python_tests, browser_demo, browser_showcase."
+        timeout = min(MAX_COMMAND_SECONDS, max(0.0, timeout_seconds))
+        if timeout <= 0:
+            return f"{check_id}: skipped because the manager time budget is exhausted."
         check_env = os.environ.copy()
         for name in tuple(check_env):
             upper = name.upper()
@@ -198,14 +213,14 @@ class IsolatedWorkspace:
                 text=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                timeout=MAX_COMMAND_SECONDS,
+                timeout=timeout,
                 check=False,
             )
         except subprocess.TimeoutExpired as exc:
             tail = (exc.stdout or "")
             if isinstance(tail, bytes):
                 tail = tail.decode("utf-8", errors="replace")
-            return f"{check_id}: timed out after {MAX_COMMAND_SECONDS}s.\n{tail[-6000:]}"
+            return f"{check_id}: timed out after {timeout:g}s.\n{tail[-6000:]}"
         except FileNotFoundError as exc:
             return f"{check_id}: command unavailable: {exc}"
         output = result.stdout[-12_000:]

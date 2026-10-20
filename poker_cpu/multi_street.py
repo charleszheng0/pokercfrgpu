@@ -50,7 +50,9 @@ class MultiStreetGame:
 
     def __init__(self, board, ranges, *, pot=8, stack=10, button=0,
                  big_blind=2, range_weights=None, bet_fractions=(0.5, 1.0),
-                 max_raises=1):
+                 raise_fractions=None, bet_fractions_by_street=None,
+                 raise_fractions_by_street=None, max_raises=1,
+                 include_min_size=True):
         self.board = parse_cards(board)
         if len(self.board) not in (3, 4, 5):
             raise ValueError("Postflop solve requires a flop, turn, or river board")
@@ -60,9 +62,32 @@ class MultiStreetGame:
             raise ValueError("Invalid blind or button")
         if type(max_raises) is not int or max_raises < 0:
             raise ValueError("max_raises must be nonnegative")
-        fractions = tuple(float(value) for value in bet_fractions)
-        if any(not isfinite(value) or value <= 0 for value in fractions):
-            raise ValueError("Bet fractions must be positive finite values")
+        def checked_fractions(values, label):
+            values = tuple(float(value) for value in values)
+            if any(not isfinite(value) or value <= 0 for value in values):
+                raise ValueError(f"{label} fractions must be positive finite values")
+            return values
+
+        fractions = checked_fractions(bet_fractions, "Bet")
+        raise_fractions = checked_fractions(
+            fractions if raise_fractions is None else raise_fractions, "Raise")
+        street_ids = {"flop": 1, "turn": 2, "river": 3}
+
+        def checked_street_map(values, fallback, label):
+            result = {street: fallback for street in street_ids.values()}
+            for street_name, street_fractions in (values or {}).items():
+                if street_name not in street_ids:
+                    raise ValueError(f"Unknown {label.lower()} sizing street: {street_name}")
+                result[street_ids[street_name]] = checked_fractions(
+                    street_fractions, label)
+            return result
+
+        self.bet_fractions_by_street = checked_street_map(
+            bet_fractions_by_street, fractions, "Bet")
+        self.raise_fractions_by_street = checked_street_map(
+            raise_fractions_by_street, raise_fractions, "Raise")
+        if type(include_min_size) is not bool:
+            raise ValueError("include_min_size must be Boolean")
         if len(ranges) != 2 or not all(ranges):
             raise ValueError("Two nonempty private ranges are required")
         if range_weights is None:
@@ -89,6 +114,8 @@ class MultiStreetGame:
         self.pot, self.stack, self.big_blind = pot, stack, big_blind
         self.button = button
         self.bet_fractions = fractions
+        self.raise_fractions = raise_fractions
+        self.include_min_size = include_min_size
         self.max_raises = max_raises
         self.street = ("preflop", "flop", "turn", "river")[len(self.board) - 2]
         # Per-game caches avoid retaining every prior solve through a global
@@ -122,12 +149,16 @@ class MultiStreetGame:
             return tuple(actions)
         minimum = highest + state.last_raise
         pot_after_call = self.pot + sum(state.spent) + owed
-        targets = {cap} if cap < minimum else {minimum, cap}
+        targets = {cap}
+        if cap >= minimum and self.include_min_size:
+            targets.add(minimum)
+        kind = "raise" if owed else "bet"
+        fractions = (self.raise_fractions_by_street[state.street] if owed
+                     else self.bet_fractions_by_street[state.street])
         if cap >= minimum:
-            for fraction in self.bet_fractions:
+            for fraction in fractions:
                 target = highest + max(state.last_raise, int(pot_after_call * fraction))
                 targets.add(min(cap, target))
-        kind = "raise" if owed else "bet"
         return tuple(actions + [Action(kind, target) for target in sorted(targets)
                                 if target > highest])
 

@@ -1,5 +1,11 @@
 # Measured benchmarks
 
+## Action-tree menu probe — 2026-10-20
+
+`python -m experiments.compare_bet_tree_menus` compares the unchanged default abstraction with the new Shark-inspired per-street menu on the same fixed river request. Three sequential 100-iteration CFR+ runs per condition used the `As Kh Qd 7c 2s` board, 20-chip pot, 40-chip effective stacks, two equally weighted combos per player, four compatible deals, exact chance, and exact finite-game NashConv. Median wall time was **339.58 ms** for the default menu and **214.36 ms** for the Shark-inspired menu. Both had five root choices. NashConv was **2.147069 chips** for the default tree and **2.034422 chips** for the Shark-inspired tree in all three repeats; per-hand action frequencies and EVs are saved in [compare_bet_tree_menus.json](../experiments/compare_bet_tree_menus.json).
+
+These are different abstract games, so their NashConv values are not a head-to-head accuracy comparison. One tiny river position at 100 iterations does not show the preset is strategically stronger or scales to full ranges. It only verifies deterministic output and gives an initial runtime observation; turn/flop branching and memory remain unmeasured.
+
 ## Scheduled training and solver cache smoke (2026-10-14)
 
 On Apple M2/Python 3.10.6, a disposable 24-hand NFSP run using a 16×16 network, batch 4, and checkpoints every eight hands produced policy losses 1.3391/1.2409/1.2874; the four-hand-per-opponent evaluations are too small for a strength conclusion and no model was promoted. A separate 32-hand smoke with a 20-iteration CFR+ solve of the fixed explicit-range river demo measured 2.09864-chip exact restricted NashConv in 0.0505 seconds and failed the 0.1-chip cache gate. A headless Chrome end-to-end run rendered a 2,000-iteration demo solution with 0.080251-chip NashConv and 5,433.7 ms reported solve latency, then sampled an action from its cached hand strategy. These are single smoke runs, not latency distributions or general strategy-quality estimates. The Python suite passed 95 tests; the Chrome browser suite passed.

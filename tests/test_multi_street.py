@@ -4,12 +4,55 @@ import unittest
 import weakref
 
 from poker_cpu.engine import Action
-from poker_cpu.multi_street import MultiStreetGame
+from poker_cpu.multi_street import MultiStreetGame, PublicState
 from poker_cpu.one_street_solver import OneStreetGame
 from poker_cpu.river_solver import RiverCFR, RiverGame, RiverState
 
 
 class MultiStreetTests(unittest.TestCase):
+    def test_per_street_bet_and_raise_menus_are_distinct_and_stack_capped(self):
+        hero, opponent = ("Jc", "Tc"), ("9h", "9s")
+        game = MultiStreetGame(
+            "As Kh Qd", ((hero,), (opponent,)), pot=8, stack=50, button=1,
+            bet_fractions=(0.5, 1.0), raise_fractions=(0.5, 1.0),
+            bet_fractions_by_street={"flop": (0.5, 1.0), "turn": (1 / 3, 2 / 3, 1.0)},
+            raise_fractions_by_street={"flop": (1.0,), "turn": (0.5, 1.0)},
+            include_min_size=False,
+        )
+        flop_root = game.initial_state()
+        self.assertEqual(game.legal(flop_root), (
+            Action("check"), Action("bet", 4), Action("bet", 8), Action("bet", 50)))
+        facing_flop_bet = game.advance(flop_root, Action("bet", 4))
+        self.assertEqual(game.legal(facing_flop_bet), (
+            Action("fold"), Action("call"), Action("raise", 20), Action("raise", 50)))
+
+        turn_root = PublicState(street=2, board=("As", "Kh", "Qd", "7c"), current=0)
+        self.assertEqual(game.legal(turn_root), (
+            Action("check"), Action("bet", 2), Action("bet", 5), Action("bet", 8),
+            Action("bet", 50)))
+        facing_turn_bet = game.advance(turn_root, Action("bet", 5))
+        self.assertEqual(game.legal(facing_turn_bet), (
+            Action("fold"), Action("call"), Action("raise", 14), Action("raise", 23),
+            Action("raise", 50)))
+
+    def test_shark_style_tree_uses_street_specific_bet_and_raise_fractions(self):
+        from poker_cpu.solve import ActionAbstraction
+
+        abstraction = ActionAbstraction.shark_style_postflop()
+        self.assertEqual(abstraction.sizes_for("flop", "bet"), (0.5, 1.0))
+        self.assertEqual(abstraction.sizes_for("turn", "bet"), (1 / 3, 2 / 3, 1.0))
+        self.assertEqual(abstraction.sizes_for("river", "raise"), (0.5, 1.0))
+        self.assertFalse(abstraction.include_min_size)
+
+    def test_sizing_maps_reject_unknown_streets_and_nonfinite_fractions(self):
+        hero, opponent = ("Jc", "Tc"), ("9h", "9s")
+        with self.assertRaisesRegex(ValueError, "Unknown bet sizing street"):
+            MultiStreetGame("As Kh Qd", ((hero,), (opponent,)),
+                            bet_fractions_by_street={"preflop": (0.5,)})
+        with self.assertRaisesRegex(ValueError, "positive finite"):
+            MultiStreetGame("As Kh Qd", ((hero,), (opponent,)),
+                            raise_fractions_by_street={"flop": (float("nan"),)})
+
     def test_per_game_caches_release_finished_solve(self):
         game = MultiStreetGame("As Kh Qd 7c", ((("8h", "8s"),),
                                               (("9h", "9s"),)),

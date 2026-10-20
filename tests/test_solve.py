@@ -9,6 +9,22 @@ from poker_cpu.solve import (ActionAbstraction, BettingContext, SolveRequest,
 
 
 class SharedSolverTests(unittest.TestCase):
+    def test_shark_style_abstraction_reaches_shared_solver_action_tree(self):
+        request = SolveRequest(
+            board=("As", "Kh", "Qd", "7c"), street="turn",
+            pot_before_street=9, stacks_at_street_start=(50, 50),
+            betting=BettingContext(button=1, first_actor=0, current_player=0),
+            ranges=(WeightedRange((("Jc", "Tc"),), (1.0,)),
+                    WeightedRange((("9h", "9s"),), (1.0,))),
+            abstraction=ActionAbstraction.shark_style_postflop(),
+            config=SolverConfig(iterations=1, max_joint_deals=2),
+        )
+        result = solve(request)
+        self.assertEqual(result.status, "supported_restricted_game")
+        self.assertEqual(result.actions, (Action("check"), Action("bet", 3),
+                                          Action("bet", 6), Action("bet", 9),
+                                          Action("bet", 50)))
+
     @staticmethod
     def ranges():
         return (

@@ -30,6 +30,44 @@ class BettingContext:
 class ActionAbstraction:
     bet_fractions: tuple[float, ...] = (0.5, 1.0)
     max_raises: int = 1
+    raise_fractions: Optional[tuple[float, ...]] = None
+    bet_fractions_by_street: tuple[tuple[str, tuple[float, ...]], ...] = ()
+    raise_fractions_by_street: tuple[tuple[str, tuple[float, ...]], ...] = ()
+    include_min_size: bool = True
+
+    def sizes_for(self, street: str, action: str) -> tuple[float, ...]:
+        """Return the configured pot-fraction sizes for one street/action."""
+        if street not in ("flop", "turn", "river"):
+            raise ValueError("Sizing is only defined for postflop streets")
+        if action not in ("bet", "raise"):
+            raise ValueError("Sizing action must be bet or raise")
+        rows = self.bet_fractions_by_street if action == "bet" else self.raise_fractions_by_street
+        overrides = dict(rows)
+        if street in overrides:
+            return overrides[street]
+        if action == "raise" and self.raise_fractions is not None:
+            return self.raise_fractions
+        return self.bet_fractions
+
+    @classmethod
+    def shark_style_postflop(cls, max_raises: int = 1) -> "ActionAbstraction":
+        """Small, documented Shark 2.0-inspired menu; not a reproduced solver tree."""
+        return cls(
+            bet_fractions=(0.5, 1.0),
+            max_raises=max_raises,
+            raise_fractions=(1.0,),
+            bet_fractions_by_street=(
+                ("flop", (0.5, 1.0)),
+                ("turn", (1 / 3, 2 / 3, 1.0)),
+                ("river", (1 / 3, 2 / 3, 1.0)),
+            ),
+            raise_fractions_by_street=(
+                ("flop", (1.0,)),
+                ("turn", (0.5, 1.0)),
+                ("river", (0.5, 1.0)),
+            ),
+            include_min_size=False,
+        )
 
 
 @dataclass(frozen=True)
@@ -258,7 +296,11 @@ def solve(request: SolveRequest) -> SolveResult:
                 big_blind=request.big_blind,
                 range_weights=tuple(belief.weights for belief in ranges),
                 bet_fractions=request.abstraction.bet_fractions,
+                raise_fractions=request.abstraction.raise_fractions,
+                bet_fractions_by_street=dict(request.abstraction.bet_fractions_by_street),
+                raise_fractions_by_street=dict(request.abstraction.raise_fractions_by_street),
                 max_raises=request.abstraction.max_raises,
+                include_min_size=request.abstraction.include_min_size,
             )
         if len(game.deals) > request.config.max_joint_deals:
             return _unsupported(street, f"{len(game.deals)} compatible deals exceed the configured {request.config.max_joint_deals}-deal CPU limit")
@@ -349,7 +391,11 @@ def solve(request: SolveRequest) -> SolveResult:
         range_assumption,
         "Exact best response only inside this small abstract game",
         "No safe re-solving or opponent counterfactual-value constraints",
-        f"Bet fractions {request.abstraction.bet_fractions}; at most {request.abstraction.max_raises} raise(s) per street",
+        ("Bet/raise sizing: " + "; ".join(
+            f"{street} bet={request.abstraction.sizes_for(street, 'bet')} "
+            f"raise={request.abstraction.sizes_for(street, 'raise')}"
+            for street in ("flop", "turn", "river")) +
+         f"; at most {request.abstraction.max_raises} raise(s) per street"),
         "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
         ("No betting after the current street; remaining board runouts are enumerated exactly"
          if cutoff else
