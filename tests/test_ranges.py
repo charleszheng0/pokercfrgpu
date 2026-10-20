@@ -4,6 +4,7 @@ from poker_cpu.range_inference import infer_ranges
 from poker_cpu.ranges import canonical_hand, hand_class, preset_catalog, preset_range
 from poker_cpu.river_solver import WeightedRange
 from poker_cpu.engine import HoldemGame
+from trainer.demo import DEMO_RIVER_REQUEST
 
 
 class RangeModelTests(unittest.TestCase):
@@ -19,6 +20,14 @@ class RangeModelTests(unittest.TestCase):
         self.assertAlmostEqual(sum(sample.weights), 1)
         self.assertEqual(hand_class(("Tc", "Jc")), "JTs")
         self.assertEqual(canonical_hand(("Jh", "Jd")), ("Jd", "Jh"))
+
+    def test_fixed_demo_presets_match_the_saved_demo_position(self):
+        board = DEMO_RIVER_REQUEST["board"].split()
+        for seat, preset_id in enumerate(("fixed_demo_hero", "fixed_demo_opponent")):
+            belief = preset_range(preset_id, dead_cards=board)
+            expected = {canonical_hand(hand) for hand in DEMO_RIVER_REQUEST["ranges"][seat]["hands"]}
+            self.assertEqual(set(belief.hands), expected)
+            self.assertEqual(len(belief.hands), 2)
 
     def test_public_history_updates_action_likelihoods_and_card_removal(self):
         priors = (

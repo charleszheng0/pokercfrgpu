@@ -52,6 +52,16 @@ const editor = context.window.RangeEditor;
   const defaultRanges = editor.payloadRanges();
   assert.strictEqual(defaultRanges[0].hands.length, 3);
   assert.strictEqual(defaultRanges[1].hands.length, 3);
+  const selectClass = label => elements.get('hero-matrix').children.find(cell => cell.textContent === label).onclick();
+  selectClass('AKs');
+  selectClass('AQs');
+  assert.deepStrictEqual(Array.from(editor.selectedClasses('hero')), ['AKs', 'AQs']);
+  elements.get('hero-combos').children[1].children[2].onclick(); // 50% for both selected classes
+  assert(elements.get('hero-range-summary').textContent.includes('7 combos'));
+  elements.get('hero-combos').children[1].children[0].onclick(); // clear both without changing other classes
+  assert.strictEqual(editor.payloadRanges()[0].hands.length, 3);
+  selectClass('AKs');
+  assert.deepStrictEqual(Array.from(editor.selectedClasses('hero')), ['AQs']);
   elements.get('river-board').value = 'As Kh Qd 7c Ac';
   editor.refresh();
   assert.strictEqual(editor.payloadRanges()[1].hands.length, 2);
@@ -59,7 +69,7 @@ const editor = context.window.RangeEditor;
   elements.get('opponent-preset').value = 'overlap_opponent';
   elements.get('opponent-preset').onchange();
   assert.strictEqual(editor.payloadRanges()[1].hands.length, 2);
-  assert(elements.get('opponent-range-summary').textContent.includes('1 possible with the entered hand'));
+  assert(elements.get('opponent-range-summary').textContent.includes('1 compatible'));
   const seen = new Set();
   for (let row = 0; row < 13; row++) for (let col = 0; col < 13; col++) {
     const combos = editor.combosFor(editor.labelFor(row, col));

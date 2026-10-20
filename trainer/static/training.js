@@ -28,6 +28,8 @@
     const state = data.status || {};
     $('training-state').textContent = state.state || 'idle';
     $('training-state').title = state.error || '';
+    $('training-start').disabled = ['running', 'waiting'].includes(state.state);
+    $('training-stop').disabled = !['running', 'waiting'].includes(state.state);
     $('training-progress').textContent = state.progress
       ? `${state.progress.hands} hands · ${state.progress.elapsed_seconds.toFixed(1)} s · policy loss ${state.progress.policy_loss?.toFixed(4) ?? 'pending'} · held-out loss ${state.progress.validation_policy_loss?.toFixed(4) ?? 'pending'} · Q loss ${state.progress.q_loss?.toFixed(4) ?? 'pending'}`
       : state.error || (state.last_run ? `Latest completed: ${state.last_run}` : 'No run yet.');
@@ -43,6 +45,19 @@
       loaded = true;
     }
     const history = [...(data.history || [])].reverse();
+    const latest = history[0];
+    const summary = $('training-summary'); summary.replaceChildren();
+    const metrics = [
+      ['Self-play', state.progress ? `${state.progress.hands} hands` : latest ? `${latest.training_hands} hands` : '—'],
+      ['Vs heuristic', latest ? `${latest.evaluation.find(e => e.opponent === 'heuristic')?.mean_chips_per_hand.toFixed(2) ?? '—'} chips/hand` : '—'],
+      ['Active version', data.active?.run_id ? data.active.run_id.replace(/^run-/, '').slice(0, 13) : 'Preset model'],
+    ];
+    metrics.forEach(([label, value]) => {
+      const item = document.createElement('div'); item.className = 'metric';
+      const name = document.createElement('span'); name.textContent = label;
+      const number = document.createElement('strong'); number.textContent = value;
+      item.append(name, number); summary.append(item);
+    });
     const box = $('training-history'); box.replaceChildren();
     if (!history.length) box.textContent = 'No completed runs yet.';
     history.forEach(run => {
@@ -57,13 +72,54 @@
     });
     const curve = $('training-curve'); curve.replaceChildren();
     const points = data.current_run?.curves || history[0]?.curves || [];
-    points.forEach(point => {
-      const bar = document.createElement('div'); bar.className = 'training-bar';
-      const loss = point.policy_loss;
-      bar.style.height = `${loss == null ? 10 : Math.max(8, Math.min(140, 135 / (1 + loss)))}px`;
-      bar.title = `${point.hands} hands · policy loss ${loss?.toFixed(4) ?? 'pending'} · Q loss ${point.q_loss?.toFixed(4) ?? 'pending'}`;
-      curve.append(bar);
-    });
+    if (!points.length) {
+      curve.textContent = 'Curves appear after the first checkpoint.';
+    } else {
+      const series = [
+        ['Policy loss', 'policy_loss', '#72cfa9'],
+        ['Held-out loss', 'validation_policy_loss', '#e4c37e'],
+        ['Q loss', 'q_loss', '#8bb8ed'],
+      ];
+      const numbers = series.flatMap(([, key]) => points.map(p => p[key]).filter(Number.isFinite));
+      if (!numbers.length) { curve.textContent = 'Losses pending'; return; }
+      const min = Math.min(...numbers), max = Math.max(...numbers);
+      const span = Math.max(max - min, .01), width = 720, height = 150;
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      svg.setAttribute('aria-hidden', 'true');
+      for (let step = 0; step <= 2; step++) {
+        const line = document.createElementNS(svg.namespaceURI, 'line');
+        const y = 12 + step * 62;
+        for (const [key, value] of Object.entries({x1: 10, x2: 710, y1: y, y2: y, stroke: '#38465b', 'stroke-width': 1})) line.setAttribute(key, value);
+        svg.append(line);
+      }
+      for (const [, key, color] of series) {
+        const valid = points.map((point, index) => [index, point[key]]).filter(([, value]) => Number.isFinite(value));
+        if (!valid.length) continue;
+        const polyline = document.createElementNS(svg.namespaceURI, 'polyline');
+        const x = index => 10 + index * 700 / Math.max(1, points.length - 1);
+        const y = value => 137 - (value - min) * 124 / span;
+        polyline.setAttribute('points', valid.map(([index, value]) => `${x(index)},${y(value)}`).join(' '));
+        polyline.setAttribute('fill', 'none'); polyline.setAttribute('stroke', color);
+        polyline.setAttribute('stroke-width', '2.6'); polyline.setAttribute('stroke-linecap', 'round');
+        polyline.setAttribute('stroke-linejoin', 'round'); svg.append(polyline);
+        for (const [index, value] of valid) {
+          const dot = document.createElementNS(svg.namespaceURI, 'circle');
+          dot.setAttribute('cx', x(index)); dot.setAttribute('cy', y(value));
+          dot.setAttribute('r', '3.5'); dot.setAttribute('fill', color); svg.append(dot);
+        }
+      }
+      curve.append(svg);
+      const legend = document.createElement('div'); legend.className = 'training-legend';
+      series.forEach(([label, key, color]) => {
+        if (!points.some(point => Number.isFinite(point[key]))) return;
+        const item = document.createElement('span'); item.style.setProperty('--series-color', color);
+        const last = [...points].reverse().find(point => Number.isFinite(point[key]));
+        item.textContent = `${label} ${last[key].toFixed(3)}`; legend.append(item);
+      });
+      curve.append(legend);
+    }
   }
   async function refresh() {
     try { const response = await fetch('/api/training/status'); render(await response.json()); }

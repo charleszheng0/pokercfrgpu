@@ -100,7 +100,9 @@ class SolveResult:
     search_latency_ms: Optional[float] = None
     latency_ms: Optional[float] = None
     joint_deals: int = 0
+    big_blind: int = 2
     root_paid: tuple[int, int] = (0, 0)
+    decision_ev_offset_chips: float = 0.0
     root_history: tuple[Action, ...] = ()
     chance_sampling: bool = False
     sampling_seed: Optional[int] = None
@@ -383,7 +385,8 @@ def solve(request: SolveRequest) -> SolveResult:
         target_nash_conv_chips=target,
         search_latency_ms=search_ms,
         latency_ms=(perf_counter() - started) * 1000,
-        joint_deals=len(game.deals), root_paid=root.paid,
+        joint_deals=len(game.deals), big_blind=request.big_blind, root_paid=root.paid,
+        decision_ev_offset_chips=request.pot_before_street / 2 + root.paid[root.current],
         root_history=request.betting.street_actions,
         chance_sampling=request.config.chance_sampling,
         sampling_seed=request.config.sampling_seed if request.config.chance_sampling else None,

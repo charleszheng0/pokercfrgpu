@@ -1,6 +1,7 @@
 """Local HTTP table; all state transitions use poker_cpu.engine.HoldemGame."""
 
 import argparse
+from copy import deepcopy
 import json
 import secrets
 import time
@@ -16,8 +17,10 @@ from poker_cpu.cards import parse_cards
 from poker_cpu.engine import Action, HoldemGame
 from poker_cpu.ranges import canonical_hand, preset_catalog
 from poker_cpu.river_solver import WeightedRange
+from poker_cpu.rollout_feedback import estimate_action_evs
 from poker_cpu.solve import BettingContext, SolveRequest, SolverConfig, request_from_game, solve
 from .demo import DEMO_DESCRIPTION, DEMO_RIVER_REQUEST
+from .recruiter_demo import HANDS as SHOWCASE_HANDS, new_game as new_showcase_game
 from .solve_debug import log_event
 from . import offline_training
 from .solution_cache import demo_solution, sample_demo_action
@@ -93,6 +96,9 @@ def analyze_river_position(payload):
     street = payload.get("street", "river")
     if street not in ("flop", "turn", "river"):
         raise ValueError("Unsupported state: only postflop research solves are available")
+    range_source = payload.get("range_source", "manual_assumption")
+    if range_source not in ("manual_assumption", "illustrative_preset", "fixed_demo_inputs", "offline_sampled_range"):
+        raise ValueError("Unknown range source")
     try:
         board = parse_cards(payload.get("board", ""))
         hero_hand = canonical_hand(payload.get("hero_hand", ""))
@@ -168,7 +174,7 @@ def analyze_river_position(payload):
             max_time_ms=10000 if street != "river" else None,
             allow_experimental_flop=payload.get("allow_experimental_flop") is True,
         ),
-        acting_hand=hero_hand, range_source="manual_assumption",
+        acting_hand=hero_hand, range_source=range_source,
     ))
     if report.status != "supported_restricted_game":
         if "Selected hand has no compatible" in report.reason:
@@ -183,6 +189,8 @@ def analyze_river_position(payload):
                   "frequency": row.frequency} for row in hero_rows]
     ev_rows = [{"action": {"kind": row.action.kind, "amount": row.action.amount},
                 "ev": row.ev_chips, "ev_bb": row.ev_bb,
+                "decision_ev": row.ev_chips + report.decision_ev_offset_chips,
+                "decision_ev_bb": (row.ev_chips + report.decision_ev_offset_chips) / report.big_blind,
                 "ev_loss": row.ev_loss_chips,
                 "ev_loss_bb": row.ev_loss_bb} for row in hero_rows]
     delta = report.nash_conv_chips - report.halfway_nash_conv_chips
@@ -219,6 +227,8 @@ def analyze_river_position(payload):
         "nash_conv_delta": delta,
         "frequencies": freq_rows,
         "action_evs": ev_rows,
+        "decision_ev_basis": "Expected chips won from this decision onward, net of future wagers; chips already in the pot and prior street wagers are sunk. Fold is zero when available.",
+        "decision_ev_offset_chips": report.decision_ev_offset_chips,
         "per_hand": [
             {"hand": row.hand, "marginal_probability": row.marginal_probability,
              "actions": [{"kind": estimate.action.kind,
@@ -226,6 +236,8 @@ def analyze_river_position(payload):
                           "frequency": estimate.frequency,
                           "ev": estimate.ev_chips,
                           "ev_bb": estimate.ev_bb,
+                          "decision_ev": estimate.ev_chips + report.decision_ev_offset_chips,
+                          "decision_ev_bb": (estimate.ev_chips + report.decision_ev_offset_chips) / report.big_blind,
                           "ev_loss": estimate.ev_loss_chips,
                           "ev_loss_bb": estimate.ev_loss_bb}
                          for estimate in row.actions]}
@@ -234,12 +246,21 @@ def analyze_river_position(payload):
         "aggregate_strategy": [
             {"kind": row.action.kind, "amount": row.action.amount,
              "frequency": row.frequency, "ev": row.ev_chips,
-             "ev_bb": row.ev_bb, "ev_loss": row.ev_loss_chips,
+             "ev_bb": row.ev_bb,
+             "decision_ev": row.ev_chips + report.decision_ev_offset_chips,
+             "decision_ev_bb": (row.ev_chips + report.decision_ev_offset_chips) / report.big_blind,
+             "ev_loss": row.ev_loss_chips,
              "ev_loss_bb": row.ev_loss_bb}
             for row in report.aggregate_actions
         ],
-        "ev_basis": "conditional chip EV for the entered hero hand; opponent hands are weighted by supplied range and blockers; average CFR+ continuation policy",
-        "range_note": "Manual ranges are user-supplied beliefs. They are not inferred from betting history.",
+        "ev_basis": "Internal zero-sum pot-centered conditional chip EV for the entered hero hand; opponent hands are weighted by supplied range and blockers; average CFR+ continuation policy",
+        "range_source": range_source,
+        "range_note": {
+            "manual_assumption": "Manual ranges are user-supplied beliefs. They are not inferred from betting history.",
+            "illustrative_preset": "Illustrative preset ranges are assumptions. They are not inferred from betting history.",
+            "fixed_demo_inputs": "Fixed saved demo ranges apply only to the matching demonstration position. They are not inferred from betting history.",
+            "offline_sampled_range": "Offline worker sampled this range distribution for a random river scenario. It does not model a real player's range.",
+        }[range_source],
         "supported_state": f"{street.capitalize()} decision after the supplied abstract action history; pot is the amount before {street} betting, and supplied ranges must already reflect observed actions. Restricted bet sizes and one raise maximum.",
     }
 
@@ -284,24 +305,32 @@ def experimental_review_ranges(request):
             WeightedRange(opponent, tuple(1.0 for _ in opponent)))
 
 
-def serialize_experimental_review(report, ranges):
+def serialize_experimental_review(report, ranges, chosen_action):
     if report.status != "supported_restricted_game":
         return {"status": "unsupported", "reason": report.reason}
     hand = report.selected_hand
+    selected = next(row for row in hand.actions if row.action == chosen_action)
     return {
         "status": "experimental_assumed_range",
         "label": (f"Experimental {report.street} review · assumed ranges" +
                   (" · no later betting" if report.street in ("flop", "turn") else "")),
         "range_note": "Hero's observed hand versus three equally weighted illustrative opponent combinations. The opponent range is not inferred from betting history or calibrated to this opponent.",
         "solver_scope_note": report.reason,
+        "decision_ev_basis": "Expected chips won from this decision onward, net of future wagers; prior wagers are sunk. Fold is zero when available.",
+        "decision_ev_offset_chips": report.decision_ev_offset_chips,
         "opponent_range": ranges[1].hands,
         "actions": [
             {"kind": row.action.kind, "amount": row.action.amount,
              "frequency": row.frequency, "ev_chips": row.ev_chips,
-             "ev_bb": row.ev_bb, "ev_loss_chips": row.ev_loss_chips,
+             "ev_bb": row.ev_bb,
+             "decision_ev_chips": row.ev_chips + report.decision_ev_offset_chips,
+             "decision_ev_bb": (row.ev_chips + report.decision_ev_offset_chips) / report.big_blind,
+             "ev_loss_chips": row.ev_loss_chips,
              "ev_loss_bb": row.ev_loss_bb}
             for row in hand.actions
         ],
+        "selected_action_decision_ev_chips": selected.ev_chips + report.decision_ev_offset_chips,
+        "selected_action_decision_ev_bb": (selected.ev_chips + report.decision_ev_offset_chips) / report.big_blind,
         "selected_action_ev_loss_chips": report.selected_action_ev_loss_chips,
         "selected_action_ev_loss_bb": report.selected_action_ev_loss_bb,
         "nash_conv_chips": report.nash_conv_chips,
@@ -425,12 +454,25 @@ class TableSession:
         self.decision_reviews = []
         self.solver_reviews = []
         self._review_requests = {}
+        self.showcase_index = None
 
     def new_hand(self, opponent="heuristic"):
         with self.lock:
             return self._new_hand(opponent)
 
-    def _new_hand(self, opponent):
+    def start_showcase(self):
+        with self.lock:
+            return self._new_hand("heuristic", showcase_index=0)
+
+    def next_showcase_hand(self):
+        with self.lock:
+            if self.showcase_index is None or not self.game.done:
+                raise ValueError("Finish the current showcase hand before advancing")
+            if self.showcase_index + 1 >= len(SHOWCASE_HANDS):
+                raise ValueError("The three showcase hands are complete")
+            return self._new_hand("heuristic", showcase_index=self.showcase_index + 1)
+
+    def _new_hand(self, opponent, showcase_index=None):
         if opponent not in ("random", "heuristic", "nfsp"):
             raise ValueError("Opponent must be random, heuristic, or nfsp")
         active_model = offline_training.status()["active"] if opponent == "nfsp" else None
@@ -439,6 +481,7 @@ class TableSession:
         if opponent == "nfsp" and not all(path.is_file() for path in model_pair):
             raise ValueError("Trained NFSP model is not available yet")
         self.opponent = opponent
+        self.showcase_index = showcase_index
         retained_hands = {hand["hand"] for hand in self.hands[-10:]}
         self._review_requests = {
             key: request for key, request in self._review_requests.items()
@@ -448,7 +491,7 @@ class TableSession:
         self.decision_reviews = []
         self.solver_reviews = []
         stack = 20 if opponent == "nfsp" else 100
-        self.game = HoldemGame(
+        self.game = new_showcase_game(showcase_index) if showcase_index is not None else HoldemGame(
             stacks=(stack, stack),
             button=self.hand_number % 2,
             seed=secrets.randbits(64),
@@ -458,7 +501,9 @@ class TableSession:
             self.agent = RandomAgent(secrets.randbits(64))
             self.adviser = None
         elif opponent == "heuristic":
-            self.agent = HeuristicAgent(secrets.randbits(64), samples=96)
+            seed = (SHOWCASE_HANDS[showcase_index].opponent_seed
+                    if showcase_index is not None else secrets.randbits(64))
+            self.agent = HeuristicAgent(seed, samples=96)
             self.adviser = None
         else:
             import torch
@@ -573,6 +618,17 @@ class TableSession:
         with self.lock:
             return self._act(index, action)
 
+    def estimate_live(self, samples=24):
+        """Snapshot a public decision, then run the CPU estimate off-lock."""
+        with self.lock:
+            if self.game is None or self.game.done or self.game.current_player != 0:
+                raise ValueError("No human action is pending")
+            snapshot = deepcopy(self.game)
+            hand = self.hand_number
+            action_count = len(self.game.history)
+        result = estimate_action_evs(snapshot, samples=samples)
+        return {**result, "hand": hand, "action_count": action_count}
+
     def _act(self, index=None, custom_action=None):
         if self.game is None or self.game.done or self.game.current_player != 0:
             raise ValueError("No human action is pending")
@@ -685,7 +741,8 @@ class TableSession:
                       ranges=[{"hands": belief.hands, "weights": belief.weights}
                               for belief in ranges])
             try:
-                result = serialize_experimental_review(solve(configured), ranges)
+                result = serialize_experimental_review(solve(configured), ranges,
+                                                       configured.selected_action)
             except Exception as exc:
                 log_event("review_solve_error", hand=hand_number, index=index,
                           street=request.street, error_type=type(exc).__name__,
@@ -732,6 +789,11 @@ class TableSession:
             }
         return {
             "started": True,
+            "showcase": ({"index": self.showcase_index + 1,
+                           "total": len(SHOWCASE_HANDS),
+                           "name": SHOWCASE_HANDS[self.showcase_index].name,
+                           "lesson": SHOWCASE_HANDS[self.showcase_index].lesson}
+                          if self.showcase_index is not None else None),
             "hand": self.hand_number,
             "opponent": self.opponent,
             "starting_stack": game.initial_stacks[0],
@@ -817,6 +879,13 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+        elif self.path == "/polish.css":
+            body = (STATIC / "polish.css").read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/css; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
         elif self.path == "/training.js":
             body = (STATIC / "training.js").read_bytes()
             self.send_response(HTTPStatus.OK)
@@ -835,7 +904,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND)
 
     def do_POST(self):
-        if self.path not in ("/api/new", "/api/action", "/api/river-analysis", "/api/solve", "/api/demo-analysis", "/api/cached-demo-action", "/api/review-decision", "/api/training/config", "/api/training/start", "/api/training/stop"):
+        if self.path not in ("/api/new", "/api/action", "/api/showcase/start", "/api/showcase/next", "/api/live-estimate", "/api/river-analysis", "/api/solve", "/api/demo-analysis", "/api/cached-demo-action", "/api/review-decision", "/api/training/config", "/api/training/start", "/api/training/stop"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         length = int(self.headers.get("Content-Length", "0"))
@@ -867,11 +936,18 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(sample_demo_action())
                 return
             token, session = self._session()
+            if self.path == "/api/live-estimate":
+                self._json(session.estimate_live(payload.get("samples", 24)), token=token)
+                return
             if self.path == "/api/review-decision":
                 self._json({"analysis": session.review_decision(payload.get("hand"), payload.get("index"))}, token=token)
                 return
             if self.path == "/api/new":
                 state = session.new_hand(payload.get("opponent", "heuristic"))
+            elif self.path == "/api/showcase/start":
+                state = session.start_showcase()
+            elif self.path == "/api/showcase/next":
+                state = session.next_showcase_hand()
             else:
                 state = session.act(
                     payload.get("index"), action=payload.get("action")

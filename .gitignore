@@ -4,3 +4,5 @@ __pycache__/
 node_modules/
 artifacts/offline_training/
 artifacts/solution_cache/
+artifacts/cfr_scenario_worker/
+artifacts/cfr_scenario_cache/

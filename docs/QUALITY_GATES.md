@@ -1,10 +1,12 @@
 # CPU quality gates before CUDA
 
+See [the current project map](CURRENT_STATE.md) for the full dependency tree and latest evidence boundary.
+
 These are forward-looking release criteria. A passing toy-game check does not substitute for a full Hold'em result.
 
 | Gate | Evidence required | Current status |
 |---|---|---|
-| Hold'em rules | Deterministic rules, seeded conservation/legality tests, hidden-card isolation, independent hand-rank comparison | **Partial pass:** the full current suite passes 88 tests; 5,000 Treys comparisons agree. Exhaustive betting-tree verification remains. |
+| Hold'em rules | Deterministic rules, seeded conservation/legality tests, hidden-card isolation, independent hand-rank comparison | **Partial pass:** the full suite passed 106 tests on 2026-10-15; 5,000 saved Treys comparisons agree. Exhaustive betting-tree verification remains. |
 | Kuhn CFR | Exact NashConv < 0.01 after 10,000 iterations and value within 0.005 of −1/18 | **Pass:** 0.0046 NashConv, value −0.055546. |
 | Leduc CFR | Exact NashConv < 0.2 after 500 synchronous iterations | **Pass:** 0.1395. |
 | NFSP small-game learning | At least three seeded runs reduce exact NashConv; a later strength target is < 1.0 for all three seeds | **Learning pass, strength pending:** η=0.3 reduced all three by 20,000 episodes, but finals were 2.54–2.96. |

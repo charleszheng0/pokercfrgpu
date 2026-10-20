@@ -4,8 +4,8 @@
   const suits = 'cdhs';
   const $ = id => document.getElementById(id);
   const state = {
-    hero: {weights: new Map(), selected: null, preset: null},
-    opponent: {weights: new Map(), selected: null, preset: null},
+    hero: {weights: new Map(), selected: new Set(), preset: null},
+    opponent: {weights: new Map(), selected: new Set(), preset: null},
   };
   let catalog = [];
   let onChange = () => {};
@@ -54,8 +54,9 @@
     const sent = solverEntries(seat);
     const all = [...state[seat].weights].filter(([, weight]) => weight > 0).length;
     const blocked = all - active.length;
-    const limit = sent.length > 8 ? ' · narrow to 8 or fewer for this CPU river solve' : '';
-    $(seat + '-range-summary').textContent = `${sent.length} solver-range combos · ${active.length} possible with the entered hand${blocked ? ` · ${blocked} blocked in this view` : ''}${limit}`;
+    const limit = sent.length > 8 ? ' · limit 8 for CPU solve' : '';
+    $(seat + '-range-summary').textContent = `${sent.length} combos${active.length !== sent.length ? ` · ${active.length} compatible` : ''}${limit}`;
+    $(seat + '-range-summary').title = `${sent.length} solver-range combinations; ${active.length} remain compatible with known cards${blocked ? `, ${blocked} blocked` : ''}.`;
     $(seat + '-range-summary').classList.toggle('warning', sent.length > 8);
   }
   function renderMatrix(seat) {
@@ -68,13 +69,18 @@
       const frequency = combos.length ? combos.reduce((total, combo) => total + (state[seat].weights.get(combo) || 0), 0) / combos.length : 0;
       const cell = document.createElement('button');
       cell.type = 'button'; cell.className = `matrix-cell ${row === col ? 'pair' : row < col ? 'suited' : 'offsuited'}`;
-      if (state[seat].selected === label) cell.classList.add('selected');
+      if (state[seat].selected.has(label)) cell.classList.add('selected');
       if (!combos.length) cell.classList.add('blocked');
       cell.disabled = !combos.length;
       cell.textContent = label;
+      cell.setAttribute('aria-pressed', String(state[seat].selected.has(label)));
       cell.setAttribute('aria-label', `${label}, ${Math.round(frequency * 100)} percent average, ${combos.length} available combinations`);
       if (combos.length) cell.style.background = `linear-gradient(0deg, #327454 ${Math.round(frequency * 100)}%, #293330 ${Math.round(frequency * 100)}%)`;
-      cell.onclick = () => { state[seat].selected = label; renderMatrix(seat); renderEditor(seat); };
+      cell.onclick = () => {
+        if (state[seat].selected.has(label)) state[seat].selected.delete(label);
+        else state[seat].selected.add(label);
+        renderMatrix(seat); renderEditor(seat);
+      };
       holder.append(cell);
     }
     renderSummary(seat);
@@ -83,30 +89,38 @@
     state[seat].preset = 'custom';
     $(seat + '-preset').value = 'custom';
     $(seat + '-preset-note').textContent = 'Custom frequencies entered here. They are assumptions, not inferred from betting history.';
+    $(seat + '-preset').title = $(seat + '-preset-note').textContent;
     onChange();
   }
   function renderEditor(seat) {
     const holder = $(seat + '-combos');
     holder.replaceChildren();
-    const label = state[seat].selected;
-    if (!label) { holder.textContent = 'Select a hand class to edit its suit combinations.'; return; }
-    const heading = document.createElement('strong'); heading.textContent = `${label} suit combinations`; holder.append(heading);
+    const labels = [...state[seat].selected];
+    if (!labels.length) { holder.textContent = 'Select one or more hands above.'; return; }
+    const heading = document.createElement('strong');
+    heading.textContent = labels.length === 1 ? `${labels[0]} selected` : `${labels.length} hand classes selected`;
+    holder.append(heading);
     const controls = document.createElement('div'); controls.className = 'class-controls';
-    const field = document.createElement('label'); field.textContent = 'Set all available combos (%)';
-    const input = document.createElement('input'); input.type = 'number'; input.min = '0'; input.max = '100'; input.step = '1'; input.value = '100';
-    field.append(input);
-    const apply = document.createElement('button'); apply.type = 'button'; apply.textContent = 'Apply to class';
-    apply.onclick = () => {
-      const value = Number(input.value);
-      if (!Number.isFinite(value) || value < 0 || value > 100) return;
+    const applyWeight = value => {
       const blockers = blockedCards(seat);
-      for (const combo of combosFor(label)) if (!isBlocked(combo, blockers)) {
-        if (value) state[seat].weights.set(combo, value / 100);
-        else state[seat].weights.delete(combo);
-      }
+      for (const label of labels) for (const combo of combosFor(label))
+        if (!isBlocked(combo, blockers)) {
+          if (value) state[seat].weights.set(combo, value / 100);
+          else state[seat].weights.delete(combo);
+        }
       markCustom(seat); renderMatrix(seat); renderEditor(seat);
     };
-    controls.append(field, apply); holder.append(controls);
+    for (const value of [0, 25, 50, 75, 100]) {
+      const button = document.createElement('button'); button.type = 'button';
+      button.textContent = `${value}%`; button.setAttribute('aria-label', `Set selected hands to ${value} percent`);
+      button.onclick = () => applyWeight(value);
+      controls.append(button);
+    }
+    holder.append(controls);
+    if (labels.length !== 1) return;
+    const label = labels[0];
+    const details = document.createElement('details'); details.className = 'suit-details';
+    const summary = document.createElement('summary'); summary.textContent = 'Edit suit combinations'; details.append(summary);
     const blockers = blockedCards(seat);
     for (const combo of combosFor(label)) {
       const row = document.createElement('div'); row.className = 'combo-row';
@@ -123,8 +137,9 @@
         amount.textContent = `${value}%`;
         markCustom(seat); renderMatrix(seat);
       };
-      row.append(name, slider, amount); holder.append(row);
+      row.append(name, slider, amount); details.append(row);
     }
+    holder.append(details);
   }
   function applyPreset(seat, preset) {
     const weights = new Map();
@@ -140,8 +155,9 @@
     }
     state[seat].weights = weights;
     state[seat].preset = preset.id;
-    state[seat].selected = null;
+    state[seat].selected = new Set();
     $(seat + '-preset-note').textContent = preset.description;
+    $(seat + '-preset').title = preset.description;
     renderMatrix(seat); renderEditor(seat); onChange();
   }
   function usePreset(seat, id) {
@@ -151,6 +167,16 @@
     applyPreset(seat, preset);
   }
   function currentPreset(seat) { return state[seat]?.preset; }
+  function ensureHeroHand() {
+    const cards = canonical($('river-hero').value.trim().split(/\s+/));
+    const combo = comboKey(cards);
+    if (isBlocked(combo, blockedCards('hero'))) throw new Error('Hero hand overlaps the board.');
+    if (!state.hero.weights.has(combo)) {
+      state.hero.weights.set(combo, 1);
+      markCustom('hero'); renderMatrix('hero'); renderEditor('hero');
+    }
+  }
+  function selectedClasses(seat) { return [...state[seat].selected]; }
   function refresh() {
     for (const seat of ['hero', 'opponent']) { renderMatrix(seat); renderEditor(seat); }
     onChange();
@@ -185,7 +211,7 @@
         const combo = comboKey(cards);
         if (isBlocked(combo, blockedCards('hero'))) throw new Error('Hero hand overlaps the board.');
         state.hero.weights.set(combo, 1);
-        state.hero.selected = cards[0][0] + cards[1][0] + (cards[0][0] === cards[1][0] ? '' : cards[0][1] === cards[1][1] ? 's' : 'o');
+        state.hero.selected = new Set([cards[0][0] + cards[1][0] + (cards[0][0] === cards[1][0] ? '' : cards[0][1] === cards[1][1] ? 's' : 'o')]);
         markCustom('hero'); renderMatrix('hero'); renderEditor('hero');
       } catch (error) { $('analysis-status').textContent = error.message; $('analysis-status').className = 'analysis-error'; }
     };
@@ -228,6 +254,49 @@
       holder.append(cell);
     }
   }
+  function renderActionMixMatrix(holder, perHand, actions, colorForAction, onSelect = () => {}) {
+    holder.replaceChildren();
+    const byCombo = new Map(perHand.map(row => [comboKey(row.hand), row]));
+    for (let row = 0; row < 13; row++) for (let col = 0; col < 13; col++) {
+      const label = labelFor(row, col);
+      const totals = actions.map(() => 0);
+      let mass = 0, count = 0;
+      for (const combo of combosFor(label)) {
+        const strategy = byCombo.get(combo);
+        if (!strategy) continue;
+        mass += strategy.marginal_probability;
+        count++;
+        actions.forEach((action, index) => {
+          const estimate = strategy.actions.find(item => item.kind === action.kind && item.amount === action.amount);
+          if (estimate) totals[index] += strategy.marginal_probability * estimate.frequency;
+        });
+      }
+      const cell = document.createElement(count ? 'button' : 'span');
+      cell.className = `matrix-cell strategy-cell strategy-mix-cell ${count ? '' : 'blocked'}`;
+      cell.textContent = label;
+      if (count && mass > 0) {
+        cell.type = 'button';
+        const frequencies = totals.map(value => value / mass);
+        let at = 0;
+        const segments = frequencies.map((value, index) => {
+          const from = at;
+          at += Math.max(0, value) * 100;
+          return `${colorForAction(actions[index])} ${from.toFixed(2)}% ${at.toFixed(2)}%`;
+        });
+        cell.style.background = `linear-gradient(90deg, ${segments.join(', ')})`;
+        const description = actions.map((action, index) => `${action.kind}${action.amount ? ' to ' + action.amount : ''} ${Math.round(frequencies[index] * 100)}%`).join(' · ');
+        cell.title = `${label} · ${count} combo${count === 1 ? '' : 's'} · ${description}`;
+        cell.setAttribute('aria-label', cell.title);
+        cell.onclick = () => onSelect({label, count, frequencies});
+      } else {
+        cell.title = `${label} · outside supported range`;
+        cell.setAttribute('aria-label', cell.title);
+      }
+      holder.append(cell);
+    }
+  }
   window.RangeEditor = {init, refresh, payloadRanges, combosFor, labelFor,
-                        renderStrategyMatrix, usePreset, currentPreset};
+                        ensureHeroHand,
+                        renderStrategyMatrix, renderActionMixMatrix,
+                        usePreset, currentPreset, selectedClasses};
 })();

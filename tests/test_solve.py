@@ -66,6 +66,23 @@ class SharedSolverTests(unittest.TestCase):
                                selected_check.ev_loss_chips)
         self.assertGreaterEqual(result.nash_conv_chips, 0)
 
+    def test_decision_ev_offset_uses_the_acting_players_sunk_chips(self):
+        request = SolveRequest(
+            board=("As", "Kh", "Qd", "7c", "2s"), street="river",
+            pot_before_street=8, stacks_at_street_start=(10, 10),
+            betting=BettingContext(button=1, first_actor=0, current_player=1,
+                                   street_actions=(Action("bet", 4),)),
+            ranges=self.ranges(), config=SolverConfig(iterations=20),
+            acting_hand=("9h", "9s"),
+        )
+        result = solve(request)
+        self.assertEqual(result.status, "supported_restricted_game")
+        self.assertEqual(result.root_paid, (4, 0))
+        self.assertAlmostEqual(result.decision_ev_offset_chips, 4)
+        fold = next(row for row in result.selected_hand.actions
+                    if row.action == Action("fold"))
+        self.assertAlmostEqual(fold.ev_chips + result.decision_ev_offset_chips, 0)
+
     def test_turn_reaches_river_betting_through_the_same_api(self):
         ranges = (
             WeightedRange((("Jc", "Tc"),), (1,)),

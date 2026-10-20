@@ -67,6 +67,18 @@ def preset_catalog():
     }
     return [
         {
+            "id": "fixed_demo_hero",
+            "label": "Fixed river demo · hero",
+            "description": "Two saved illustrative combos for the fixed river demo position; not a general preflop blueprint.",
+            "combos": {"Jc Tc": 1.0, "8h 8s": 1.0},
+        },
+        {
+            "id": "fixed_demo_opponent",
+            "label": "Fixed river demo · opponent",
+            "description": "Two saved illustrative opponent combos for the fixed river demo; not inferred from betting.",
+            "combos": {"9h 9s": 1.0, "Ac Ad": 1.0},
+        },
+        {
             "id": "river_demo_hero",
             "label": "River example · hero",
             "description": "Three illustrative combos for trying the restricted river solver; no betting history was used.",

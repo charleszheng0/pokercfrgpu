@@ -1,0 +1,188 @@
+"""Low-priority offline CFR+ solves for reproducible tiny river scenarios.
+
+Each artifact is a solution to one explicitly specified restricted game. This
+worker does not train a generalizing policy or create a full Hold'em blueprint.
+Only scenarios meeting the configured exact restricted-game NashConv threshold
+are written to the playable-cache directory.
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import random
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+from poker_cpu.cards import DECK
+from poker_cpu.ranges import canonical_hand
+
+ROOT = Path(__file__).resolve().parents[1]
+STORE = Path(os.environ.get("POKER_CFR_SCENARIO_STORE", ROOT / "artifacts" / "cfr_scenario_worker"))
+CACHE = ROOT / "artifacts" / "cfr_scenario_cache"
+
+
+def atomic_json(path, data):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(data, indent=2, allow_nan=False) + "\n")
+    temporary.replace(path)
+
+
+def read_json(path, default):
+    try:
+        return json.loads(Path(path).read_text())
+    except FileNotFoundError:
+        return default
+
+
+def make_request(seed, iterations=1000):
+    """Sample a valid 4-deal river game with disjoint weighted combos."""
+    rng = random.Random(seed)
+    cards = list(DECK)
+    rng.shuffle(cards)
+    board = cards[:5]
+    hero_hands = [canonical_hand(cards[5:7]), canonical_hand(cards[7:9])]
+    opponent_hands = [canonical_hand(cards[9:11]), canonical_hand(cards[11:13])]
+    return {
+        "street": "river",
+        "board": " ".join(board),
+        "hero_hand": " ".join(hero_hands[0]),
+        "pot": rng.choice((8, 12, 20)),
+        "stacks": [rng.choice((10, 20, 40))] * 2,
+        # The public endpoint evaluates hero (seat 0) at the root. Randomize
+        # boards/ranges/stacks, but keep the root actor aligned with that API.
+        "first_actor": 0,
+        "iterations": iterations,
+        "ranges": [
+            {"hands": [list(hand) for hand in hero_hands], "weights": [1.0, 1.0]},
+            {"hands": [list(hand) for hand in opponent_hands], "weights": [1.0, 1.0]},
+        ],
+        "range_source": "offline_sampled_range",
+    }
+
+
+def request_key(request):
+    return hashlib.sha256(json.dumps(request, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def solve_one(seed, *, iterations=1000, threshold_chips=0.1, store=STORE, cache=CACHE):
+    from .server import analyze_river_position
+
+    request = make_request(seed, iterations)
+    started = time.perf_counter()
+    report = analyze_river_position(request)
+    elapsed = time.perf_counter() - started
+    key = request_key(request)
+    qualified = report["nash_conv"] <= threshold_chips
+    row = {
+        "scenario_id": key,
+        "seed": seed,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "status": "cached_qualified" if qualified else "candidate_only",
+        "threshold_nash_conv_chips": threshold_chips,
+        "nash_conv_chips": report["nash_conv"],
+        "iterations": report["iterations"],
+        "latency_seconds": elapsed,
+        "joint_deals": report["joint_deals"],
+        "scope": "river; 4 supplied private-hand combinations; restricted bets; exact restricted-game NashConv",
+        "request": request,
+        "result": report,
+    }
+    store.mkdir(parents=True, exist_ok=True)
+    atomic_json(store / f"{key}.json", row)
+    if qualified:
+        cache.mkdir(parents=True, exist_ok=True)
+        atomic_json(cache / f"{key}.json", row)
+    return row
+
+
+def run_loop(*, duration_seconds=3600, pause_seconds=3, max_solves=1000,
+             iterations=1000, threshold_chips=0.1, seed=20261020,
+             store=STORE, cache=CACHE):
+    try:
+        os.nice(15)
+    except (AttributeError, OSError):
+        pass
+    store.mkdir(parents=True, exist_ok=True)
+    stop_file = store / "stop"
+    stop_file.unlink(missing_ok=True)
+    started = time.monotonic()
+    completed = len(read_json(store / "history.json", []))
+    rows = read_json(store / "history.json", [])
+    atomic_json(store / "status.json", {
+        "state": "running", "pid": os.getpid(), "started_at": datetime.now(timezone.utc).isoformat(),
+        "completed": completed, "duration_limit_seconds": duration_seconds,
+        "iterations_per_solve": iterations, "threshold_nash_conv_chips": threshold_chips,
+        "cache_scope": "restricted river scenarios only",
+    })
+    while (time.monotonic() - started < duration_seconds and completed < max_solves
+           and not stop_file.exists()):
+        try:
+            row = solve_one(seed + completed, iterations=iterations,
+                            threshold_chips=threshold_chips, store=store / "candidates", cache=cache)
+        except Exception as exc:
+            atomic_json(store / "status.json", {
+                "state": "error", "pid": os.getpid(), "completed": completed,
+                "elapsed_seconds": time.monotonic() - started,
+                "error": repr(exc), "failed_seed": seed + completed,
+                "cache_scope": "restricted river scenarios only",
+            })
+            raise
+        rows.append({key: value for key, value in row.items() if key not in ("request", "result")})
+        completed += 1
+        atomic_json(store / "history.json", rows[-1000:])
+        atomic_json(store / "status.json", {
+            "state": "running", "pid": os.getpid(), "completed": completed,
+            "qualified": sum(item["status"] == "cached_qualified" for item in rows),
+            "last_scenario": rows[-1], "elapsed_seconds": time.monotonic() - started,
+            "duration_limit_seconds": duration_seconds,
+            "iterations_per_solve": iterations, "threshold_nash_conv_chips": threshold_chips,
+            "cache_scope": "restricted river scenarios only",
+        })
+        end = min(started + duration_seconds, time.monotonic() + pause_seconds)
+        while time.monotonic() < end and not stop_file.exists():
+            time.sleep(min(0.5, end - time.monotonic()))
+    atomic_json(store / "status.json", {
+        "state": "stopped", "pid": os.getpid(), "completed": completed,
+        "qualified": sum(item["status"] == "cached_qualified" for item in rows),
+        "elapsed_seconds": time.monotonic() - started,
+        "cache_scope": "restricted river scenarios only",
+    })
+    return read_json(store / "status.json", {})
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--once", action="store_true", help="solve one random river scenario")
+    parser.add_argument("--loop", action="store_true", help="run bounded low-priority offline solves")
+    parser.add_argument("--stop", action="store_true", help="request a running worker to stop")
+    parser.add_argument("--duration-seconds", type=int, default=3600)
+    parser.add_argument("--pause-seconds", type=float, default=3.0)
+    parser.add_argument("--max-solves", type=int, default=1000)
+    parser.add_argument("--iterations", type=int, default=1000)
+    parser.add_argument("--threshold-chips", type=float, default=0.1)
+    parser.add_argument("--seed", type=int, default=20261020)
+    args = parser.parse_args()
+    if args.stop:
+        STORE.mkdir(parents=True, exist_ok=True)
+        (STORE / "stop").touch()
+        print(json.dumps({"state": "stop_requested", "store": str(STORE)}))
+    elif args.once:
+        print(json.dumps(solve_one(args.seed, iterations=args.iterations,
+                                   threshold_chips=args.threshold_chips), indent=2))
+    elif args.loop:
+        print(json.dumps(run_loop(duration_seconds=args.duration_seconds,
+                                  pause_seconds=args.pause_seconds,
+                                  max_solves=args.max_solves,
+                                  iterations=args.iterations,
+                                  threshold_chips=args.threshold_chips,
+                                  seed=args.seed), indent=2))
+    else:
+        parser.error("Choose --once, --loop, or --stop")
+
+
+if __name__ == "__main__":
+    main()

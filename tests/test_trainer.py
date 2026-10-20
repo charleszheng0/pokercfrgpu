@@ -46,6 +46,24 @@ class TrainerTests(unittest.TestCase):
         self.assertNotIn("opponent_hand", study)
         self.assertEqual(state["solver_feedback"]["solver_api_status"], "unsupported")
 
+    def test_live_estimate_covers_preflop_without_changing_the_hand(self):
+        table = TableSession()
+        state = table.new_hand("random")
+        self.assertEqual(state["current_player"], 0)
+        before = table.state()
+        report = table.estimate_live(samples=2)
+        after = table.state()
+        self.assertEqual(report["status"], "experimental_rollout")
+        self.assertEqual(report["street"], "preflop")
+        self.assertEqual(report["hand"], before["hand"])
+        self.assertEqual(report["action_count"], len(before["history"]))
+        self.assertEqual({(row["action"]["kind"], row["action"]["amount"])
+                          for row in report["actions"]},
+                         {(row["kind"], row["amount"]) for row in before["legal_actions"]})
+        self.assertEqual(before["hole"], after["hole"])
+        self.assertEqual(before["history"], after["history"])
+        self.assertEqual(before["stacks"], after["stacks"])
+
     @staticmethod
     def river_payload(iterations=20):
         return {
@@ -67,12 +85,26 @@ class TrainerTests(unittest.TestCase):
         self.assertTrue(all(isinstance(row["ev"], float) for row in report["action_evs"]))
         best_ev = max(row["ev"] for row in report["action_evs"])
         self.assertTrue(all(abs(row["ev_loss"] - (best_ev - row["ev"])) < 1e-10 for row in report["action_evs"]))
+        self.assertAlmostEqual(report["decision_ev_offset_chips"], 10)
+        for row in report["action_evs"]:
+            self.assertAlmostEqual(row["decision_ev"], row["ev"] + 10)
+            self.assertAlmostEqual(row["decision_ev_bb"], row["decision_ev"] / 2)
         self.assertGreaterEqual(report["nash_conv"], 0)
         self.assertIn("exact NashConv", report["validation_status"])
         self.assertIn("not inferred from betting history", report["range_note"])
         self.assertIn("supplied abstract action history", report["supported_state"])
         self.assertIsNone(report["target_nash_conv_chips"])
         self.assertTrue(report["convergence_trace"])
+
+    def test_lab_reports_when_ranges_came_from_a_preset(self):
+        payload = self.river_payload()
+        payload["range_source"] = "illustrative_preset"
+        report = analyze_river_position(payload)
+        self.assertEqual(report["range_source"], "illustrative_preset")
+        self.assertIn("preset", report["range_note"])
+        payload["range_source"] = "unverified_source"
+        with self.assertRaisesRegex(ValueError, "Unknown range source"):
+            analyze_river_position(payload)
 
     def test_explicit_nashconv_target_is_returned_with_measured_status(self):
         payload = self.river_payload(iterations=40)
@@ -99,6 +131,9 @@ class TrainerTests(unittest.TestCase):
         report = analyze_river_position(payload)
         self.assertEqual(report["river_paid"], (0, 10))
         self.assertEqual({row["action"]["kind"] for row in report["frequencies"]} & {"fold", "call"}, {"fold", "call"})
+        fold = next(row for row in report["action_evs"] if row["action"]["kind"] == "fold")
+        self.assertAlmostEqual(fold["decision_ev"], 0)
+        self.assertAlmostEqual(report["decision_ev_offset_chips"], 10)
         self.assertAlmostEqual(sum(row["frequency"] for row in report["frequencies"]), 1)
         payload["river_actions"][1]["amount"] = 9
         with self.assertRaisesRegex(ValueError, "outside the restricted tree"):
@@ -128,6 +163,9 @@ class TrainerTests(unittest.TestCase):
         report = analyze_river_position(payload)
         self.assertEqual(report["river_paid"], (2, 14))
         self.assertEqual({row["action"]["kind"] for row in report["frequencies"]}, {"fold", "call"})
+        fold = next(row for row in report["action_evs"] if row["action"]["kind"] == "fold")
+        self.assertAlmostEqual(report["decision_ev_offset_chips"], 12)
+        self.assertAlmostEqual(fold["decision_ev"], 0)
 
     def test_shared_lab_api_can_solve_a_tiny_turn_position(self):
         payload = self.river_payload(iterations=2)
