@@ -222,6 +222,21 @@ The headless Chrome end-to-end run observed a separate **3,728.87 ms** solve thr
 
 `python3 -m trainer.cfr_scenario_worker --once --iterations 1000 --threshold-chips 0.1 --seed 20261020` sampled board `8h 9c 6h Th 6d`, hero `4h 3s`, a 20-chip pot, 40-chip effective stacks, and two equal-weight private combos per player (four compatible joint deals). CFR+ completed 1,000 iterations in **2,247.5 ms**. Exact restricted-game NashConv was **0.000288735 chips**, compared with **0.001153787 chips at 500 iterations** in the same run's convergence trace. The candidate passed the 0.1-chip cache screen and was stored under its exact request hash. This is one generated river game with artificial ranges; the threshold and NashConv do not certify full Hold'em strategy quality. The worker has not yet completed a one-hour batch, so cache pass rate and latency percentiles are unknown.
 
+## Fixed river CFR+ iteration sweep (2026-10-20)
+
+The [reproduction script](../experiments/river_cfr_convergence.py) solved the same explicit four-combo-per-player river game at increasing iteration budgets. Inputs, ranges, compatible-deal set, and action abstraction were fixed. Each result uses exact restricted-game best-response/NashConv diagnostics; each latency is a single local run.
+
+| CFR+ iterations | Exact restricted NashConv (chips) | End-to-end latency |
+|---:|---:|---:|
+| 20 | 5.783390 | 0.178 s |
+| 100 | 1.098107 | 0.712 s |
+| 500 | 0.216640 | 3.387 s |
+| 2,000 | 0.063774 | 13.524 s |
+
+For this one restricted river game, more iterations substantially reduced measured NashConv and crossed the worker's 0.1-chip candidate gate at 2,000 iterations. This does not imply that 2,000 iterations is enough for other games, nor that range growth has converged. Full per-hand EVs/frequencies and run metadata are stored in [the raw result](../experiments/river_cfr_convergence.json).
+
+The restarted low-priority scenario worker uses four exact combos per player and 2,000 iterations. Its first two new samples had 16 compatible deals each and measured NashConv **0.027817 chips in 19.661 s** and **0.024944 chips in 9.410 s**; both passed the 0.1-chip restricted-game cache screen. This is an early two-scenario sample, not a latency percentile or evidence of live-range accuracy. The worker status and individual requests/results are saved under `artifacts/cfr_scenario_worker/` and `artifacts/cfr_scenario_cache/`.
+
 ## Experimental saved-hand river review (2026-10-14)
 
 The [seeded gameplay run](../experiments/live_review_baseline.json) used 100-chip stacks, 1/2 blinds, a passive check/call opponent, and seed 29. The saved hero decision was a check after the opponent checked the river `5s 4h Js Qh 2s` with hero `8s Qc`, four chips in the pot, and 98 chips per stack. The opt-in review used the observed hero hand against **three equally weighted illustrative opponent combinations** (`Ac Ad`, `Kd Kh`, `9h 9s`); these were not inferred from the opponent's actions. Its 1,000-iteration CFR+ run took **838.75 ms** and returned **0.00007175-chip exact NashConv inside that three-deal game**. The selected check had 99.9995% frequency, −0.666667-chip conditional EV, and zero estimated action loss. Bet sizes and other EVs are saved in the raw result. This one hand establishes request capture and solver plumbing, not range accuracy or meaningful player advice. The latest isolated Chrome demo rerun took 3,821.81 ms after a test-startup polling fix; the saved 3,728.87 ms was the earlier passing run.

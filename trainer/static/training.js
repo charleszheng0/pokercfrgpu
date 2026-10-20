@@ -48,7 +48,9 @@
     const latest = history[0];
     const summary = $('training-summary'); summary.replaceChildren();
     const metrics = [
-      ['Self-play', state.progress ? `${state.progress.hands} hands` : latest ? `${latest.training_hands} hands` : '—'],
+      ['NFSP experience', state.progress
+        ? `${state.progress.cumulative_training_hands ?? state.progress.hands} hands`
+        : latest ? `${latest.cumulative_training_hands ?? latest.training_hands} hands` : '—'],
       ['Vs heuristic', latest ? `${latest.evaluation.find(e => e.opponent === 'heuristic')?.mean_chips_per_hand.toFixed(2) ?? '—'} chips/hand` : '—'],
       ['Active version', data.active?.run_id ? data.active.run_id.replace(/^run-/, '').slice(0, 13) : 'Preset model'],
     ];
@@ -64,8 +66,11 @@
       const node = document.createElement('div'); node.className = 'training-run';
       const title = document.createElement('strong'); title.textContent = `${run.run_id} · ${run.promotion.replaceAll('_', ' ')}${data.active?.run_id === run.run_id ? ' · ACTIVE' : ''}`; node.append(title);
       const info = document.createElement('div'); info.className = 'training-metrics';
-      const metrics = [`${run.training_hands} hands`, `${run.training_seconds.toFixed(1)} s`,
+      const metrics = [`${run.training_hands} hands this run`,
+        `${run.cumulative_training_hands ?? run.training_hands} cumulative`,
+        `${run.training_seconds.toFixed(1)} s`,
         ...run.evaluation.map(e => `${e.opponent}: ${e.mean_chips_per_hand.toFixed(2)} ± ${e.standard_error?.toFixed(2) ?? '—'} chips/hand`)];
+      if (run.continued_from_run_id) metrics.push('continued learner checkpoint');
       if (run.delta_95ci_independent) metrics.push(`Δ vs incumbent 95% CI [${run.delta_95ci_independent.map(x => x.toFixed(2)).join(', ')}] chips`);
       metrics.forEach(value => { const chip = document.createElement('span'); chip.textContent = value; info.append(chip); });
       node.append(info); box.append(node);

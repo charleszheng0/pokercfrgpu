@@ -94,7 +94,7 @@ def status():
             "active": read_json(STORE / "active.json", None),
             "blueprint": read_json(STORE / "blueprint_active.json", None),
             "blueprint_history": read_json(STORE / "blueprint_history.json", [])[-30:],
-            "scope": "NFSP restricted 20-chip self-play and a separate fixed-position restricted river CFR+ cache"}
+            "scope": "NFSP restricted 20-chip self-play with persistent learner checkpoint; separate fixed-position restricted river CFR+ cache"}
 
 
 def start():
@@ -126,10 +126,13 @@ def _agent_settings(settings):
                 validation_fraction=settings["validation_fraction"])
 
 
-def _snapshot(agents, hand, settings, seed, reward_sum, q_losses, sl_losses, curves):
+def _snapshot(agents, hand, settings, seed, reward_sum, q_losses, sl_losses,
+              curves, *, run_id=None, experience_hands=None):
     # A checkpoint includes optimizer and replay state for a true resume. It is
     # local trusted data; never load a checkpoint provided by an HTTP client.
     return {"hand": hand, "seed": seed, "settings": settings,
+            "run_id": run_id,
+            "experience_hands": hand if experience_hands is None else experience_hands,
             "reward_sum": reward_sum, "q_losses": q_losses,
             "sl_losses": sl_losses, "curves": curves,
             "python_rng": random.getstate(), "torch_rng": torch.get_rng_state(),
@@ -200,20 +203,30 @@ def run_once(settings=None, *, output=STORE, allow_promotion=True):
     agents = [HoldemNFSPAgent(**_agent_settings(settings)) for _ in range(2)]
     latest = output / "latest_checkpoint.pt"
     start_hand = 0
+    experience_before = 0
+    continued_from = None
     curves = []
     reward_sum = 0.0
     q_losses, sl_losses = [], []
     if latest.exists():
         # Resume only identical configuration; changing hyperparameters starts a new run.
         saved = torch.load(latest, map_location="cpu", weights_only=False)
-        if saved["settings"] == settings and saved["hand"] < settings["hands_per_run"]:
+        if saved["settings"] == settings:
             _resume(agents, saved)
-            start_hand = saved["hand"]
-            seed = saved["seed"]
-            curves = saved.get("curves", [])
-            reward_sum = saved.get("reward_sum", 0.0)
-            q_losses = saved.get("q_losses", [])
-            sl_losses = saved.get("sl_losses", [])
+            experience_before = saved.get("experience_hands", saved["hand"])
+            if saved["hand"] < settings["hands_per_run"]:
+                # Resume an interrupted cycle exactly, including its RNG state
+                # and in-cycle metrics.
+                start_hand = saved["hand"]
+                experience_before -= start_hand
+                seed = saved["seed"]
+                curves = saved.get("curves", [])
+                reward_sum = saved.get("reward_sum", 0.0)
+                q_losses = saved.get("q_losses", [])
+                sl_losses = saved.get("sl_losses", [])
+            else:
+                # Continue the same learner after a completed scheduled cycle.
+                continued_from = saved.get("run_id")
     started = time.perf_counter()
     completed = start_hand
     for hand in range(start_hand, settings["hands_per_run"]):
@@ -227,7 +240,9 @@ def run_once(settings=None, *, output=STORE, allow_promotion=True):
                 if q is not None: q_losses.append(q)
                 if sl is not None: sl_losses.append(sl)
         if (hand + 1) % settings["checkpoint_every"] == 0 or hand + 1 == settings["hands_per_run"]:
-            point = {"hands": hand + 1, "seat0_mean_chips": reward_sum / (hand + 1),
+            point = {"hands": hand + 1,
+                     "cumulative_training_hands": experience_before + hand + 1,
+                     "seat0_mean_chips": reward_sum / (hand + 1),
                      "q_loss": sum(q_losses) / len(q_losses) if q_losses else None,
                      "policy_loss": sum(sl_losses) / len(sl_losses) if sl_losses else None,
                      "validation_policy_loss": agents[1].validation_policy_loss(),
@@ -235,8 +250,12 @@ def run_once(settings=None, *, output=STORE, allow_promotion=True):
                      "elapsed_seconds": time.perf_counter() - started}
             curves.append(point)
             checkpoint = run_dir / "checkpoint.pt"
-            torch.save(_snapshot(agents, hand + 1, settings, seed,
-                                 reward_sum, q_losses, sl_losses, curves), checkpoint)
+            snapshot = _snapshot(
+                agents, hand + 1, settings, seed, reward_sum, q_losses,
+                sl_losses, curves, run_id=run_id,
+                experience_hands=experience_before + hand + 1,
+            )
+            torch.save(snapshot, checkpoint)
             checkpoint.replace(latest)
             atomic_json(run_dir / "progress.json", {"run_id": run_id, "settings": settings,
                                                      "curves": curves, "state": "training"})
@@ -252,6 +271,8 @@ def run_once(settings=None, *, output=STORE, allow_promotion=True):
                    for opponent in ("random", "heuristic")]
     row = {"run_id": run_id, "date": datetime.now(timezone.utc).isoformat(),
            "seed": seed, "settings": settings, "training_hands": completed,
+           "cumulative_training_hands": experience_before + completed,
+           "continued_from_run_id": continued_from,
            "training_seconds": time.perf_counter() - started, "curves": curves,
            "evaluation": evaluations, "model_dir": str(run_dir),
            "sha256": hashlib.sha256((run_dir / "policy_player_1.pt").read_bytes()).hexdigest(),
@@ -284,7 +305,6 @@ def run_once(settings=None, *, output=STORE, allow_promotion=True):
         row["blueprint_job"] = improve_demo_blueprint(settings["cfr_iterations"], output)
     atomic_json(output / "history.json", history)
     atomic_json(run_dir / "progress.json", {**row, "state": "complete"})
-    latest.unlink(missing_ok=True)
     return row
 
 

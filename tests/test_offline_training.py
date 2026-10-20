@@ -69,6 +69,23 @@ class OfflineTrainingTests(unittest.TestCase):
             b = torch.load(Path(restarted["model_dir"]) / "policy_player_1.pt", weights_only=True)
             self.assertTrue(all(torch.equal(a[key], b[key]) for key in a))
 
+    def test_completed_scheduled_runs_continue_same_nfsp_learner(self):
+        settings = {"hands_per_run": 8, "checkpoint_every": 4, "batch_size": 4,
+                    "evaluation_hands": 2, "hidden_layers": [16, 16],
+                    "rl_capacity": 32, "sl_capacity": 32}
+        with TemporaryDirectory() as directory:
+            output = Path(directory)
+            first = run_once(settings, output=output, allow_promotion=False)
+            saved_first = torch.load(output / "latest_checkpoint.pt", weights_only=False)
+            second = run_once(settings, output=output, allow_promotion=False)
+            saved_second = torch.load(output / "latest_checkpoint.pt", weights_only=False)
+            self.assertEqual(second["continued_from_run_id"], first["run_id"])
+            self.assertEqual(first["cumulative_training_hands"], 8)
+            self.assertEqual(second["cumulative_training_hands"], 16)
+            self.assertEqual(saved_second["experience_hands"], 16)
+            self.assertGreater(len(saved_second["agents"][0]["rl"]),
+                               len(saved_first["agents"][0]["rl"]))
+
 
 if __name__ == "__main__":
     unittest.main()

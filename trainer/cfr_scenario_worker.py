@@ -38,14 +38,19 @@ def read_json(path, default):
         return default
 
 
-def make_request(seed, iterations=1000):
-    """Sample a valid 4-deal river game with disjoint weighted combos."""
+def make_request(seed, iterations=1000, combos_per_range=4):
+    """Sample a river game with exact weighted combos and no dead sampled hands."""
+    if isinstance(combos_per_range, bool) or not isinstance(combos_per_range, int) or not 1 <= combos_per_range <= 8:
+        raise ValueError("combos_per_range must be an integer from 1 to 8 for the shared API")
     rng = random.Random(seed)
     cards = list(DECK)
     rng.shuffle(cards)
     board = cards[:5]
-    hero_hands = [canonical_hand(cards[5:7]), canonical_hand(cards[7:9])]
-    opponent_hands = [canonical_hand(cards[9:11]), canonical_hand(cards[11:13])]
+    hero_hands = [canonical_hand(cards[5 + 2 * i:7 + 2 * i])
+                  for i in range(combos_per_range)]
+    opponent_start = 5 + 2 * combos_per_range
+    opponent_hands = [canonical_hand(cards[opponent_start + 2 * i:opponent_start + 2 * i + 2])
+                      for i in range(combos_per_range)]
     return {
         "street": "river",
         "board": " ".join(board),
@@ -57,28 +62,38 @@ def make_request(seed, iterations=1000):
         "first_actor": 0,
         "iterations": iterations,
         "ranges": [
-            {"hands": [list(hand) for hand in hero_hands], "weights": [1.0, 1.0]},
-            {"hands": [list(hand) for hand in opponent_hands], "weights": [1.0, 1.0]},
+            {"hands": [list(hand) for hand in hero_hands], "weights": [1.0] * combos_per_range},
+            {"hands": [list(hand) for hand in opponent_hands], "weights": [1.0] * combos_per_range},
         ],
         "range_source": "offline_sampled_range",
     }
 
 
 def request_key(request):
+    """Hash the exact solve request, including its computational budget."""
     return hashlib.sha256(json.dumps(request, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def solve_one(seed, *, iterations=1000, threshold_chips=0.1, store=STORE, cache=CACHE):
+def scenario_key(request):
+    """Stable poker-game identity, independent of solver iteration budget."""
+    scenario = {key: value for key, value in request.items() if key != "iterations"}
+    return hashlib.sha256(json.dumps(scenario, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def solve_one(seed, *, iterations=2000, combos_per_range=4, threshold_chips=0.1,
+              store=STORE, cache=CACHE):
     from .server import analyze_river_position
 
-    request = make_request(seed, iterations)
+    request = make_request(seed, iterations, combos_per_range)
     started = time.perf_counter()
     report = analyze_river_position(request)
     elapsed = time.perf_counter() - started
-    key = request_key(request)
+    scenario_id = scenario_key(request)
+    solve_id = request_key(request)
     qualified = report["nash_conv"] <= threshold_chips
     row = {
-        "scenario_id": key,
+        "scenario_id": scenario_id,
+        "solve_id": solve_id,
         "seed": seed,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "status": "cached_qualified" if qualified else "candidate_only",
@@ -87,20 +102,20 @@ def solve_one(seed, *, iterations=1000, threshold_chips=0.1, store=STORE, cache=
         "iterations": report["iterations"],
         "latency_seconds": elapsed,
         "joint_deals": report["joint_deals"],
-        "scope": "river; 4 supplied private-hand combinations; restricted bets; exact restricted-game NashConv",
+        "scope": f"river; {2 * combos_per_range} supplied private-hand combinations; restricted bets; exact restricted-game NashConv",
         "request": request,
         "result": report,
     }
     store.mkdir(parents=True, exist_ok=True)
-    atomic_json(store / f"{key}.json", row)
+    atomic_json(store / f"{solve_id}.json", row)
     if qualified:
         cache.mkdir(parents=True, exist_ok=True)
-        atomic_json(cache / f"{key}.json", row)
+        atomic_json(cache / f"{solve_id}.json", row)
     return row
 
 
-def run_loop(*, duration_seconds=3600, pause_seconds=3, max_solves=1000,
-             iterations=1000, threshold_chips=0.1, seed=20261020,
+def run_loop(*, duration_seconds=3600, pause_seconds=20, max_solves=1000,
+             iterations=2000, combos_per_range=4, threshold_chips=0.1, seed=20261020,
              store=STORE, cache=CACHE):
     try:
         os.nice(15)
@@ -115,13 +130,15 @@ def run_loop(*, duration_seconds=3600, pause_seconds=3, max_solves=1000,
     atomic_json(store / "status.json", {
         "state": "running", "pid": os.getpid(), "started_at": datetime.now(timezone.utc).isoformat(),
         "completed": completed, "duration_limit_seconds": duration_seconds,
-        "iterations_per_solve": iterations, "threshold_nash_conv_chips": threshold_chips,
+        "iterations_per_solve": iterations, "combos_per_player_range": combos_per_range,
+        "threshold_nash_conv_chips": threshold_chips,
         "cache_scope": "restricted river scenarios only",
     })
     while (time.monotonic() - started < duration_seconds and completed < max_solves
            and not stop_file.exists()):
         try:
             row = solve_one(seed + completed, iterations=iterations,
+                            combos_per_range=combos_per_range,
                             threshold_chips=threshold_chips, store=store / "candidates", cache=cache)
         except Exception as exc:
             atomic_json(store / "status.json", {
@@ -139,7 +156,8 @@ def run_loop(*, duration_seconds=3600, pause_seconds=3, max_solves=1000,
             "qualified": sum(item["status"] == "cached_qualified" for item in rows),
             "last_scenario": rows[-1], "elapsed_seconds": time.monotonic() - started,
             "duration_limit_seconds": duration_seconds,
-            "iterations_per_solve": iterations, "threshold_nash_conv_chips": threshold_chips,
+            "iterations_per_solve": iterations, "combos_per_player_range": combos_per_range,
+            "threshold_nash_conv_chips": threshold_chips,
             "cache_scope": "restricted river scenarios only",
         })
         end = min(started + duration_seconds, time.monotonic() + pause_seconds)
@@ -160,9 +178,10 @@ def main():
     parser.add_argument("--loop", action="store_true", help="run bounded low-priority offline solves")
     parser.add_argument("--stop", action="store_true", help="request a running worker to stop")
     parser.add_argument("--duration-seconds", type=int, default=3600)
-    parser.add_argument("--pause-seconds", type=float, default=3.0)
+    parser.add_argument("--pause-seconds", type=float, default=20.0)
     parser.add_argument("--max-solves", type=int, default=1000)
-    parser.add_argument("--iterations", type=int, default=1000)
+    parser.add_argument("--iterations", type=int, default=2000)
+    parser.add_argument("--combos-per-range", type=int, default=4)
     parser.add_argument("--threshold-chips", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=20261020)
     args = parser.parse_args()
@@ -172,12 +191,14 @@ def main():
         print(json.dumps({"state": "stop_requested", "store": str(STORE)}))
     elif args.once:
         print(json.dumps(solve_one(args.seed, iterations=args.iterations,
+                                   combos_per_range=args.combos_per_range,
                                    threshold_chips=args.threshold_chips), indent=2))
     elif args.loop:
         print(json.dumps(run_loop(duration_seconds=args.duration_seconds,
                                   pause_seconds=args.pause_seconds,
                                   max_solves=args.max_solves,
                                   iterations=args.iterations,
+                                  combos_per_range=args.combos_per_range,
                                   threshold_chips=args.threshold_chips,
                                   seed=args.seed), indent=2))
     else:
