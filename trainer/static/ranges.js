@@ -46,8 +46,11 @@
     return [...state[seat].weights].filter(([combo, weight]) => weight > 0 && !isBlocked(combo, blockers));
   }
   function solverEntries(seat) {
-    const boardOnly = blockedCards('hero');
-    return [...state[seat].weights].filter(([combo, weight]) => weight > 0 && !isBlocked(combo, boardOnly));
+    // The opponent cannot hold either the public board or the known hero cards.
+    // Exclude those combos before the API limit is applied so dead combos do not
+    // consume the small-range budget.
+    const blockers = blockedCards(seat);
+    return [...state[seat].weights].filter(([combo, weight]) => weight > 0 && !isBlocked(combo, blockers));
   }
   function renderSummary(seat) {
     const active = available(seat);
@@ -117,11 +120,22 @@
       controls.append(button);
     }
     holder.append(controls);
-    if (labels.length !== 1) return;
+    if (labels.length !== 1) {
+      const hint = document.createElement('span');
+      hint.className = 'combo-hint';
+      hint.textContent = 'Select one hand class to edit its exact suit combinations.';
+      holder.append(hint);
+      return;
+    }
     const label = labels[0];
     const details = document.createElement('details'); details.className = 'suit-details';
-    const summary = document.createElement('summary'); summary.textContent = 'Edit suit combinations'; details.append(summary);
     const blockers = blockedCards(seat);
+    const availableCount = combosFor(label).filter(combo => !isBlocked(combo, blockers)).length;
+    const summary = document.createElement('summary');
+    summary.textContent = `Specific combos · ${availableCount} available`;
+    details.append(summary);
+    // Keep the per-combo controls visible so suit-specific ranges are discoverable.
+    details.open = true;
     for (const combo of combosFor(label)) {
       const row = document.createElement('div'); row.className = 'combo-row';
       const name = document.createElement('span'); name.textContent = combo.replace(' ', ' ');

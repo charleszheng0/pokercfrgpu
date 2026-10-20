@@ -512,6 +512,34 @@ For the first three held-out positions, 20/200/500 CFR iteration NashConv was 1.
 **Batch failure and correction.** The first low-priority batch reached four solved/cached scenarios, then exited on seed 20261024 with `ValueError: hero must be facing a nonterminal river decision`. The generator had randomized `first_actor` to seat 1 while the API always requests hero (seat 0) at the root. I fixed the generator to keep hero as root actor and added explicit error state persistence; three worker tests passed after the correction. A controlled 1,000-iteration solve of seed 20261024 then completed in **2.3565 s** but had **0.171245-chip** exact restricted NashConv, so it remained candidate-only and was not cached. The batch restarted without duplicating that seed, with OS nice level 15, 15-second pauses, a 1,000-iteration budget, a 0.1-chip restricted-game screen, and 3,540 seconds remaining (approximately one hour total including the failed run). Its first new scenario, seed 20261025, passed; status then showed five qualified entries total. Final pass rate and coverage are pending. Status is in `artifacts/cfr_scenario_worker/status.json`; only qualified entries go to `artifacts/cfr_scenario_cache/`.
 
 **Latest status.** After the regression suite completed, the restarted worker remained alive at 91.2 seconds elapsed with **10 solves completed and 10 qualified**. This early sample excludes the separately recorded 0.171245-chip candidate and is too small to estimate the eventual batch acceptance rate. The complete Python suite passed **109 tests in 26.545 s**, the browser suite passed, the range-editor smoke passed, and `git diff --check` passed.
+
+## E052 — 2026-10-20 — exact-combo river range scaling
+
+**Question and method.** Measure how the current CPU river CFR+ path scales as explicit concrete combo ranges grow, without changing production solver math or the shared API's 64-compatible-deal cap. `experiments/river_range_scaling.py` generates deterministic exact combo ranges with seed **20261020** on `As Kh Qd 7c 2s`, pot **20**, effective stacks **40/40**, BB **2**, default half-pot/pot/all-in actions, one raise, and **20 CFR+ iterations**. Both ranges use equal weights. Every row uses exact joint-deal enumeration and exact best-response/NashConv analysis. Sizes with at most 64 compatible joint deals call the shared `solve()` API; larger rows call the same `RiverGame`/`RiverCFR` reference directly and are marked candidate-only. Each timing is one run, not a distribution. Raw inputs, action EVs/frequencies, errors, runtime, and environment are in [river_range_scaling.json](../experiments/river_range_scaling.json).
+
+**Observed.** The batch completed all seven conditions with no solver errors:
+
+| Combos per range | Compatible joint deals | Path | Iterations | Restricted NashConv (chips) | End-to-end (ms) |
+|---:|---:|---|---:|---:|---:|
+| 1 | 1 | Shared API | 20 | 0.830342 | 18.109 |
+| 2 | 4 | Shared API | 20 | 4.719043 | 58.917 |
+| 4 | 13 | Shared API | 20 | 5.783390 | 175.066 |
+| 6 | 30 | Shared API | 20 | 4.390467 | 392.673 |
+| 8 | 56 | Shared API | 20 | 4.278610 | 735.353 |
+| 10 | 89 | Direct candidate | 20 | 4.150222 | 826.789 |
+| 12 | 129 | Direct candidate | 20 | 3.873151 | 1,226.079 |
+
+The 1-combo smoke produced five root action frequencies and conditional action EVs for the selected hand `Kc 3h`; these and the corresponding per-hand/aggregate rows for every size are saved in the raw JSON. The shared API accepted the 8-combo range at 56 deals and correctly remained capped below the 10-combo, 89-deal condition; candidate rows did not modify or bypass the production API. Runtime increased from 18 ms at one deal to 735 ms at 56 deals and 1,226 ms at 129 deals in this fixture. NashConv is nonmonotonic across range sizes and remains several chips after only 20 iterations, so the sweep demonstrates computational scaling, not convergence or strategic quality. The same selected hero combo is evaluated against different opponent ranges as the range grows, so action EVs across rows are not a controlled same-game comparison.
+
+**Harness correction and checks.** The first smoke fixture used seed 17 and generated mutually blocked singleton combos; the solver correctly rejected the zero-deal game. The generator now deterministically retries only when the entire sampled pair of ranges has no compatible deal, while retaining ordinary blocker collisions and reporting the resulting compatible-deal count. `python3 -m unittest tests.test_river_range_scaling` passed **2 tests** (seeded generation/blocker count and a one-deal real-solver smoke). No production solver or API range limit changed. Larger ranges, additional seeds, convergence sweeps, and paired same-game action-EV comparisons remain future experiments.
+
+## E053 — 2026-10-20 — exact-combo Scenario Lab discoverability and blocker filtering
+
+**Observed.** A code-level audit and API execution confirmed the range editor already serialized exact suit-specific combos into the shared river solver. The controls were nested under a collapsed disclosure and only appeared for one selected hand class without explaining that restriction. Also, the opponent range serializer removed board blockers but could still submit combos containing the known hero cards; CFR later discarded these deals, but the dead entries consumed the eight-combo API limit.
+
+**Change.** The selected-class editor now opens its **Specific combos** section by default, shows how many combinations remain available, and tells users to select one class for exact suit-level weights. Opponent combos blocked by hero cards are filtered before counting and serialization. The range-size cap and CFR calculations are unchanged.
+
+**Verification.** `node tests/range_editor_smoke.js` verified multi-class selection, exact `9c 9d` serialization at 37% weight, and that a blocked opponent combo no longer consumes a range slot. The relevant Python suite passed **26 tests** (`test_river_range_scaling`, `test_solve`, and `test_river_solver`), and `git diff --check` passed. The Chrome browser regression passed with the existing demo's measured 0.080251-chip restricted NashConv at 2,000 CFR+ iterations and 3,737 ms; it verified action changes did not rerun solving and the game path still resumed. E052 remains only a 20-iteration scaling smoke, not evidence of accurate strategy. No solver mathematics or outputs changed.
 ## E050 — 2026-10-20 — external solver source review and river-worker progress snapshot
 
 **Question.** How do established public projects obtain hand/action frequencies and EV, and what concrete sequence gets this project from limited solved spots to gameplay coverage?

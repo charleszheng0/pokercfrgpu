@@ -68,8 +68,28 @@ const editor = context.window.RangeEditor;
   elements.get('river-board').value = 'As Kh Qd 7c 2s';
   elements.get('opponent-preset').value = 'overlap_opponent';
   elements.get('opponent-preset').onchange();
-  assert.strictEqual(editor.payloadRanges()[1].hands.length, 2);
-  assert(elements.get('opponent-range-summary').textContent.includes('1 compatible'));
+  assert.strictEqual(editor.payloadRanges()[1].hands.length, 1);
+  assert.deepStrictEqual(Array.from(editor.payloadRanges()[1].hands[0]), ['Ac', 'Ad']);
+  assert(elements.get('opponent-range-summary').textContent.includes('1 combos'));
+
+  // Exact suit-combo editing is exposed for one selected class and serialized
+  // as concrete cards with its own weight, while multi-select remains available.
+  elements.get('hero-clear-range').onclick();
+  elements.get('include-hero-hand').onclick();
+  selectClass('JTs'); // switch from the auto-selected hero hand to one class
+  selectClass('99');
+  const heroEditor = elements.get('hero-combos');
+  const suitDetails = heroEditor.children[2];
+  assert.strictEqual(suitDetails.open, true);
+  assert(suitDetails.children[0].textContent.includes('Specific combos'));
+  const exactRow = suitDetails.children.find(child => child.children?.[0]?.textContent === '9c 9d');
+  assert(exactRow, 'pair class should expose concrete card combinations');
+  exactRow.children[1].value = '37';
+  exactRow.children[1].oninput();
+  const exactRanges = editor.payloadRanges();
+  const exactIndex = exactRanges[0].hands.findIndex(cards => Array.from(cards).join(' ') === '9c 9d');
+  assert(exactIndex >= 0);
+  assert.strictEqual(exactRanges[0].weights[exactIndex], 0.37);
   const seen = new Set();
   for (let row = 0; row < 13; row++) for (let col = 0; col < 13; col++) {
     const combos = editor.combosFor(editor.labelFor(row, col));
