@@ -1,0 +1,1398 @@
+{
+  "experiment": "seeded_held_out_postflop_tree_validation",
+  "date": "2026-10-20",
+  "seed": 20261021,
+  "revision": "c3ee1708d49134b8b95d213c5efe82720281a59e",
+  "working_tree": "dirty",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "methodology": "Three distinct seeded boards/range fixtures per solver mode. River uses two weighted combos per player and exact joint deals; turn/flop profiles use one combo per player. River 200 iterations; full turn and showdown-cutoff turn/flop 100 iterations. Exact restricted-game NashConv and conditional hero action EVs are recorded.",
+  "groups": {
+    "river_full_tree": {
+      "positions": 3,
+      "nash_conv_chips": [
+        0.18942142043673016,
+        0.0034973968750557916,
+        0.005669476985207922
+      ],
+      "nash_conv_median_chips": 0.005669476985207922,
+      "nash_conv_max_chips": 0.18942142043673016,
+      "wall_latency_ms": [
+        229.45279197301716,
+        229.14883302291855,
+        228.2744999974966
+      ],
+      "wall_latency_median_ms": 229.14883302291855,
+      "compatible_deals": [
+        4,
+        4,
+        4
+      ]
+    },
+    "turn_full_tree": {
+      "positions": 3,
+      "nash_conv_chips": [
+        0.014290946453241027,
+        0.013054141825729282,
+        0.009490892164216724
+      ],
+      "nash_conv_median_chips": 0.013054141825729282,
+      "nash_conv_max_chips": 0.014290946453241027,
+      "wall_latency_ms": [
+        1927.7517499867827,
+        1958.4279580158181,
+        2063.2783329929225
+      ],
+      "wall_latency_median_ms": 1958.4279580158181,
+      "compatible_deals": [
+        1,
+        1,
+        1
+      ]
+    },
+    "turn_showdown_cutoff": {
+      "positions": 3,
+      "nash_conv_chips": [
+        0.018580057221676327,
+        0.021159507486494533,
+        0.016066976984746795
+      ],
+      "nash_conv_median_chips": 0.018580057221676327,
+      "nash_conv_max_chips": 0.021159507486494533,
+      "wall_latency_ms": [
+        49.57883298629895,
+        49.82120799832046,
+        49.27337495610118
+      ],
+      "wall_latency_median_ms": 49.57883298629895,
+      "compatible_deals": [
+        1,
+        1,
+        1
+      ]
+    },
+    "flop_showdown_cutoff": {
+      "positions": 3,
+      "nash_conv_chips": [
+        0.02201152925819372,
+        0.008099906302712512,
+        0.009314607259326202
+      ],
+      "nash_conv_median_chips": 0.009314607259326202,
+      "nash_conv_max_chips": 0.02201152925819372,
+      "wall_latency_ms": [
+        408.37070904672146,
+        407.8736660303548,
+        410.71329201804474
+      ],
+      "wall_latency_median_ms": 408.37070904672146,
+      "compatible_deals": [
+        1,
+        1,
+        1
+      ]
+    }
+  },
+  "positions": [
+    {
+      "position_id": "river_full_tree_0",
+      "status": "supported_restricted_game",
+      "reason": "Restricted postflop game; strategy is not full-game GTO",
+      "validation_status": "restricted_residual_measured",
+      "street": "river",
+      "mode": "full_tree",
+      "board": [
+        "Th",
+        "8c",
+        "Jd",
+        "2c",
+        "Ah"
+      ],
+      "hero_hand": [
+        "8d",
+        "7c"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "8d",
+              "7c"
+            ],
+            [
+              "Qc",
+              "Qd"
+            ]
+          ],
+          "weights": [
+            0.65,
+            0.35
+          ]
+        },
+        {
+          "hands": [
+            [
+              "5h",
+              "9h"
+            ],
+            [
+              "Kh",
+              "Kc"
+            ]
+          ],
+          "weights": [
+            0.4,
+            0.6
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        10,
+        10
+      ],
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.18942142043673016,
+      "latency_ms": 229.42862496711314,
+      "wall_latency_ms": 229.45279197301716,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9873585805849919
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.01158292086847295
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0009231103511314785
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0001353881954035499
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": -4.363761478653399,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": -5.155633501109907,
+          "ev_loss_chips": 0.7918720224565083
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "ev_chips": -6.237696896009801,
+          "ev_loss_chips": 1.8739354173564022
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev_chips": -7.199572139303482,
+          "ev_loss_chips": 2.8358106606500835
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "Training enumerates public-card chance exactly"
+      ]
+    },
+    {
+      "position_id": "river_full_tree_1",
+      "status": "supported_restricted_game",
+      "reason": "Restricted postflop game; strategy is not full-game GTO",
+      "validation_status": "restricted_residual_measured",
+      "street": "river",
+      "mode": "full_tree",
+      "board": [
+        "2c",
+        "5h",
+        "2d",
+        "2s",
+        "Qs"
+      ],
+      "hero_hand": [
+        "Js",
+        "Jd"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "Js",
+              "Jd"
+            ],
+            [
+              "Qc",
+              "Ac"
+            ]
+          ],
+          "weights": [
+            0.65,
+            0.35
+          ]
+        },
+        {
+          "hands": [
+            [
+              "3s",
+              "9d"
+            ],
+            [
+              "8h",
+              "3d"
+            ]
+          ],
+          "weights": [
+            0.4,
+            0.6
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        10,
+        10
+      ],
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.0034973968750557916,
+      "latency_ms": 229.1364999837242,
+      "wall_latency_ms": 229.14883302291855,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.4247264495049193
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.21220805681573526
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.36293166417814565
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.00013382950119971484
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": 6.0034669497775575,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": 6.0030626949004935,
+          "ev_loss_chips": 0.0004042548770639698
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "ev_chips": 6.002993631915678,
+          "ev_loss_chips": 0.0004733178618794298
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev_chips": 6.000248756218905,
+          "ev_loss_chips": 0.0032181935586521604
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "Training enumerates public-card chance exactly"
+      ]
+    },
+    {
+      "position_id": "river_full_tree_2",
+      "status": "supported_restricted_game",
+      "reason": "Restricted postflop game; strategy is not full-game GTO",
+      "validation_status": "restricted_residual_measured",
+      "street": "river",
+      "mode": "full_tree",
+      "board": [
+        "3h",
+        "6s",
+        "Ac",
+        "Qs",
+        "6c"
+      ],
+      "hero_hand": [
+        "4s",
+        "4d"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "4s",
+              "4d"
+            ],
+            [
+              "Kd",
+              "3s"
+            ]
+          ],
+          "weights": [
+            0.65,
+            0.35
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Qd",
+              "2s"
+            ],
+            [
+              "Ad",
+              "Qh"
+            ]
+          ],
+          "weights": [
+            0.4,
+            0.6
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        10,
+        10
+      ],
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.005669476985207922,
+      "latency_ms": 228.2628749962896,
+      "wall_latency_ms": 228.2744999974966,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9986181374943786
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.001264387752987229
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 3.05816320301879e-05
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 8.689312060387716e-05
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": -6.001903741218564,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": -8.023476019743725,
+          "ev_loss_chips": 2.021572278525161
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "ev_chips": -12.470617231988737,
+          "ev_loss_chips": 6.468713490770172
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev_chips": -15.999452736318407,
+          "ev_loss_chips": 9.997548995099843
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "Training enumerates public-card chance exactly"
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_0",
+      "status": "supported_restricted_game",
+      "reason": "Restricted postflop game; strategy is not full-game GTO",
+      "validation_status": "restricted_residual_measured",
+      "street": "turn",
+      "mode": "full_tree",
+      "board": [
+        "Ks",
+        "6c",
+        "4h",
+        "7h"
+      ],
+      "hero_hand": [
+        "As",
+        "Kh"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "As",
+              "Kh"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "2c",
+              "Jd"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        4,
+        4
+      ],
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.014290946453241027,
+      "latency_ms": 1927.738541038707,
+      "wall_latency_ms": 1927.7517499867827,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.6859890346432672
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.31339799094338894
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0006129744133436672
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": 6.013412125625289,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": 6.006675483437599,
+          "ev_loss_chips": 0.0067366421876897675
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "ev_chips": 6.0003960396039595,
+          "ev_loss_chips": 0.013016086021329087
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "Training enumerates public-card chance exactly"
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_1",
+      "status": "supported_restricted_game",
+      "reason": "Restricted postflop game; strategy is not full-game GTO",
+      "validation_status": "restricted_residual_measured",
+      "street": "turn",
+      "mode": "full_tree",
+      "board": [
+        "Ts",
+        "7s",
+        "6d",
+        "Td"
+      ],
+      "hero_hand": [
+        "3h",
+        "4d"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "3h",
+              "4d"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Ks",
+              "6s"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        4,
+        4
+      ],
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.013054141825729282,
+      "latency_ms": 1958.4137499914505,
+      "wall_latency_ms": 1958.4279580158181,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9991816559739736
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00031872029558282
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0004996237304435318
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": -5.997366905425417,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": -8.180388537422164,
+          "ev_loss_chips": 2.1830216319967475
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "ev_chips": -8.634914491449145,
+          "ev_loss_chips": 2.637547586023728
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "Training enumerates public-card chance exactly"
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_2",
+      "status": "supported_restricted_game",
+      "reason": "Restricted postflop game; strategy is not full-game GTO",
+      "validation_status": "restricted_residual_measured",
+      "street": "turn",
+      "mode": "full_tree",
+      "board": [
+        "As",
+        "9d",
+        "3d",
+        "3h"
+      ],
+      "hero_hand": [
+        "Jc",
+        "5d"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "Jc",
+              "5d"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Ks",
+              "8d"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        4,
+        4
+      ],
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.009490892164216724,
+      "latency_ms": 2063.2636249647476,
+      "wall_latency_ms": 2063.2783329929225,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.99698388098752
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00043840858692998903
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.002577710425550121
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": -5.99283413132759,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": -6.650696650686386,
+          "ev_loss_chips": 0.6578625193587957
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "ev_chips": -6.589662466246625,
+          "ev_loss_chips": 0.5968283349190351
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "Training enumerates public-card chance exactly"
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_0",
+      "status": "supported_restricted_game",
+      "reason": "Experimental current-street CFR with exact showdown runouts and no later betting; not full-game GTO",
+      "validation_status": "experimental_showdown_cutoff_residual_measured",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "board": [
+        "Qd",
+        "3h",
+        "8c",
+        "8s"
+      ],
+      "hero_hand": [
+        "5d",
+        "As"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "5d",
+              "As"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "2c",
+              "4h"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        10,
+        10
+      ],
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.018580057221676327,
+      "latency_ms": 49.56866701832041,
+      "wall_latency_ms": 49.57883298629895,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.002228528934766478
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0348230911773228
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.8178598092424405
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.14508857064547026
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": 4.373766678242203,
+          "ev_loss_chips": 1.6348342919412513
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": 5.8333439789723895,
+          "ev_loss_chips": 0.17525699121106442
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "ev_chips": 6.008600970183454,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev_chips": 6.00055805580558,
+          "ev_loss_chips": 0.008042914377873522
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "No betting after the current street; remaining board runouts are enumerated exactly"
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_1",
+      "status": "supported_restricted_game",
+      "reason": "Experimental current-street CFR with exact showdown runouts and no later betting; not full-game GTO",
+      "validation_status": "experimental_showdown_cutoff_residual_measured",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "board": [
+        "7d",
+        "Ts",
+        "Qh",
+        "Qs"
+      ],
+      "hero_hand": [
+        "6d",
+        "Qd"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "6d",
+              "Qd"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Js",
+              "Jh"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        10,
+        10
+      ],
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.021159507486494533,
+      "latency_ms": 49.80770900147036,
+      "wall_latency_ms": 49.82120799832046,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.014032920589225452
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.3566969422863146
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.5478624141516742
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.08140772297278571
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": 5.468232931533391,
+          "ev_loss_chips": 0.5452685817346072
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": 6.0135015132679985,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "ev_chips": 6.011998355881175,
+          "ev_loss_chips": 0.0015031573868231618
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev_chips": 6.000846084608461,
+          "ev_loss_chips": 0.012655428659537726
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "No betting after the current street; remaining board runouts are enumerated exactly"
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_2",
+      "status": "supported_restricted_game",
+      "reason": "Experimental current-street CFR with exact showdown runouts and no later betting; not full-game GTO",
+      "validation_status": "experimental_showdown_cutoff_residual_measured",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "board": [
+        "2d",
+        "3c",
+        "Kc",
+        "6c"
+      ],
+      "hero_hand": [
+        "Td",
+        "5s"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "Td",
+              "5s"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Js",
+              "7c"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        10,
+        10
+      ],
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.016066976984746795,
+      "latency_ms": 49.263083026744425,
+      "wall_latency_ms": 49.27337495610118,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9966899230988855
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0026800130807887812
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 9.996236414953505e-05
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0005301014561762737
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": -6.0029927677595945,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": -8.02474911679808,
+          "ev_loss_chips": 2.021756349038486
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "ev_chips": -10.292743571258526,
+          "ev_loss_chips": 4.289750803498932
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev_chips": -10.907416741674169,
+          "ev_loss_chips": 4.904423973914574
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "No betting after the current street; remaining board runouts are enumerated exactly"
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_0",
+      "status": "supported_restricted_game",
+      "reason": "Experimental current-street CFR with exact showdown runouts and no later betting; not full-game GTO",
+      "validation_status": "experimental_showdown_cutoff_residual_measured",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "board": [
+        "6c",
+        "7c",
+        "Kd"
+      ],
+      "hero_hand": [
+        "4s",
+        "2h"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "4s",
+              "2h"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "Td",
+              "6d"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        10,
+        10
+      ],
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.02201152925819372,
+      "latency_ms": 408.3612500107847,
+      "wall_latency_ms": 408.37070904672146,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9946192425062556
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.004877206393236773
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.00012202791300673696
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0003815231875007776
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": -6.007923477721289,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": -8.02245565530063,
+          "ev_loss_chips": 2.0145321775793414
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "ev_chips": -11.917812866299833,
+          "ev_loss_chips": 5.909889388578544
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev_chips": -14.575740374037405,
+          "ev_loss_chips": 8.567816896316117
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "No betting after the current street; remaining board runouts are enumerated exactly"
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_1",
+      "status": "supported_restricted_game",
+      "reason": "Experimental current-street CFR with exact showdown runouts and no later betting; not full-game GTO",
+      "validation_status": "experimental_showdown_cutoff_residual_measured",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "board": [
+        "6c",
+        "3d",
+        "Td"
+      ],
+      "hero_hand": [
+        "7s",
+        "Kh"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "7s",
+              "Kh"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "3c",
+              "Jh"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        10,
+        10
+      ],
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.008099906302712512,
+      "latency_ms": 407.8614999889396,
+      "wall_latency_ms": 407.8736660303548,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.997671280108711
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0013418622275216485
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.00013049374962770713
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.000856363914139698
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": -5.996112131640727,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": -7.600524216118695,
+          "ev_loss_chips": 1.6044120844779686
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "ev_chips": -7.857291381787126,
+          "ev_loss_chips": 1.8611792501463995
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev_chips": -7.5946134613461345,
+          "ev_loss_chips": 1.5985013297054076
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "No betting after the current street; remaining board runouts are enumerated exactly"
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_2",
+      "status": "supported_restricted_game",
+      "reason": "Experimental current-street CFR with exact showdown runouts and no later betting; not full-game GTO",
+      "validation_status": "experimental_showdown_cutoff_residual_measured",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "board": [
+        "Kd",
+        "Ts",
+        "5d"
+      ],
+      "hero_hand": [
+        "6h",
+        "Qh"
+      ],
+      "ranges": [
+        {
+          "hands": [
+            [
+              "6h",
+              "Qh"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        },
+        {
+          "hands": [
+            [
+              "5h",
+              "Ad"
+            ]
+          ],
+          "weights": [
+            1.0
+          ]
+        }
+      ],
+      "pot": 12,
+      "stacks": [
+        10,
+        10
+      ],
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.009314607259326202,
+      "latency_ms": 410.701832966879,
+      "wall_latency_ms": 410.71329201804474,
+      "action_frequencies": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.997756908817617
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0015574168299810564
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0001032781375365835
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0005823962148654322
+        }
+      ],
+      "action_evs": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "ev_chips": -6.003124302597693,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "ev_chips": -8.012495603727608,
+          "ev_loss_chips": 2.0093713011299146
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "ev_chips": -8.918790751562248,
+          "ev_loss_chips": 2.915666448964555
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "ev_chips": -8.952054805480548,
+          "ev_loss_chips": 2.948930502882855
+        }
+      ],
+      "assumptions": [
+        "seeded_held_out_profile: supplied priors must already reflect earlier public actions",
+        "Exact best response only inside this small abstract game",
+        "No safe re-solving or opponent counterfactual-value constraints",
+        "Bet/raise sizing: flop bet=(0.5, 1.0) raise=(0.5, 1.0); turn bet=(0.5, 1.0) raise=(0.5, 1.0); river bet=(0.5, 1.0) raise=(0.5, 1.0); at most 1 raise(s) per street",
+        "EV is zero-sum net chips from the root street's start; prior root-street contributions are included",
+        "No betting after the current street; remaining board runouts are enumerated exactly"
+      ]
+    }
+  ],
+  "limitations": [
+    "Only three small synthetic positions per mode; no real betting-history range inference.",
+    "Cutoff modes omit future betting; their NashConv is for a different game than full-tree mode.",
+    "No external solver labels; this suite tests reproducible support and cross-board sensitivity, not equilibrium accuracy.",
+    "Per-position latency is one CPU sample and is not a percentile estimate."
+  ]
+}

@@ -243,6 +243,37 @@ For this one restricted river game, more iterations substantially reduced measur
 
 The restarted low-priority scenario worker uses four exact combos per player and 2,000 iterations. Its first two new samples had 16 compatible deals each and measured NashConv **0.027817 chips in 19.661 s** and **0.024944 chips in 9.410 s**; both passed the 0.1-chip restricted-game cache screen. This is an early two-scenario sample, not a latency percentile or evidence of live-range accuracy. The worker status and individual requests/results are saved under `artifacts/cfr_scenario_worker/` and `artifacts/cfr_scenario_cache/`.
 
+## Fixed river sizing-tree sweep (2026-10-20)
+
+The [profile script](../experiments/profile_sizing_trees.py) measured six action menus on the same board, pot, effective stack, four compatible joint deals, and 100 CFR+ iterations. Each menu was run three times. The table gives structural tree size and median end-to-end CPU time; exact outputs and all individual times are in [the raw JSON](../experiments/profile_sizing_trees.json).
+
+| River menu | Root actions | Public decision states | Info-set action slots | Median latency (ms) | Restricted NashConv (chips) |
+|---|---:|---:|---:|---:|---:|
+| 75% bet + jam; no min size | 3 | 8 | 40 | 62.75 | 1.210840 |
+| 50%/100% + jam; no min size | 4 | 14 | 76 | 119.62 | 1.947462 |
+| Shark-inspired 33%/66%/100%; raise 50%/100% | 5 | 22 | 124 | 194.30 | 2.034422 |
+| 50%/100% + min size; one raise | 5 | 26 | 148 | 233.79 | 2.147069 |
+| 25%/50%/75%/100% + min size; one raise | 7 | 42 | 244 | 384.59 | 1.807273 |
+| 50%/100% + min size; two raises | 5 | 48 | 280 | 469.88 | 2.457523 |
+
+The 4-size menu had 1.62x as many public states and 1.65x as many action slots as baseline, with 1.64x median runtime. Allowing a second raise raised those ratios to 1.85x, 1.89x, and 2.01x. Each menu's measured NashConv is exact only for that menu's own finite game; these values must not be compared across different menus as a strategy-quality ranking. One hundred iterations is not a convergence benchmark. The three run times per row are too few to estimate reliable latency percentiles.
+
+## Declared constrained postflop profiles (2026-10-20)
+
+`poker_cpu.tree_profiles.supported_tree_profiles()` defines seven tiny smoke positions, each with one compatible private-hand deal. The [validation artifact](../experiments/validate_tree_profiles.json) records normalized strategies, conditional hand/action EVs, action loss, assumptions, NashConv and runtime. Five profiles reached ≤0.1 chips exact NashConv inside their own restricted games; both full-flop profiles failed that gate.
+
+| Profile | Mode | Iterations | Exact restricted NashConv (chips) | Latency (ms) | Result |
+|---|---|---:|---:|---:|---|
+| River root | Full river tree, default menu | 100 | 0.005978 | 36.43 | Gate passed for this fixture |
+| River facing bet | Full response tree, two raise targets | 100 | 0.001188 | 15.35 | Gate passed for this fixture |
+| Turn root | Turn + river betting and chance, default menu | 100 | 0.013959 | 2,598.55 | Gate passed for this fixture |
+| Turn cutoff | Turn betting + exact runout, no river betting | 100 | 0.011192 | 152.20 | Gate passed for cutoff game |
+| Flop cutoff | Flop betting + exact runout, no later betting | 100 | 0.008380 | 567.22 | Gate passed for cutoff game |
+| Flop full tree, exact chance | Experimental flop-to-river betting | 1 | 2.426894 | 2,849.30 | Smoke only; max 3 iterations, gate failed at 0.851082 chips |
+| Flop full tree, sampled chance | Vanilla CFR, 2,000 sampled iterations | 2,000 | 0.482945 | 2,826.95 | Gate failed; three seeds range 0.457810–0.489940 |
+
+The [same-profile iteration sweep](../experiments/tree_profile_convergence.json) measures action-EV MAE, strategy L1 deviation, and root policy regret versus the deepest budget tested in each profile. At 30 versus 100 iterations, full turn measured 0.0657-chip action-EV MAE and 0.00218-chip root regret; turn cutoff measured 0.0668 MAE and 0.00165 regret; flop cutoff measured 0.0351 MAE, 0.0343 regret, and 0.232 strategy L1 deviation. Sampled full-flop CFR did not pass NashConv at 100, 500, or 2,000 iterations, with three-seed results clustered around 0.46–0.49 chips at 2,000. The deeper budget is a finite-iteration reference, not an equilibrium oracle. Cutoff results omit future betting. Latencies are one run per profile and varied across sessions; they are not service-level estimates. These small fixtures establish implementation behavior, not general flop/turn/river coverage, full-range capacity, live range validity, or GTO quality. Reproduce with `python3 -m experiments.validate_tree_profiles` and `python3 -m experiments.tree_profile_convergence`.
+
 ## Experimental saved-hand river review (2026-10-14)
 
 The [seeded gameplay run](../experiments/live_review_baseline.json) used 100-chip stacks, 1/2 blinds, a passive check/call opponent, and seed 29. The saved hero decision was a check after the opponent checked the river `5s 4h Js Qh 2s` with hero `8s Qc`, four chips in the pot, and 98 chips per stack. The opt-in review used the observed hero hand against **three equally weighted illustrative opponent combinations** (`Ac Ad`, `Kd Kh`, `9h 9s`); these were not inferred from the opponent's actions. Its 1,000-iteration CFR+ run took **838.75 ms** and returned **0.00007175-chip exact NashConv inside that three-deal game**. The selected check had 99.9995% frequency, −0.666667-chip conditional EV, and zero estimated action loss. Bet sizes and other EVs are saved in the raw result. This one hand establishes request capture and solver plumbing, not range accuracy or meaningful player advice. The latest isolated Chrome demo rerun took 3,821.81 ms after a test-startup polling fix; the saved 3,728.87 ms was the earlier passing run.
@@ -252,3 +283,9 @@ A further headless Chrome run played the seeded hand using table controls, click
 ## Four-street live pipeline diagnosis (2026-10-14)
 
 The [seeded trace](../experiments/live_pipeline_diagnosis.json) and [diagnostic report](LIVE_SOLVER_DIAGNOSIS.md) use one complete 100-chip-stack hand with hero `8s Qc` and three disclosed, unconditioned opponent combinations. Preflop had no solver. Exact full flop rejected three deals before search. Exact full turn took **13,454.3 ms for one CFR+ iteration** and left **43.5924 chips restricted NashConv**. The same turn decision under the existing exact-showdown, no-future-betting cutoff took **466.7 ms for 500 iterations** and had **0.0002181-chip NashConv within that cutoff game**. Flop cutoff took **1,532.0 ms for 500 iterations** and had **0.0003649-chip cutoff-game NashConv**. River full restricted CFR+ took **850.3 ms for 1,000 iterations** and had **0.00007175-chip restricted NashConv**. These are one-run latencies, not speedup claims for the same game: full turn and cutoff turn have different continuation rules. The cutoff's root action EV error versus deeper multi-street solving is unmeasured.
+
+## Seeded held-out postflop fixtures and river convergence — 2026-10-20
+
+Three additional seeded fixtures per profile: river full-tree (200 iterations, two combos/seat, four compatible deals) returned **0.00567 median / 0.18942 maximum chips** exact restricted NashConv at **229 ms median**; full turn (100, one combo/seat) returned **0.01305 / 0.01429 chips** at **1,958 ms**; turn showdown-cutoff returned **0.01858 / 0.02116 chips** at **49.6 ms**; flop showdown-cutoff returned **0.00931 / 0.02201 chips** at **408 ms**. Full per-position results are in [postflop_multiboard_validation.json](../experiments/postflop_multiboard_validation.json). Cutoff modes have no later betting and are separate games from full-tree solving.
+
+The highest-residual river position was deepened at 200/500/1,000 iterations. NashConv was **0.18942/0.05609/0.01914 chips** and wall latency **228/564/1,125 ms**. Against the 1,000-iteration finite reference, 200/500-iteration root action-EV MAE was **0.03137/0.00396 chips**, strategy L1 **0.02427/0.00304**, and root policy regret **0.01031/0.00165 chips**. See [deepen_heldout_river_outlier.json](../experiments/deepen_heldout_river_outlier.json). This is one synthetic fixture, not a general accuracy or latency claim.

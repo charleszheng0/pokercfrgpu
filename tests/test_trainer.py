@@ -96,6 +96,17 @@ class TrainerTests(unittest.TestCase):
         self.assertIsNone(report["target_nash_conv_chips"])
         self.assertTrue(report["convergence_trace"])
 
+    def test_scenario_lab_uses_only_an_exact_qualified_offline_cache_hit(self):
+        cached_result = {"status": "restricted_river_analysis", "frequencies": [],
+                         "action_evs": [], "nash_conv": 0.05}
+        row = {"result": cached_result, "solve_id": "exact-id",
+               "scenario_id": "scenario-id", "nash_conv_chips": 0.05}
+        with patch("trainer.cfr_scenario_worker.get_qualified_scenario", return_value=row), \
+                patch("trainer.server.solve", side_effect=AssertionError("cache should avoid solving")):
+            report = analyze_river_position(self.river_payload())
+        self.assertEqual(report["cache_status"], "exact_scenario_cache_hit")
+        self.assertEqual(report["frequencies"], [])
+
     def test_lab_reports_when_ranges_came_from_a_preset(self):
         payload = self.river_payload()
         payload["range_source"] = "illustrative_preset"

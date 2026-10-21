@@ -403,6 +403,7 @@ def solve(request: SolveRequest) -> SolveResult:
          if request.config.chance_sampling else "Training enumerates public-card chance exactly"),
     )
     quality_prefix = ("research_sampled" if request.config.chance_sampling else
+                      "experimental_full_flop" if street == "flop" and not cutoff else
                       "experimental_showdown_cutoff" if cutoff else
                       "experimental_assumed_range" if request.use_context == "experimental_live"
                       else "restricted")
@@ -413,6 +414,8 @@ def solve(request: SolveRequest) -> SolveResult:
         status="supported_restricted_game",
         reason=("Experimental chance-sampled restricted game; strategy is not full-game GTO"
                 if request.config.chance_sampling else
+                "Experimental full flop-to-river restricted tree; strategy is not validated for product advice"
+                if street == "flop" and not cutoff else
                 "Experimental current-street CFR with exact showdown runouts and no later betting; not full-game GTO"
                 if cutoff else
                 "Experimental assumed-range restricted game; strategy is not full-game GTO"

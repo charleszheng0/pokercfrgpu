@@ -162,6 +162,19 @@ def analyze_river_position(payload):
                         for hand, weight in zip(hands, weights))
     except (TypeError, ValueError) as exc:
         raise ValueError(f"Invalid range: {exc}") from exc
+
+    # Reuse offline analysis only for the exact request and current solver
+    # fingerprint. Cached samples are not generalized to other hands or lines.
+    from .cfr_scenario_worker import get_qualified_scenario
+    cached = get_qualified_scenario(payload)
+    if cached is not None:
+        result = dict(cached["result"])
+        result["cache_status"] = "exact_scenario_cache_hit"
+        log_event("scenario_cache_hit", solve_id=cached["solve_id"],
+                  scenario_id=cached["scenario_id"],
+                  nash_conv_chips=cached["nash_conv_chips"])
+        return result
+
     report = solve(SolveRequest(
         board=board, street=street, pot_before_street=pot,
         stacks_at_street_start=tuple(stacks),

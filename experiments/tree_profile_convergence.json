@@ -1,0 +1,1479 @@
+{
+  "experiment": "tiny_restricted_tree_convergence_sweep",
+  "date": "2026-10-20",
+  "revision": "c3ee1708d49134b8b95d213c5efe82720281a59e",
+  "working_tree": "dirty",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "methodology": "Exact restricted-game NashConv measured at each requested iteration budget; each profile fixes board, pot, stacks, range, action menu, and root history. No values are compared across profile IDs because their games differ.",
+  "profiles": [
+    {
+      "profile_id": "river_root",
+      "iterations_requested": 1,
+      "iterations_completed": 1,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 3.999999999999999,
+      "latency_ms": 1.9872499979101121,
+      "wall_latency_ms": 1.9991250010207295,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.3333333333333333,
+          "ev_chips": 2.9999999999999996
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.3333333333333333,
+          "ev_chips": 3.6666666666666665
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.3333333333333333,
+          "ev_chips": 6.0
+        }
+      ]
+    },
+    {
+      "profile_id": "river_root",
+      "iterations_requested": 5,
+      "iterations_completed": 5,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 2.0125766208206297,
+      "latency_ms": 2.172958047594875,
+      "wall_latency_ms": 2.1828750032000244,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.3954439622252902,
+          "ev_chips": 5.697786761063937
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.41263684585551785,
+          "ev_chips": 5.851813102202179
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.19191919191919193,
+          "ev_chips": 4.133333333333334
+        }
+      ]
+    },
+    {
+      "profile_id": "river_root",
+      "iterations_requested": 20,
+      "iterations_completed": 20,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.14375547291575996,
+      "latency_ms": 4.8434580094181,
+      "wall_latency_ms": 4.856250016018748,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.4628198613466104,
+          "ev_chips": 4.131897390593088
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.5234716249448758,
+          "ev_chips": 4.143108916699936
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.01370851370851371,
+          "ev_chips": 4.0095238095238095
+        }
+      ]
+    },
+    {
+      "profile_id": "river_root",
+      "iterations_requested": 100,
+      "iterations_completed": 100,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.00597795035887394,
+      "latency_ms": 19.340666010975838,
+      "wall_latency_ms": 19.352167029865086,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.4677871020434448,
+          "ev_chips": 4.005512383140765
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.5316428409508547,
+          "ev_chips": 4.005976849490742
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0005700570057005701,
+          "ev_chips": 4.00039603960396
+        }
+      ]
+    },
+    {
+      "profile_id": "river_facing_bet",
+      "iterations_requested": 1,
+      "iterations_completed": 1,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 6.0,
+      "latency_ms": 0.8477499941363931,
+      "wall_latency_ms": 0.8576249820180237,
+      "root_actions": [
+        {
+          "kind": "fold",
+          "amount": 0
+        },
+        {
+          "kind": "call",
+          "amount": 0
+        },
+        {
+          "kind": "raise",
+          "amount": 8
+        },
+        {
+          "kind": "raise",
+          "amount": 10
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 0.25,
+          "ev_chips": -4.0
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 0.25,
+          "ev_chips": 8.0
+        },
+        {
+          "kind": "raise",
+          "amount": 8,
+          "frequency": 0.25,
+          "ev_chips": 10.0
+        },
+        {
+          "kind": "raise",
+          "amount": 10,
+          "frequency": 0.25,
+          "ev_chips": 11.0
+        }
+      ]
+    },
+    {
+      "profile_id": "river_facing_bet",
+      "iterations_requested": 5,
+      "iterations_completed": 5,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.3999999999999986,
+      "latency_ms": 1.0222910204902291,
+      "wall_latency_ms": 1.0309999925084412,
+      "root_actions": [
+        {
+          "kind": "fold",
+          "amount": 0
+        },
+        {
+          "kind": "call",
+          "amount": 0
+        },
+        {
+          "kind": "raise",
+          "amount": 8
+        },
+        {
+          "kind": "raise",
+          "amount": 10
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 0.016666666666666666,
+          "ev_chips": -4.0
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 0.17601626016260166,
+          "ev_chips": 8.0
+        },
+        {
+          "kind": "raise",
+          "amount": 8,
+          "frequency": 0.358130081300813,
+          "ev_chips": 8.133333333333333
+        },
+        {
+          "kind": "raise",
+          "amount": 10,
+          "frequency": 0.44918699186991873,
+          "ev_chips": 8.2
+        }
+      ]
+    },
+    {
+      "profile_id": "river_facing_bet",
+      "iterations_requested": 20,
+      "iterations_completed": 20,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.02857142857142847,
+      "latency_ms": 2.2931250277906656,
+      "wall_latency_ms": 2.302583015989512,
+      "root_actions": [
+        {
+          "kind": "fold",
+          "amount": 0
+        },
+        {
+          "kind": "call",
+          "amount": 0
+        },
+        {
+          "kind": "raise",
+          "amount": 8
+        },
+        {
+          "kind": "raise",
+          "amount": 10
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 0.0011904761904761906,
+          "ev_chips": -4.0
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 0.1711091753774681,
+          "ev_chips": 8.0
+        },
+        {
+          "kind": "raise",
+          "amount": 8,
+          "frequency": 0.36530197444831586,
+          "ev_chips": 8.00952380952381
+        },
+        {
+          "kind": "raise",
+          "amount": 10,
+          "frequency": 0.46239837398373984,
+          "ev_chips": 8.014285714285714
+        }
+      ]
+    },
+    {
+      "profile_id": "river_facing_bet",
+      "iterations_requested": 100,
+      "iterations_completed": 100,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.0011881188118829655,
+      "latency_ms": 8.488291001413018,
+      "wall_latency_ms": 8.496833965182304,
+      "root_actions": [
+        {
+          "kind": "fold",
+          "amount": 0
+        },
+        {
+          "kind": "call",
+          "amount": 0
+        },
+        {
+          "kind": "raise",
+          "amount": 8
+        },
+        {
+          "kind": "raise",
+          "amount": 10
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 4.950495049504949e-05,
+          "ev_chips": -4.0
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 0.17074740400869354,
+          "ev_chips": 8.0
+        },
+        {
+          "kind": "raise",
+          "amount": 8,
+          "frequency": 0.3658307172180632,
+          "ev_chips": 8.00039603960396
+        },
+        {
+          "kind": "raise",
+          "amount": 10,
+          "frequency": 0.4633723738227481,
+          "ev_chips": 8.000594059405941
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_full_tree",
+      "iterations_requested": 1,
+      "iterations_completed": 1,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 4.833333333333333,
+      "latency_ms": 158.42891699867323,
+      "wall_latency_ms": 158.4422920132056,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.3333333333333333,
+          "ev_chips": 2.99074074074074
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.3333333333333333,
+          "ev_chips": 3.4166666666666656
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.3333333333333333,
+          "ev_chips": 6.0
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_full_tree",
+      "iterations_requested": 2,
+      "iterations_completed": 2,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 4.277777777777779,
+      "latency_ms": 158.64391601644456,
+      "wall_latency_ms": 158.6564999888651,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.1111111111111111,
+          "ev_chips": 2.308525944490857
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.1111111111111111,
+          "ev_chips": 1.805555555555555
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.7777777777777778,
+          "ev_chips": 4.666666666666667
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_full_tree",
+      "iterations_requested": 5,
+      "iterations_completed": 5,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 3.87090838934123,
+      "latency_ms": 217.48354198643938,
+      "wall_latency_ms": 217.495916003827,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.3656500593395331,
+          "ev_chips": 6.205032478409358
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.43943717575701075,
+          "ev_chips": 5.888098361206062
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.19491276490345621,
+          "ev_chips": 4.133333333333334
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_full_tree",
+      "iterations_requested": 10,
+      "iterations_completed": 10,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 1.2816879360936055,
+      "latency_ms": 296.40708304941654,
+      "wall_latency_ms": 296.4220420108177,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.5944434154907856,
+          "ev_chips": 5.137738114013577
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.3523985577173626,
+          "ev_chips": 4.564907060737087
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0531580267918518,
+          "ev_chips": 4.036363636363636
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_full_tree",
+      "iterations_requested": 30,
+      "iterations_completed": 30,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.15159749781752252,
+      "latency_ms": 663.4358750307001,
+      "wall_latency_ms": 663.4529589791782,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.6879916531277295,
+          "ev_chips": 4.143517722091211
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.3057208383269953,
+          "ev_chips": 4.06944770293159
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.006287508545275246,
+          "ev_chips": 4.004301075268817
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_full_tree",
+      "iterations_requested": 100,
+      "iterations_completed": 100,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.013958977521815186,
+      "latency_ms": 1928.406040999107,
+      "wall_latency_ms": 1928.4222910064273,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.6993852908123801,
+          "ev_chips": 4.013300276340213
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.30003576038096424,
+          "ev_chips": 4.006429341389226
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0005789488066556831,
+          "ev_chips": 4.00039603960396
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_showdown_cutoff",
+      "iterations_requested": 1,
+      "iterations_completed": 1,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 8.0,
+      "latency_ms": 19.871999975293875,
+      "wall_latency_ms": 19.88320902455598,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        },
+        {
+          "kind": "bet",
+          "amount": 8
+        },
+        {
+          "kind": "bet",
+          "amount": 10
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.2,
+          "ev_chips": 5.57
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.2,
+          "ev_chips": 3.6000000000000005
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.2,
+          "ev_chips": 4.25
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.2,
+          "ev_chips": 5.666666666666666
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.2,
+          "ev_chips": 9.0
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_showdown_cutoff",
+      "iterations_requested": 10,
+      "iterations_completed": 10,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 1.0276060066683055,
+      "latency_ms": 24.413834034930915,
+      "wall_latency_ms": 24.424333998467773,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        },
+        {
+          "kind": "bet",
+          "amount": 8
+        },
+        {
+          "kind": "bet",
+          "amount": 10
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.01979712034185069,
+          "ev_chips": 4.396446083231062
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.20500033745699903,
+          "ev_chips": 4.768505326068009
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.4475137313971201,
+          "ev_chips": 5.019022785192011
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.28128868660072864,
+          "ev_chips": 4.73131449008577
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.046400124203301585,
+          "ev_chips": 4.090909090909091
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_showdown_cutoff",
+      "iterations_requested": 30,
+      "iterations_completed": 30,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.12154479648764838,
+      "latency_ms": 35.6845420319587,
+      "wall_latency_ms": 35.695375001523644,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        },
+        {
+          "kind": "bet",
+          "amount": 8
+        },
+        {
+          "kind": "bet",
+          "amount": 10
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.024493981833070524,
+          "ev_chips": 4.055164014447355
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.21998811405700777,
+          "ev_chips": 4.092815680445966
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.4698531508845598,
+          "ev_chips": 4.121430425989118
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.2801765664916381,
+          "ev_chips": 4.087716143603445
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.005488186733723843,
+          "ev_chips": 4.010752688172043
+        }
+      ]
+    },
+    {
+      "profile_id": "turn_showdown_cutoff",
+      "iterations_requested": 100,
+      "iterations_completed": 100,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.011191748587475736,
+      "latency_ms": 69.9248340097256,
+      "wall_latency_ms": 69.93770902045071,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        },
+        {
+          "kind": "bet",
+          "amount": 8
+        },
+        {
+          "kind": "bet",
+          "amount": 10
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.025066032567940547,
+          "ev_chips": 4.00515273172449
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.2218135391060815,
+          "ev_chips": 4.008566265467211
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.4725739637844608,
+          "ev_chips": 4.0111907844709735
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.28004111665415443,
+          "ev_chips": 4.008090537411403
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0005053478873626906,
+          "ev_chips": 4.0009900990099005
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_showdown_cutoff",
+      "iterations_requested": 1,
+      "iterations_completed": 1,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 3.8249158249158244,
+      "latency_ms": 383.7246249895543,
+      "wall_latency_ms": 383.74041696079075,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.3333333333333333,
+          "ev_chips": 2.7519640852974185
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.3333333333333333,
+          "ev_chips": 3.447811447811447
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.3333333333333333,
+          "ev_chips": 5.737373737373737
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_showdown_cutoff",
+      "iterations_requested": 10,
+      "iterations_completed": 10,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.5864771087181166,
+      "latency_ms": 380.7210420491174,
+      "wall_latency_ms": 380.73504104977474,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.3850159270669009,
+          "ev_chips": 4.1934152242741165
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.540863618783767,
+          "ev_chips": 4.4764069923664
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.07412045414933216,
+          "ev_chips": 4.031588613406796
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_showdown_cutoff",
+      "iterations_requested": 30,
+      "iterations_completed": 30,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.09100488543003626,
+      "latency_ms": 390.462875016965,
+      "wall_latency_ms": 390.4761250014417,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.12792512981862816,
+          "ev_chips": 3.7921801153288888
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.7396369123347791,
+          "ev_chips": 4.057316776107924
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.13243795784659265,
+          "ev_chips": 4.003736287607255
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_showdown_cutoff",
+      "iterations_requested": 100,
+      "iterations_completed": 100,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.008379657767319859,
+      "latency_ms": 395.02341696061194,
+      "wall_latency_ms": 395.0406250078231,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 4
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.011779244626863784,
+          "ev_chips": 3.7424202652448555
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.8258962048447879,
+          "ev_chips": 4.005285423170683
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.1623245505283484,
+          "ev_chips": 4.00034403440344
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_full_tree_experimental",
+      "iterations_requested": 1,
+      "iterations_completed": 1,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 2.4268939393939393,
+      "latency_ms": 2274.681790964678,
+      "wall_latency_ms": 2274.7094579972327,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 1
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.5,
+          "ev_chips": 1.6921559343434356
+        },
+        {
+          "kind": "bet",
+          "amount": 1,
+          "frequency": 0.5,
+          "ev_chips": 4.3358585858585865
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_full_tree_experimental",
+      "iterations_requested": 2,
+      "iterations_completed": 2,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 1.2567760942760948,
+      "latency_ms": 2189.9622500059195,
+      "wall_latency_ms": 2189.9819580139592,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 1
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.16666666666666666,
+          "ev_chips": 0.7879577020202025
+        },
+        {
+          "kind": "bet",
+          "amount": 1,
+          "frequency": 0.8333333333333334,
+          "ev_chips": 4.1119528619528625
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_full_tree_experimental",
+      "iterations_requested": 3,
+      "iterations_completed": 3,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.8510817331320792,
+      "latency_ms": 2515.737207955681,
+      "wall_latency_ms": 2515.7662500278093,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 1
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.25180438726702964,
+          "ev_chips": 3.292871895915926
+        },
+        {
+          "kind": "bet",
+          "amount": 1,
+          "frequency": 0.7481956127329704,
+          "ev_chips": 4.055976430976431
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_full_tree_sampled",
+      "iterations_requested": 100,
+      "iterations_completed": 100,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.6106533995610075,
+      "latency_ms": 1743.9489160315134,
+      "wall_latency_ms": 1744.006042019464,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 1
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.03372471508154656,
+          "ev_chips": 3.0264504381528776
+        },
+        {
+          "kind": "bet",
+          "amount": 1,
+          "frequency": 0.9662752849184534,
+          "ev_chips": 4.003358585858586
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_full_tree_sampled",
+      "iterations_requested": 500,
+      "iterations_completed": 500,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.6284182447759399,
+      "latency_ms": 1841.3494160049595,
+      "wall_latency_ms": 1841.3758340175264,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 1
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.3543108164144933,
+          "ev_chips": 4.053565817432746
+        },
+        {
+          "kind": "bet",
+          "amount": 1,
+          "frequency": 0.6456891835855068,
+          "ev_chips": 4.000671717171717
+        }
+      ]
+    },
+    {
+      "profile_id": "flop_full_tree_sampled",
+      "iterations_requested": 2000,
+      "iterations_completed": 2000,
+      "status": "supported_restricted_game",
+      "nash_conv_chips": 0.4829452056011245,
+      "latency_ms": 2320.5172910238616,
+      "wall_latency_ms": 2320.5382089945488,
+      "root_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 1
+        }
+      ],
+      "selected_hand_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.12195047265782616,
+          "ev_chips": 3.9165344564220717
+        },
+        {
+          "kind": "bet",
+          "amount": 1,
+          "frequency": 0.8780495273421739,
+          "ev_chips": 4.000167929292929
+        }
+      ]
+    }
+  ],
+  "same_game_decision_quality_vs_deepest_budget": {
+    "river_root": {
+      "reference_iterations": 100,
+      "reference_nash_conv_chips": 0.00597795035887394,
+      "comparisons": [
+        {
+          "iterations": 1,
+          "action_ev_mae_chips_vs_deepest_budget": 1.1148088421202935,
+          "strategy_l1_vs_deepest_budget": 0.6655265526552656,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.0020150920789197
+        },
+        {
+          "iterations": 5,
+          "action_ev_mae_chips_vs_deepest_budget": 1.2236826414546609,
+          "strategy_l1_vs_deepest_budget": 0.3826982698269828,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.0012547349374809613
+        },
+        {
+          "iterations": 20,
+          "action_ev_mae_chips_vs_deepest_budget": 0.09088161486045543,
+          "strategy_l1_vs_deepest_budget": 0.02627691340562647,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.0002914688605342164
+        }
+      ],
+      "reference_scope": "same restricted profile and same private hand; deepest budget is not an exact equilibrium oracle"
+    },
+    "river_facing_bet": {
+      "reference_iterations": 100,
+      "reference_nash_conv_chips": 0.0011881188118829655,
+      "comparisons": [
+        {
+          "iterations": 1,
+          "action_ev_mae_chips_vs_deepest_budget": 1.2497524752475249,
+          "strategy_l1_vs_deepest_budget": 0.6584061820816227,
+          "root_policy_regret_chips_vs_deepest_action_values": 3.000346534653466
+        },
+        {
+          "iterations": 5,
+          "action_ev_mae_chips_vs_deepest_budget": 0.0830858085808579,
+          "strategy_l1_vs_deepest_budget": 0.04377203574015934,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.20018538195282964
+        },
+        {
+          "iterations": 20,
+          "action_ev_mae_chips_vs_deepest_budget": 0.0057048561999057945,
+          "strategy_l1_vs_deepest_budget": 0.0030054852175112933,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.01446040753901201
+        }
+      ],
+      "reference_scope": "same restricted profile and same private hand; deepest budget is not an exact equilibrium oracle"
+    },
+    "turn_full_tree": {
+      "reference_iterations": 100,
+      "reference_nash_conv_chips": 0.013958977521815186,
+      "comparisons": [
+        {
+          "iterations": 1,
+          "action_ev_mae_chips_vs_deepest_budget": 1.2039753902393577,
+          "strategy_l1_vs_deepest_budget": 0.7321039149580935,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.006591723895746249
+        },
+        {
+          "iterations": 2,
+          "action_ev_mae_chips_vs_deepest_budget": 1.5239729149152446,
+          "strategy_l1_vs_deepest_budget": 1.5543976579422443,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.010800065789417168
+        },
+        {
+          "iterations": 5,
+          "action_ev_mae_chips_vs_deepest_budget": 1.4021128385384511,
+          "strategy_l1_vs_deepest_budget": 0.667470462945694,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.005534544710903866
+        },
+        {
+          "iterations": 10,
+          "action_ev_mae_chips_vs_deepest_budget": 0.5729610512603003,
+          "strategy_l1_vs_deepest_budget": 0.20988375064318898,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.003107271329051642
+        },
+        {
+          "iterations": 30,
+          "action_ev_mae_chips_vs_deepest_budget": 0.06571361431940599,
+          "strategy_l1_vs_deepest_budget": 0.02278727536930126,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.0021817234920558093
+        }
+      ],
+      "reference_scope": "same restricted profile and same private hand; deepest budget is not an exact equilibrium oracle"
+    },
+    "turn_showdown_cutoff": {
+      "reference_iterations": 100,
+      "reference_nash_conv_chips": 0.011191748587475736,
+      "comparisons": [
+        {
+          "iterations": 1,
+          "action_ev_mae_chips_vs_deepest_budget": 1.7739617559034222,
+          "strategy_l1_vs_deepest_budget": 0.7488572390893935,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.004392700854178422
+        },
+        {
+          "iterations": 10,
+          "action_ev_mae_chips_vs_deepest_budget": 0.5944414714803932,
+          "strategy_l1_vs_deepest_budget": 0.09428469252502616,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.0020029408341626365
+        },
+        {
+          "iterations": 30,
+          "action_ev_mae_chips_vs_deepest_budget": 0.0667777069147899,
+          "strategy_l1_vs_deepest_budget": 0.010236577367689563,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.0016498587832733946
+        }
+      ],
+      "reference_scope": "same restricted profile and same private hand; deepest budget is not an exact equilibrium oracle"
+    },
+    "flop_showdown_cutoff": {
+      "reference_iterations": 100,
+      "reference_nash_conv_chips": 0.008379657767319859,
+      "comparisons": [
+        {
+          "iterations": 1,
+          "action_ev_mae_chips_vs_deepest_budget": 1.0949866194256566,
+          "strategy_l1_vs_deepest_budget": 0.985125743022909,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.08926884889769049
+        },
+        {
+          "iterations": 10,
+          "action_ev_mae_chips_vs_deepest_budget": 0.31778703574277767,
+          "strategy_l1_vs_deepest_budget": 0.7464733648800743,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.10157353045195627
+        },
+        {
+          "iterations": 30,
+          "action_ev_mae_chips_vs_deepest_budget": 0.03506115207502969,
+          "strategy_l1_vs_deepest_budget": 0.23229177038352888,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.03428148688971566
+        }
+      ],
+      "reference_scope": "same restricted profile and same private hand; deepest budget is not an exact equilibrium oracle"
+    },
+    "flop_full_tree_experimental": {
+      "reference_iterations": 3,
+      "reference_nash_conv_chips": 0.8510817331320792,
+      "comparisons": [
+        {
+          "iterations": 1,
+          "action_ev_mae_chips_vs_deepest_budget": 0.9402990582273232,
+          "strategy_l1_vs_deepest_budget": 0.4963912254659408,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.3815522675302523
+        },
+        {
+          "iterations": 2,
+          "action_ev_mae_chips_vs_deepest_budget": 1.2804453124360777,
+          "strategy_l1_vs_deepest_budget": 0.17027544120072594,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.12718408917675106
+        }
+      ],
+      "reference_scope": "same restricted profile and same private hand; deepest budget is not an exact equilibrium oracle"
+    },
+    "flop_full_tree_sampled": {
+      "reference_iterations": 2000,
+      "reference_nash_conv_chips": 0.4829452056011245,
+      "comparisons": [
+        {
+          "iterations": 100,
+          "action_ev_mae_chips_vs_deepest_budget": 0.4466373374174255,
+          "strategy_l1_vs_deepest_budget": 0.17645151515255908,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.0028205150438505022
+        },
+        {
+          "iterations": 500,
+          "action_ev_mae_chips_vs_deepest_budget": 0.06876757444473136,
+          "strategy_l1_vs_deepest_budget": 0.4647206875133343,
+          "root_policy_regret_chips_vs_deepest_action_values": 0.029632244052452794
+        }
+      ],
+      "reference_scope": "same restricted profile and same private hand; deepest budget is not an exact equilibrium oracle"
+    }
+  },
+  "sampled_flop_seed_sensitivity_at_2000": [
+    {
+      "seed": 7,
+      "iterations": 2000,
+      "nash_conv_chips": 0.4829452056011245,
+      "latency_ms": 2298.9081669948064
+    },
+    {
+      "seed": 19,
+      "iterations": 2000,
+      "nash_conv_chips": 0.45781044379417324,
+      "latency_ms": 2350.3158329986036
+    },
+    {
+      "seed": 20261020,
+      "iterations": 2000,
+      "nash_conv_chips": 0.48994017401727197,
+      "latency_ms": 2305.5646250140853
+    }
+  ],
+  "limitations": [
+    "One private combo per seat and a tiny sizing abstraction; results do not generalize.",
+    "The full flop tree is measured at one iteration only due its high computation cost.",
+    "Cutoff profiles omit later-street betting and use a different game than full-tree solves.",
+    "No independent external solver reference is used."
+  ]
+}

@@ -9,6 +9,7 @@ are written to the playable-cache directory.
 import argparse
 import hashlib
 import json
+import math
 import os
 import random
 import time
@@ -21,6 +22,15 @@ from poker_cpu.ranges import canonical_hand
 ROOT = Path(__file__).resolve().parents[1]
 STORE = Path(os.environ.get("POKER_CFR_SCENARIO_STORE", ROOT / "artifacts" / "cfr_scenario_worker"))
 CACHE = ROOT / "artifacts" / "cfr_scenario_cache"
+SOLVER_SOURCE_FILES = (
+    "poker_cpu/cards.py",
+    "poker_cpu/ranges.py",
+    "poker_cpu/solve.py",
+    "poker_cpu/river_solver.py",
+    "poker_cpu/multi_street.py",
+    "trainer/server.py",
+    "trainer/cfr_scenario_worker.py",
+)
 
 
 def atomic_json(path, data):
@@ -69,15 +79,62 @@ def make_request(seed, iterations=1000, combos_per_range=4):
     }
 
 
-def request_key(request):
-    """Hash the exact solve request, including its computational budget."""
-    return hashlib.sha256(json.dumps(request, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+def solver_fingerprint():
+    """Hash the implementation that produced cached strategies."""
+    digest = hashlib.sha256()
+    for relative_path in SOLVER_SOURCE_FILES:
+        digest.update(relative_path.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update((ROOT / relative_path).read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def request_key(request, fingerprint=None):
+    """Hash the exact solve request and solver implementation version."""
+    fingerprint = fingerprint or solver_fingerprint()
+    digest = hashlib.sha256()
+    digest.update(json.dumps(request, sort_keys=True, separators=(",", ":")).encode())
+    digest.update(b"\0")
+    digest.update(fingerprint.encode("ascii"))
+    return digest.hexdigest()
 
 
 def scenario_key(request):
     """Stable poker-game identity, independent of solver iteration budget."""
     scenario = {key: value for key, value in request.items() if key != "iterations"}
     return hashlib.sha256(json.dumps(scenario, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def get_qualified_scenario(request, *, cache=None, max_nash_conv_chips=0.1):
+    """Return an exact-current-code cache hit, otherwise ``None``.
+
+    Cache entries without a source fingerprint are deliberately ignored; this
+    prevents old strategies from silently surviving solver-code changes.
+    """
+    if (type(max_nash_conv_chips) not in (int, float)
+            or not math.isfinite(max_nash_conv_chips)
+            or max_nash_conv_chips < 0):
+        raise ValueError("Cache NashConv ceiling must be finite and nonnegative")
+    cache = CACHE if cache is None else cache
+    fingerprint = solver_fingerprint()
+    solve_id = request_key(request, fingerprint)
+    try:
+        row = json.loads((Path(cache) / f"{solve_id}.json").read_text())
+    except (FileNotFoundError, ValueError):
+        return None
+    nash_conv = row.get("nash_conv_chips")
+    if (row.get("status") != "cached_qualified"
+            or row.get("solve_id") != solve_id
+            or row.get("solver_fingerprint") != fingerprint
+            or row.get("request") != request
+            or type(nash_conv) not in (int, float)
+            or not math.isfinite(nash_conv)
+            or not 0 <= nash_conv <= max_nash_conv_chips):
+        return None
+    if not isinstance(row.get("result"), dict):
+        return None
+    return row
 
 
 def solve_one(seed, *, iterations=2000, combos_per_range=4, threshold_chips=0.1,
@@ -89,11 +146,13 @@ def solve_one(seed, *, iterations=2000, combos_per_range=4, threshold_chips=0.1,
     report = analyze_river_position(request)
     elapsed = time.perf_counter() - started
     scenario_id = scenario_key(request)
-    solve_id = request_key(request)
+    fingerprint = solver_fingerprint()
+    solve_id = request_key(request, fingerprint)
     qualified = report["nash_conv"] <= threshold_chips
     row = {
         "scenario_id": scenario_id,
         "solve_id": solve_id,
+        "solver_fingerprint": fingerprint,
         "seed": seed,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "status": "cached_qualified" if qualified else "candidate_only",
