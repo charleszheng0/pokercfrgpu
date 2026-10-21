@@ -30,7 +30,8 @@ PROFILES = (
 
 
 def _one_request(rng, profile_id, street, mode, iterations, facing_bet,
-                 combos_per_seat, index, shark_style=False):
+                 combos_per_seat, index, shark_style=False,
+                 history_kind=None):
     board_count = {"flop": 3, "turn": 4, "river": 5}[street]
     deal = rng.sample(tuple(DECK), board_count + 8)
     board = tuple(deal[:board_count])
@@ -42,7 +43,7 @@ def _one_request(rng, profile_id, street, mode, iterations, facing_bet,
     seat1 = seat1[:combos_per_seat]
     weights0 = tuple(rng.randint(1, 9) for _ in seat0)
     weights1 = tuple(rng.randint(1, 9) for _ in seat1)
-    if profile_id == "turn_full_tree":
+    if street == "turn" and mode == "full_tree":
         # Previous measurement: broad stack/action trees made one solve take
         # 86 seconds. Keep this exact full-turn profile to the tested 4-chip cap.
         pot, effective = rng.choice((8, 12)), 4
@@ -52,10 +53,25 @@ def _one_request(rng, profile_id, street, mode, iterations, facing_bet,
         pot = rng.choice((8, 12, 16, 20))
         effective = rng.choice((8, 12, 16))
     stacks = (effective, effective + rng.choice((0, 0, 4)))
-    facing_bet_size = max(2, min(effective, int(pot / 3))) if shark_style else max(
+    use_shark_sizing = shark_style and mode == "full_tree"
+    facing_bet_size = max(2, min(effective, int(pot / 3))) if use_shark_sizing else max(
         2, min(effective, int(pot * 0.5)))
-    actions = (Action("bet", facing_bet_size),) if facing_bet else ()
-    actor = 1 if facing_bet else 0
+    history_kind = history_kind or ("facing_bet" if facing_bet else "root")
+    if history_kind == "facing_bet":
+        actions = (Action("bet", facing_bet_size),)
+        actor = 1
+    elif history_kind == "facing_raise":
+        first_bet = facing_bet_size
+        raise_fraction = 0.5
+        raise_to = first_bet + max(2, int((pot + 2 * first_bet) * raise_fraction))
+        actions = (Action("bet", first_bet), Action("raise", min(effective, raise_to)))
+        actor = 0
+    elif history_kind == "check":
+        actions = (Action("check"),)
+        actor = 1
+    else:
+        actions = ()
+        actor = 0
     request = SolveRequest(
         board=board, street=street, pot_before_street=pot,
         stacks_at_street_start=stacks,
@@ -66,7 +82,7 @@ def _one_request(rng, profile_id, street, mode, iterations, facing_bet,
                      if shark_style and mode == "full_tree" else ActionAbstraction()),
         config=SolverConfig(iterations=iterations, max_joint_deals=4,
                             continuation_mode=mode),
-        acting_hand=(seat1[0] if facing_bet else seat0[0]),
+        acting_hand=(seat1[0] if history_kind in ("facing_bet", "check") else seat0[0]),
         range_source="seeded_batch_assumption",
     )
     return {"scenario_id": f"{profile_id}_{index:02d}", "profile": profile_id,
@@ -80,6 +96,29 @@ def generate_requests(seed=SEED, *, shark_style=False):
         for index in range(CASES_PER_PROFILE):
             cases.append(_one_request(rng, profile_id, street, mode, iterations,
                                       facing_bet, combos, index, shark_style))
+    return cases
+
+
+def generate_history_requests(seed=20261022, *, cases_per_profile=4,
+                              shark_style=True):
+    """Generate 20 additional positions ending after real abstract action lines."""
+    rng = random.Random(seed)
+    specs = (
+        ("river_facing_raise", "river", "full_tree", 500, "facing_raise", 2),
+        ("turn_full_tree_facing_bet", "turn", "full_tree", 100, "facing_bet", 1),
+        ("turn_cutoff_facing_bet", "turn", "showdown_cutoff", 100, "facing_bet", 2),
+        ("flop_cutoff_facing_bet", "flop", "showdown_cutoff", 100, "facing_bet", 2),
+        ("flop_cutoff_after_check", "flop", "showdown_cutoff", 100, "check", 2),
+    )
+    cases = []
+    for profile, street, mode, iterations, history_kind, combos in specs:
+        for index in range(cases_per_profile):
+            case = _one_request(
+                rng, profile, street, mode, iterations,
+                history_kind in ("facing_bet", "facing_raise"), combos, index,
+                shark_style, history_kind,
+            )
+            cases.append(case)
     return cases
 
 

@@ -218,3 +218,7 @@ The initial 30-position harness paired two combos per player (four compatible jo
 ## E060: fixed iteration counts miss the target on a minority of small trees
 
 At the first budgets, 4/30 scenarios exceeded 0.1-chip exact restricted NashConv. Holding those states fixed and increasing iterations reduced the worst residuals; the worst river root required 2,000 iterations to reach 0.0505 chips. The solver's target-check configuration then met the 0.1 threshold on 30/30 within declared per-street caps. This is a positive result for this 30-case synthetic batch, but not a universal pass rate: the cases have at most two combos per player, use a narrow action abstraction, and cutoff games omit later betting. Expand held-out seeds and histories before relying on a production gate.
+
+## E061: selected-hand identity must follow the decision actor through history replay
+
+The first river bet/raise harness run selected seat 1's hand even though the replayed two-action line ended with seat 0 acting; the solver correctly rejected the request because the selected hand had no compatible mass for the acting range. The flop-after-check generator had the inverse mismatch. The request builder now derives the selected hand from `current_player`, and tests assert that correspondence for every generated history state. After correction, all 20 history cases reached supported solver outputs and met the declared 0.1-chip restricted-game target. This verifies the harness/API state mapping for these lines; it does not validate inferred ranges after those actions.

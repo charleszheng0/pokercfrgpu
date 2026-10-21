@@ -303,3 +303,9 @@ With the solver's 0.1-chip target and caps of 2,000 iterations river, 100 full-t
 The batch was repeated using the Shark 2.0-inspired bet fractions on full river and turn trees. The cutoff solver retains its fixed sizing menu. The fixed-budget run met the threshold on 27/30, and target-bounded solving met it on 30/30. Median/p95: river root **0.92/2.04 s**, facing bet **0.19/0.32 s**, full turn **0.66/1.14 s**, turn cutoff **0.28/0.54 s**, flop cutoff **1.82/1.87 s**. Raw files: [shark_postflop_validation_batch.json](../experiments/shark_postflop_validation_batch.json), [adaptive_shark_postflop_batch.json](../experiments/adaptive_shark_postflop_batch.json).
 
 These are exact NashConv values inside tiny supplied-range trees, not full-game exploitability or action-abstraction error. Six positions/profile do not establish population reliability. Full flop-to-river, preflop, broad ranges, and inferred beliefs remain unsupported.
+
+### Action-history extension to 50 positions — 2026-10-21
+
+Twenty more seeded states cover river facing a bet+raise, turn full-tree facing a bet, turn cutoff facing a bet, flop cutoff facing a bet, and flop cutoff after check. Four per group, all actual solver requests were supported and all met the 0.1-chip exact restricted NashConv target. Target-solve median latency was 68 ms for river raise responses, 115 ms for full-turn facing-bet states, 98 ms for turn cutoff facing-bet, 1.58 s for flop cutoff facing-bet, and 1.67 s for flop cutoff after check. The combined root/action history cohort is now 50 deterministic states; detailed inputs/results are in [history_postflop_batch.json](../experiments/history_postflop_batch.json).
+
+This adds decision histories but not broad ranges or full-game coverage. The flop/turn cutoff values exclude later betting, and the tree residual cannot reveal off-tree abstraction error.

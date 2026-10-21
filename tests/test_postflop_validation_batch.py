@@ -1,6 +1,6 @@
 import unittest
 
-from experiments.postflop_validation_batch import generate_requests
+from experiments.postflop_validation_batch import generate_history_requests, generate_requests
 from poker_cpu.solve import ActionAbstraction
 
 
@@ -43,6 +43,26 @@ class PostflopValidationBatchTests(unittest.TestCase):
                 self.assertIn(bet.amount, (2, 4, 5, 6))
         self.assertNotEqual(by_id_default["river_root_00"].abstraction,
                             by_id_shark["river_root_00"].abstraction)
+
+    def test_history_batch_uses_the_acting_hand_and_explicit_action_lines(self):
+        cases = generate_history_requests()
+        self.assertEqual(len(cases), 20)
+        self.assertEqual(len({row["scenario_id"] for row in cases}), 20)
+        profiles = {row["profile"] for row in cases}
+        self.assertEqual(len(profiles), 5)
+        for case in cases:
+            request = case["request"]
+            actor = request.betting.current_player
+            self.assertIn(request.acting_hand, request.ranges[actor].hands)
+            self.assertEqual(len(request.board), {"flop": 3, "turn": 4, "river": 5}[request.street])
+            dead = set(request.board)
+            for belief in request.ranges:
+                for hand in belief.hands:
+                    self.assertFalse(dead.intersection(hand))
+                    dead.update(hand)
+            if case["profile"] == "river_facing_raise":
+                self.assertEqual([a.kind for a in request.betting.street_actions],
+                                 ["bet", "raise"])
 
 
 if __name__ == "__main__":
