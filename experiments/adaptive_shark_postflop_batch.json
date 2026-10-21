@@ -1,0 +1,1498 @@
+{
+  "experiment": "adaptive_budget_30_position_postflop_batch",
+  "action_tree_style": "shark_2_0_inspired",
+  "date": "2026-10-21",
+  "seed": 20261021,
+  "revision": "04409f68b73039c3436e4feb5565e27c895e4dcf",
+  "working_tree": "dirty",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "total_wall_seconds": 24.98752174997935,
+  "methodology": "Same 30 deterministic positions as postflop_validation_batch.json, with shark_style=True. Solver's built-in exact-NashConv target check requests <=0.1 chips. Iteration ceilings: river 2,000, full turn 100, turn/flop cutoff 500. The solver begins with a halfway checkpoint then checks every 10% of cap; it is not warm-started between budgets.",
+  "profiles": {
+    "river_root": {
+      "positions": 6,
+      "target_met": 6,
+      "target_pass_rate": 1.0,
+      "max_iterations_used": 1400,
+      "median_iterations": 1000.0,
+      "median_nash_conv_chips": 0.026266341518032865,
+      "worst_nash_conv_chips": 0.0952234823418232,
+      "median_latency_ms": 919.6376245236024,
+      "p95_latency_ms_nearest_rank": 2035.3172910399735
+    },
+    "river_facing_bet": {
+      "positions": 6,
+      "target_met": 6,
+      "target_pass_rate": 1.0,
+      "max_iterations_used": 1000,
+      "median_iterations": 1000.0,
+      "median_nash_conv_chips": 8.7972681717563e-05,
+      "worst_nash_conv_chips": 0.03350045680809188,
+      "median_latency_ms": 189.79568750364706,
+      "p95_latency_ms_nearest_rank": 318.23779200203717
+    },
+    "turn_full_tree": {
+      "positions": 6,
+      "target_met": 6,
+      "target_pass_rate": 1.0,
+      "max_iterations_used": 50,
+      "median_iterations": 50.0,
+      "median_nash_conv_chips": 0.05213503588308788,
+      "worst_nash_conv_chips": 0.06894187079486702,
+      "median_latency_ms": 663.5786874976475,
+      "p95_latency_ms_nearest_rank": 1142.2843339969404
+    },
+    "turn_showdown_cutoff": {
+      "positions": 6,
+      "target_met": 6,
+      "target_pass_rate": 1.0,
+      "max_iterations_used": 250,
+      "median_iterations": 250.0,
+      "median_nash_conv_chips": 0.011511178442477732,
+      "worst_nash_conv_chips": 0.08295907862709506,
+      "median_latency_ms": 276.47287453874014,
+      "p95_latency_ms_nearest_rank": 538.0572080030106
+    },
+    "flop_showdown_cutoff": {
+      "positions": 6,
+      "target_met": 6,
+      "target_pass_rate": 1.0,
+      "max_iterations_used": 250,
+      "median_iterations": 250.0,
+      "median_nash_conv_chips": 0.015426505168365967,
+      "worst_nash_conv_chips": 0.04062144904596443,
+      "median_latency_ms": 1817.7617084875237,
+      "p95_latency_ms_nearest_rank": 1865.7558750128374
+    }
+  },
+  "scenarios": [
+    {
+      "scenario_id": "river_root_00",
+      "profile": "river_root",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.018799588353577423,
+      "target_met": true,
+      "latency_ms": 920.6787080038339,
+      "wall_latency_ms": 920.6938330316916,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9997238952495178,
+          "ev_chips": -1.990306304333497,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00023761448766254845,
+          "ev_chips": -2.5888629064001467,
+          "ev_loss_chips": 0.5985566020666497
+        },
+        {
+          "kind": "bet",
+          "amount": 5,
+          "frequency": 3.31238422222574e-05,
+          "ev_chips": -3.430479971139721,
+          "ev_loss_chips": 1.4401736668062242
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 5.366420597525573e-06,
+          "ev_chips": -3.9999880119880125,
+          "ev_loss_chips": 2.0096817076545155
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          0.018799588353577423
+        ]
+      ],
+      "request": "river_root_00"
+    },
+    {
+      "scenario_id": "river_root_01",
+      "profile": "river_root",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.00014837163462644298,
+      "target_met": true,
+      "latency_ms": 1820.5129170091823,
+      "wall_latency_ms": 1820.531375007704,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9999722829609492,
+          "ev_chips": -4.000065748132794,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 2.5064916936650214e-05,
+          "ev_chips": -6.096165900664088,
+          "ev_loss_chips": 2.096100152531294
+        },
+        {
+          "kind": "bet",
+          "amount": 5,
+          "frequency": 1.852921314838957e-06,
+          "ev_chips": -10.02107506355598,
+          "ev_loss_chips": 6.021009315423186
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 3.996003996003996e-07,
+          "ev_chips": -14.666653346653346,
+          "ev_loss_chips": 10.666587598520552
+        },
+        {
+          "kind": "bet",
+          "amount": 16,
+          "frequency": 3.996003996003996e-07,
+          "ev_chips": -19.999976023976025,
+          "ev_loss_chips": 15.99991027584323
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          0.00014837163462644298
+        ]
+      ],
+      "request": "river_root_01"
+    },
+    {
+      "scenario_id": "river_root_02",
+      "profile": "river_root",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1400,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.0952234823418232,
+      "target_met": true,
+      "latency_ms": 2035.2984589990228,
+      "wall_latency_ms": 2035.3172910399735,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.995209601916711,
+          "ev_chips": -3.374378677398144,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.00473627363094613,
+          "ev_chips": -4.8432124266108145,
+          "ev_loss_chips": 1.4688337492126706
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 3.694111495178076e-05,
+          "ev_chips": -6.187343650932298,
+          "ev_loss_chips": 2.8129649735341538
+        },
+        {
+          "kind": "bet",
+          "amount": 12,
+          "frequency": 1.4571250767942778e-05,
+          "ev_chips": -7.238212325060232,
+          "ev_loss_chips": 3.863833647662088
+        },
+        {
+          "kind": "bet",
+          "amount": 16,
+          "frequency": 2.6120866229831053e-06,
+          "ev_chips": -7.9999887835219745,
+          "ev_loss_chips": 4.625610106123831
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          0.1786990286617467
+        ],
+        [
+          1200,
+          0.1249907937975574
+        ],
+        [
+          1400,
+          0.0952234823418232
+        ]
+      ],
+      "request": "river_root_02"
+    },
+    {
+      "scenario_id": "river_root_03",
+      "profile": "river_root",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.0001169209894875678,
+      "target_met": true,
+      "latency_ms": 573.7704999628477,
+      "wall_latency_ms": 573.7851670128293,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.4680542237370713,
+          "ev_chips": 6.000107773660453,
+          "ev_loss_chips": 9.147143904542077e-06
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.5319401776948302,
+          "ev_chips": 6.000116920804357,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 5.5985680985680975e-06,
+          "ev_chips": 6.000007992007992,
+          "ev_loss_chips": 0.00010892879636514863
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          0.0001169209894875678
+        ]
+      ],
+      "request": "river_root_03"
+    },
+    {
+      "scenario_id": "river_root_04",
+      "profile": "river_root",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.042905815926561175,
+      "target_met": true,
+      "latency_ms": 572.63133401284,
+      "wall_latency_ms": 572.6429169881158,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9998551779206193,
+          "ev_chips": -2.8731788402370473,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0001376111575331682,
+          "ev_chips": -3.8960347777179742,
+          "ev_loss_chips": 1.022855937480927
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 7.21092184754263e-06,
+          "ev_chips": -4.588220955515073,
+          "ev_loss_chips": 1.7150421152780257
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          0.042905815926561175
+        ]
+      ],
+      "request": "river_root_04"
+    },
+    {
+      "scenario_id": "river_root_05",
+      "profile": "river_root",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.03373309468248831,
+      "target_met": true,
+      "latency_ms": 918.565750005655,
+      "wall_latency_ms": 918.5814160155132,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9966770484392968,
+          "ev_chips": 3.9999352472886747,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0029625762919832156,
+          "ev_chips": 3.7056477245444865,
+          "ev_loss_chips": 0.2942875227441881
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.00035505530621975594,
+          "ev_chips": 3.5284142920565715,
+          "ev_loss_chips": 0.47152095523210313
+        },
+        {
+          "kind": "bet",
+          "amount": 12,
+          "frequency": 5.319962500247421e-06,
+          "ev_chips": 3.3333466533466543,
+          "ev_loss_chips": 0.6665885939420204
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          0.03373309468248831
+        ]
+      ],
+      "request": "river_root_05"
+    },
+    {
+      "scenario_id": "river_facing_bet_00",
+      "profile": "river_facing_bet",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.02979194465166568,
+      "target_met": true,
+      "latency_ms": 146.48825000040233,
+      "wall_latency_ms": 146.50433300994337,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 6.660006660006661e-07,
+          "ev_chips": -8.0,
+          "ev_loss_chips": 25.78570691825898
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 2.2888345843384457e-06,
+          "ev_chips": 13.0,
+          "ev_loss_chips": 4.785706918258981
+        },
+        {
+          "kind": "raise",
+          "amount": 16,
+          "frequency": 0.9999970451647496,
+          "ev_chips": 17.78570691825898,
+          "ev_loss_chips": 0.0
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          0.02979194465166568
+        ]
+      ],
+      "request": "river_facing_bet_00"
+    },
+    {
+      "scenario_id": "river_facing_bet_01",
+      "profile": "river_facing_bet",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 4.463244900598795e-05,
+      "target_met": true,
+      "latency_ms": 318.22395796189085,
+      "wall_latency_ms": 318.23779200203717,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 0.9999918343308236,
+          "ev_chips": -4.0,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 4.3812183329196555e-06,
+          "ev_chips": -5.999999999999999,
+          "ev_loss_chips": 1.9999999999999991
+        },
+        {
+          "kind": "raise",
+          "amount": 8,
+          "frequency": 2.985250044073572e-06,
+          "ev_chips": -11.999982017982017,
+          "ev_loss_chips": 7.999982017982017
+        },
+        {
+          "kind": "raise",
+          "amount": 14,
+          "frequency": 3.996003996003994e-07,
+          "ev_chips": -17.99997602397602,
+          "ev_loss_chips": 13.999976023976021
+        },
+        {
+          "kind": "raise",
+          "amount": 16,
+          "frequency": 3.996003996003994e-07,
+          "ev_chips": -19.999974025974023,
+          "ev_loss_chips": 15.999974025974023
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          4.463244900598795e-05
+        ]
+      ],
+      "request": "river_facing_bet_01"
+    },
+    {
+      "scenario_id": "river_facing_bet_02",
+      "profile": "river_facing_bet",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 6.540996299264634e-05,
+      "target_met": true,
+      "latency_ms": 146.70275000389665,
+      "wall_latency_ms": 146.71412500320002,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 0.9999915712659357,
+          "ev_chips": -6.0,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 4.466855722097759e-06,
+          "ev_chips": -10.0,
+          "ev_loss_chips": 4.0
+        },
+        {
+          "kind": "raise",
+          "amount": 12,
+          "frequency": 3.96187834204363e-06,
+          "ev_chips": -17.999972027972028,
+          "ev_loss_chips": 11.999972027972028
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          6.540996299264634e-05
+        ]
+      ],
+      "request": "river_facing_bet_02"
+    },
+    {
+      "scenario_id": "river_facing_bet_03",
+      "profile": "river_facing_bet",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 6.149647838338268e-05,
+      "target_met": true,
+      "latency_ms": 317.84587498987094,
+      "wall_latency_ms": 317.8584160050377,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 3.996003996003996e-07,
+          "ev_chips": -4.0,
+          "ev_loss_chips": 7.0
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 0.9999724724502217,
+          "ev_chips": 3.0,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "raise",
+          "amount": 8,
+          "frequency": 1.6716394402853828e-05,
+          "ev_chips": 1.500008991008991,
+          "ev_loss_chips": 1.499991008991009
+        },
+        {
+          "kind": "raise",
+          "amount": 14,
+          "frequency": 5.631516865975197e-06,
+          "ev_chips": 1.4985014986201861e-05,
+          "ev_loss_chips": 2.999985014985014
+        },
+        {
+          "kind": "raise",
+          "amount": 16,
+          "frequency": 4.780038109639722e-06,
+          "ev_chips": -0.49998301698301617,
+          "ev_loss_chips": 3.499983016983016
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          6.149647838338268e-05
+        ]
+      ],
+      "request": "river_facing_bet_03"
+    },
+    {
+      "scenario_id": "river_facing_bet_04",
+      "profile": "river_facing_bet",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.03350045680809188,
+      "target_met": true,
+      "latency_ms": 232.8662080108188,
+      "wall_latency_ms": 232.8772500040941,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 1.8664607659370255e-06,
+          "ev_chips": -6.0,
+          "ev_loss_chips": 4.571428571428572
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 0.6258045297155935,
+          "ev_chips": -1.428571428571428,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "raise",
+          "amount": 14,
+          "frequency": 0.034240792734956414,
+          "ev_chips": -2.175969804895894,
+          "ev_loss_chips": 0.7473983763244663
+        },
+        {
+          "kind": "raise",
+          "amount": 16,
+          "frequency": 0.3399528110886842,
+          "ev_chips": -1.4318779289020211,
+          "ev_loss_chips": 0.0033065003305932095
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          0.03350045680809188
+        ]
+      ],
+      "request": "river_facing_bet_04"
+    },
+    {
+      "scenario_id": "river_facing_bet_05",
+      "profile": "river_facing_bet",
+      "max_iterations": 2000,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 1000,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.00011053540044247967,
+      "target_met": true,
+      "latency_ms": 146.67575003113598,
+      "wall_latency_ms": 146.68637496652082,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "fold",
+          "amount": 0,
+          "frequency": 0.9999898266075702,
+          "ev_chips": -10.0,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "call",
+          "amount": 0,
+          "frequency": 3.891386147833231e-06,
+          "ev_chips": -16.0,
+          "ev_loss_chips": 6.0
+        },
+        {
+          "kind": "raise",
+          "amount": 12,
+          "frequency": 6.2820062820062815e-06,
+          "ev_chips": -21.999962037962035,
+          "ev_loss_chips": 11.999962037962035
+        }
+      ],
+      "convergence_trace": [
+        [
+          1000,
+          0.00011053540044247967
+        ]
+      ],
+      "request": "river_facing_bet_05"
+    },
+    {
+      "scenario_id": "turn_full_tree_00",
+      "profile": "turn_full_tree",
+      "max_iterations": 100,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 50,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.06894187079486702,
+      "target_met": true,
+      "latency_ms": 1092.3199169919826,
+      "wall_latency_ms": 1092.340833041817,
+      "joint_deals": 1,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9960975616461516,
+          "ev_chips": -4.0531249032980705,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00263117276061009,
+          "ev_chips": -6.544023899417564,
+          "ev_loss_chips": 2.490898996119493
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0012712655932382415,
+          "ev_chips": -7.995294117647059,
+          "ev_loss_chips": 3.942169214348988
+        }
+      ],
+      "convergence_trace": [
+        [
+          50,
+          0.06894187079486702
+        ]
+      ],
+      "request": "turn_full_tree_00"
+    },
+    {
+      "scenario_id": "turn_full_tree_01",
+      "profile": "turn_full_tree",
+      "max_iterations": 100,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 50,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.055288499204036334,
+      "target_met": true,
+      "latency_ms": 1142.261375032831,
+      "wall_latency_ms": 1142.2843339969404,
+      "joint_deals": 1,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.6959640567369576,
+          "ev_chips": 4.052579264027774,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.30174285191123196,
+          "ev_chips": 4.025423478720627,
+          "ev_loss_chips": 0.027155785307146907
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0022930913518105288,
+          "ev_chips": 4.001568627450981,
+          "ev_loss_chips": 0.051010636576792834
+        }
+      ],
+      "convergence_trace": [
+        [
+          50,
+          0.055288499204036334
+        ]
+      ],
+      "request": "turn_full_tree_01"
+    },
+    {
+      "scenario_id": "turn_full_tree_02",
+      "profile": "turn_full_tree",
+      "max_iterations": 100,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 50,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.004491978609625136,
+      "target_met": true,
+      "latency_ms": 250.9328750311397,
+      "wall_latency_ms": 250.94841700047255,
+      "joint_deals": 1,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.000392156862745098,
+          "ev_chips": -5.271301247771837,
+          "ev_loss_chips": 0.7299821746880575
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.9996078431372549,
+          "ev_chips": -4.54131907308378,
+          "ev_loss_chips": 0.0
+        }
+      ],
+      "convergence_trace": [
+        [
+          50,
+          0.004491978609625136
+        ]
+      ],
+      "request": "turn_full_tree_02"
+    },
+    {
+      "scenario_id": "turn_full_tree_03",
+      "profile": "turn_full_tree",
+      "max_iterations": 100,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 50,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.030816309888717086,
+      "target_met": true,
+      "latency_ms": 246.80937500670552,
+      "wall_latency_ms": 246.8242910108529,
+      "joint_deals": 1,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9947311225446748,
+          "ev_chips": -5.979179883875566,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.005268877455325156,
+          "ev_chips": -7.721889483065954,
+          "ev_loss_chips": 1.7427095991903885
+        }
+      ],
+      "convergence_trace": [
+        [
+          50,
+          0.030816309888717086
+        ]
+      ],
+      "request": "turn_full_tree_03"
+    },
+    {
+      "scenario_id": "turn_full_tree_04",
+      "profile": "turn_full_tree",
+      "max_iterations": 100,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 50,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.04898157256213942,
+      "target_met": true,
+      "latency_ms": 250.00412500230595,
+      "wall_latency_ms": 250.01870904816315,
+      "joint_deals": 1,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9972549019607844,
+          "ev_chips": 6.048791223610827,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0027450980392156863,
+          "ev_chips": 6.001568627450981,
+          "ev_loss_chips": 0.047222596159846475
+        }
+      ],
+      "convergence_trace": [
+        [
+          50,
+          0.04898157256213942
+        ]
+      ],
+      "request": "turn_full_tree_04"
+    },
+    {
+      "scenario_id": "turn_full_tree_05",
+      "profile": "turn_full_tree",
+      "max_iterations": 100,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 50,
+      "status": "supported_restricted_game",
+      "validation_status": "restricted_target_met",
+      "nash_conv_chips": 0.06653809812049971,
+      "target_met": true,
+      "latency_ms": 1076.1921250377782,
+      "wall_latency_ms": 1076.2089579948224,
+      "joint_deals": 1,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.995354155780642,
+          "ev_chips": -3.944386173747382,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0008654536855810081,
+          "ev_chips": -5.236754979761882,
+          "ev_loss_chips": 1.2923688060144998
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.003780390533777078,
+          "ev_chips": -5.087344028520499,
+          "ev_loss_chips": 1.1429578547731167
+        }
+      ],
+      "convergence_trace": [
+        [
+          50,
+          0.06653809812049971
+        ]
+      ],
+      "request": "turn_full_tree_05"
+    },
+    {
+      "scenario_id": "turn_showdown_cutoff_00",
+      "profile": "turn_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.08295907862709506,
+      "target_met": true,
+      "latency_ms": 537.9763749660924,
+      "wall_latency_ms": 538.0572080030106,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.4824583361751211,
+          "ev_chips": -0.1839890059605782,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.5112605005688114,
+          "ev_chips": -0.20455078490576106,
+          "ev_loss_chips": 0.02056177894518285
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0036488863320140964,
+          "ev_chips": -0.40902448346548814,
+          "ev_loss_chips": 0.22503547750490993
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.0026322769240533215,
+          "ev_chips": -0.40777502087371253,
+          "ev_loss_chips": 0.22378601491313432
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.08295907862709506
+        ]
+      ],
+      "request": "turn_showdown_cutoff_00"
+    },
+    {
+      "scenario_id": "turn_showdown_cutoff_01",
+      "profile": "turn_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.0008453169895468182,
+      "target_met": true,
+      "latency_ms": 524.3363750050776,
+      "wall_latency_ms": 524.3799589807168,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.00018516234106940663,
+          "ev_chips": 0.8647345446980843,
+          "ev_loss_chips": 0.8052540489787523
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.5255421282628917,
+          "ev_chips": 1.6699885936768366,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.4742727093960388,
+          "ev_chips": 1.6695947366578703,
+          "ev_loss_chips": 0.00039385701896632597
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.0008453169895468182
+        ]
+      ],
+      "request": "turn_showdown_cutoff_01"
+    },
+    {
+      "scenario_id": "turn_showdown_cutoff_02",
+      "profile": "turn_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.0009967685040779273,
+      "target_met": true,
+      "latency_ms": 217.79479103861377,
+      "wall_latency_ms": 217.81754202675074,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.00015940246220306722,
+          "ev_chips": 4.54607156722538,
+          "ev_loss_chips": 1.4543634849110658
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.698327577807116,
+          "ev_chips": 6.000435052136446,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.30151301973068095,
+          "ev_chips": 6.000025111674513,
+          "ev_loss_chips": 0.0004099404619326563
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.0009967685040779273
+        ]
+      ],
+      "request": "turn_showdown_cutoff_02"
+    },
+    {
+      "scenario_id": "turn_showdown_cutoff_03",
+      "profile": "turn_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.0011026685097821343,
+      "target_met": true,
+      "latency_ms": 200.022374978289,
+      "wall_latency_ms": 200.03454200923443,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.00031693460520277337,
+          "ev_chips": 3.5461960161280417,
+          "ev_loss_chips": 0.4571696551671667
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.9995876554740161,
+          "ev_chips": 4.003365671295208,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 9.540992078133232e-05,
+          "ev_chips": 4.000049257515393,
+          "ev_loss_chips": 0.003316413779815619
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.0011026685097821343
+        ]
+      ],
+      "request": "turn_showdown_cutoff_03"
+    },
+    {
+      "scenario_id": "turn_showdown_cutoff_04",
+      "profile": "turn_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.02191968837517333,
+      "target_met": true,
+      "latency_ms": 327.2052080137655,
+      "wall_latency_ms": 327.2204160457477,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.8860108309381728,
+          "ev_chips": -5.793072314904701,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00025916596392484506,
+          "ev_chips": -6.686287599311751,
+          "ev_loss_chips": 0.8932152844070504
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0026699511888637613,
+          "ev_chips": -6.176014341981766,
+          "ev_loss_chips": 0.38294202707706493
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.11106005190903867,
+          "ev_chips": -5.91215049227711,
+          "ev_loss_chips": 0.11907817737240922
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.02191968837517333
+        ]
+      ],
+      "request": "turn_showdown_cutoff_04"
+    },
+    {
+      "scenario_id": "turn_showdown_cutoff_05",
+      "profile": "turn_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.05027065690814503,
+      "target_met": true,
+      "latency_ms": 225.70941701997072,
+      "wall_latency_ms": 225.7253330317326,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.6524590335780885,
+          "ev_chips": -7.805675825187928,
+          "ev_loss_chips": 0.02585677238452888
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0024595118329698447,
+          "ev_chips": -9.17496816967104,
+          "ev_loss_chips": 1.3951491168676409
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.3450814545889416,
+          "ev_chips": -7.779819052803399,
+          "ev_loss_chips": 0.0
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.05027065690814503
+        ]
+      ],
+      "request": "turn_showdown_cutoff_05"
+    },
+    {
+      "scenario_id": "flop_showdown_cutoff_00",
+      "profile": "flop_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.0033898505909113474,
+      "target_met": true,
+      "latency_ms": 1853.5815420327708,
+      "wall_latency_ms": 1853.5964579787105,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9996932902296967,
+          "ev_chips": -4.001773709812927,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00018573382221990896,
+          "ev_chips": -5.697817402641629,
+          "ev_loss_chips": 1.6960436928287024
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 3.122822843687265e-05,
+          "ev_chips": -6.4023159751135195,
+          "ev_loss_chips": 2.400542265300593
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 8.974771964652518e-05,
+          "ev_chips": -6.393221533699911,
+          "ev_loss_chips": 2.3914478238869847
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.0033898505909113474
+        ]
+      ],
+      "request": "flop_showdown_cutoff_00"
+    },
+    {
+      "scenario_id": "flop_showdown_cutoff_01",
+      "profile": "flop_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.008049583232344837,
+      "target_met": true,
+      "latency_ms": 1686.7870000423864,
+      "wall_latency_ms": 1686.8040839908645,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.0005084470245553695,
+          "ev_chips": 6.498362908482605,
+          "ev_loss_chips": 1.538109639070413
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.9992078541948963,
+          "ev_chips": 8.036472547553018,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.00028369878054833753,
+          "ev_chips": 8.000079584691537,
+          "ev_loss_chips": 0.03639296286148053
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.008049583232344837
+        ]
+      ],
+      "request": "flop_showdown_cutoff_01"
+    },
+    {
+      "scenario_id": "flop_showdown_cutoff_02",
+      "profile": "flop_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.0335938218367372,
+      "target_met": true,
+      "latency_ms": 1655.3950830129907,
+      "wall_latency_ms": 1655.4132080054842,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.3463882974440838,
+          "ev_chips": 5.254023916592246,
+          "ev_loss_chips": 0.0025506259429537437
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0008183778787461051,
+          "ev_chips": 5.012677325118824,
+          "ev_loss_chips": 0.24389721741637516
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.6527933246771701,
+          "ev_chips": 5.2565745425351995,
+          "ev_loss_chips": 0.0
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.0335938218367372
+        ]
+      ],
+      "request": "flop_showdown_cutoff_02"
+    },
+    {
+      "scenario_id": "flop_showdown_cutoff_03",
+      "profile": "flop_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.0002194337225414067,
+      "target_met": true,
+      "latency_ms": 1865.738166961819,
+      "wall_latency_ms": 1865.7558750128374,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 1.0624169986719786e-05,
+          "ev_chips": -3.7566780173581766,
+          "ev_loss_chips": 4.243262401438019
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 1.0624169986719786e-05,
+          "ev_chips": -4.7874251522188755,
+          "ev_loss_chips": 5.274009536298718
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.9999787516600265,
+          "ev_chips": 0.48658438407984245,
+          "ev_loss_chips": 0.0
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.0002194337225414067
+        ]
+      ],
+      "request": "flop_showdown_cutoff_03"
+    },
+    {
+      "scenario_id": "flop_showdown_cutoff_04",
+      "profile": "flop_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.022803427104387097,
+      "target_met": true,
+      "latency_ms": 1814.2627920024097,
+      "wall_latency_ms": 1814.2822919762693,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.00018552550357884138,
+          "ev_chips": 2.92759609269231,
+          "ev_loss_chips": 1.0724800793870486
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0028555009322044156,
+          "ev_chips": 3.7849141297158337,
+          "ev_loss_chips": 0.21516204236352499
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.3275622689782073,
+          "ev_chips": 3.935155413399544,
+          "ev_loss_chips": 0.06492075867981484
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.6693967045860094,
+          "ev_chips": 4.000076172079359,
+          "ev_loss_chips": 0.0
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.022803427104387097
+        ]
+      ],
+      "request": "flop_showdown_cutoff_04"
+    },
+    {
+      "scenario_id": "flop_showdown_cutoff_05",
+      "profile": "flop_showdown_cutoff",
+      "max_iterations": 500,
+      "target_nash_conv_chips": 0.1,
+      "actual_iterations": 250,
+      "status": "supported_restricted_game",
+      "validation_status": "experimental_showdown_cutoff_target_met",
+      "nash_conv_chips": 0.04062144904596443,
+      "target_met": true,
+      "latency_ms": 1821.224166022148,
+      "wall_latency_ms": 1821.241124998778,
+      "joint_deals": 4,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9888788469055494,
+          "ev_chips": -3.5541302616139956,
+          "ev_loss_chips": 0.0
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0015102600527751372,
+          "ev_chips": -3.989731268168629,
+          "ev_loss_chips": 0.4356010065546334
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.006367040571942679,
+          "ev_chips": -4.104652549769825,
+          "ev_loss_chips": 0.5505222881558294
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.0032438524697327195,
+          "ev_chips": -3.785097545322209,
+          "ev_loss_chips": 0.2309672837082135
+        }
+      ],
+      "convergence_trace": [
+        [
+          250,
+          0.04062144904596443
+        ]
+      ],
+      "request": "flop_showdown_cutoff_05"
+    }
+  ],
+  "limitations": [
+    "Synthetic ranges contain only one or two exact combos per player.",
+    "Cutoff trees omit all future betting; target applies only to those finite cutoff games.",
+    "No preflop, broad ranges, range inference, or external-solver comparison.",
+    "One deterministic batch; no statistical uncertainty estimate.",
+    "Exact restricted-game NashConv is not full-game exploitability or abstraction error."
+  ]
+}

@@ -210,3 +210,11 @@ One of three seeded river fixtures measured 0.189421-chip restricted NashConv at
 ## E059: no update rule wins every tested river position
 
 On three matched river games at 200 iterations, DCFR's median NashConv was much lower than CFR+, but its worst case was 0.253373 chips versus CFR+'s 0.189421 on the same held-out set. DCFR improved the median/max across all three tested turn and showdown-cutoff fixtures, at a roughly 4–7% median latency premium. This blocks a blanket change to DCFR as the app default: a summary median would conceal the river regression, and the sample is small. Keep the default stable while collecting paired deeper river references and conditional action-EV regret at matched time budgets.
+
+## E060: naive range/stack broadening caused a full-turn runtime blow-up
+
+The initial 30-position harness paired two combos per player (four compatible joint deals) with a 16-chip effective stack on a full turn tree. A single 100-iteration solve took **86.3 seconds**. This is a branching/chance traversal cost, not a crash or bad CFR update. The run was stopped. Separately, six river facing-bet rows were rejected because the test harness supplied seat 0's hand while seat 1 was the acting player; the solver correctly found no compatible selected-hand mass. The smallest fixes were to keep full-turn validation at one deal and the measured 4-chip stack profile, and to select the hand belonging to `current_player`. The corrected deterministic batch completed all 30 inputs.
+
+## E060: fixed iteration counts miss the target on a minority of small trees
+
+At the first budgets, 4/30 scenarios exceeded 0.1-chip exact restricted NashConv. Holding those states fixed and increasing iterations reduced the worst residuals; the worst river root required 2,000 iterations to reach 0.0505 chips. The solver's target-check configuration then met the 0.1 threshold on 30/30 within declared per-street caps. This is a positive result for this 30-case synthetic batch, but not a universal pass rate: the cases have at most two combos per player, use a narrow action abstraction, and cutoff games omit later betting. Expand held-out seeds and histories before relying on a production gate.
