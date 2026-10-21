@@ -206,3 +206,7 @@ The first hour-batch process stopped after four successful solves. Seed 20261024
 ## E058 follow-up: river default budget missed the residual gate on one held-out fixture
 
 One of three seeded river fixtures measured 0.189421-chip restricted NashConv at 200 iterations, above the 0.1-chip screening gate. Re-solving the identical game at 500 and 1,000 iterations reduced it to 0.056093 and 0.019143 chips, with latency increasing from 228 to 564 and 1,125 ms. Root EV error and policy regret relative to the finite 1,000-iteration reference also declined. The smallest evidenced fix for this position is a larger/adaptive CFR+ budget. A global 1,000-iteration default is not yet justified: this is a single tiny synthetic game and full-turn latency already approaches two seconds at 100 iterations. Next, profile convergence checkpoints against a latency cap over more held-out ranges before introducing an adaptive stopping policy.
+
+## E059: no update rule wins every tested river position
+
+On three matched river games at 200 iterations, DCFR's median NashConv was much lower than CFR+, but its worst case was 0.253373 chips versus CFR+'s 0.189421 on the same held-out set. DCFR improved the median/max across all three tested turn and showdown-cutoff fixtures, at a roughly 4–7% median latency premium. This blocks a blanket change to DCFR as the app default: a summary median would conceal the river regression, and the sample is small. Keep the default stable while collecting paired deeper river references and conditional action-EV regret at matched time budgets.

@@ -174,3 +174,5 @@ On same-profile iteration sweeps, 30-iteration full turn was within **0.0657-chi
 ## Held-out small-tree follow-up — 2026-10-20
 
 Three seeded fixtures per profile measured river full-tree NashConv median/max **0.00567/0.18942 chips** (200 iterations, 229 ms median); full turn **0.01305/0.01429** (100, 1.96 s); turn cutoff **0.01858/0.02116** (100, 49.6 ms); flop cutoff **0.00931/0.02201** (100, 408 ms). Deepening the worst river fixture to 1,000 iterations lowered residual from 0.18942 to 0.01914 chips in 1.125 s; 500-iteration root action EV MAE and policy regret versus the finite 1,000-iteration reference were 0.00396 and 0.00165 chips. Small synthetic ranges only; these are not broad coverage or GTO-quality metrics.
+
+On the E058 held-out fixtures, matched-budget DCFR reduced median restricted NashConv versus CFR+ from 0.01305 to 0.00099 chips on full turn, 0.01858 to 0.00083 on turn cutoff, and 0.00931 to 0.00041 on flop cutoff, with about 4–7% higher median runtime. On river, medians were 0.00567 (CFR+) and 0.00015 (DCFR), but worst cases were 0.18942 and 0.25337 respectively. Three fixtures per profile; no global algorithm win or GTO claim.

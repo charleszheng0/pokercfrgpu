@@ -1,0 +1,1371 @@
+{
+  "experiment": "heldout_postflop_cfr_variant_comparison",
+  "date": "2026-10-20",
+  "source_seed": 20261021,
+  "revision": "7098640280941def2390fb1a8a7a74dbd30286a5",
+  "working_tree": "dirty",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "methodology": "Same three seeded fixtures per street/mode and identical action trees, exact chance, ranges and budgets. Exact NashConv is measured within each finite game. Each condition is one run per position; runtimes are not distributions.",
+  "groups": {
+    "river_full_tree:cfr": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.16558461919349465,
+      "nash_conv_max_chips": 0.6536713187418925,
+      "latency_median_ms": 226.95266699884087
+    },
+    "river_full_tree:cfr+": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.005669476985207922,
+      "nash_conv_max_chips": 0.18942142043673016,
+      "latency_median_ms": 226.5426249941811
+    },
+    "river_full_tree:dcfr": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.00015197821491241825,
+      "nash_conv_max_chips": 0.2533731078220871,
+      "latency_median_ms": 236.7138330009766
+    },
+    "turn_full_tree:cfr": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.19383858250119435,
+      "nash_conv_max_chips": 0.23994349081726707,
+      "latency_median_ms": 1953.178416006267
+    },
+    "turn_full_tree:cfr+": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.013054141825729282,
+      "nash_conv_max_chips": 0.014290946453241027,
+      "latency_median_ms": 1964.0054170158692
+    },
+    "turn_full_tree:dcfr": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.0009871299132058198,
+      "nash_conv_max_chips": 0.001027168310455906,
+      "latency_median_ms": 2065.103667031508
+    },
+    "turn_showdown_cutoff:cfr": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.23734015647039186,
+      "nash_conv_max_chips": 0.26918301588520954,
+      "latency_median_ms": 48.67483297130093
+    },
+    "turn_showdown_cutoff:cfr+": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.018580057221676327,
+      "nash_conv_max_chips": 0.021159507486494533,
+      "latency_median_ms": 48.728082969319075
+    },
+    "turn_showdown_cutoff:dcfr": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.0008255090218884931,
+      "nash_conv_max_chips": 0.001051402404359969,
+      "latency_median_ms": 51.73104099230841
+    },
+    "flop_showdown_cutoff:cfr": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.17139352614507963,
+      "nash_conv_max_chips": 0.3225361012171666,
+      "latency_median_ms": 411.8650830350816
+    },
+    "flop_showdown_cutoff:cfr+": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.009314607259326202,
+      "nash_conv_max_chips": 0.02201152925819372,
+      "latency_median_ms": 412.34770900337026
+    },
+    "flop_showdown_cutoff:dcfr": {
+      "positions": 3,
+      "nash_conv_median_chips": 0.000409732303607413,
+      "nash_conv_max_chips": 0.00134311233176021,
+      "latency_median_ms": 421.4407500112429
+    }
+  },
+  "runs": [
+    {
+      "position_id": "river_full_tree_0",
+      "street": "river",
+      "mode": "full_tree",
+      "variant": "cfr",
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.6536713187418925,
+      "solver_latency_ms": 226.9361670478247,
+      "wall_latency_ms": 226.95266699884087,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9490043379276243,
+          "ev_chips": -4.232694768617072
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.03473882053105933,
+          "ev_chips": -5.1607814113609365
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.009074933375088558,
+          "ev_chips": -6.956942919596543
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.007181908166227702,
+          "ev_chips": -7.157
+        }
+      ]
+    },
+    {
+      "position_id": "river_full_tree_0",
+      "street": "river",
+      "mode": "full_tree",
+      "variant": "cfr+",
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.18942142043673016,
+      "solver_latency_ms": 226.52808297425508,
+      "wall_latency_ms": 226.5426249941811,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9873585805849919,
+          "ev_chips": -4.363761478653399
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.01158292086847295,
+          "ev_chips": -5.155633501109907
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0009231103511314785,
+          "ev_chips": -6.237696896009801
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0001353881954035499,
+          "ev_chips": -7.199572139303482
+        }
+      ]
+    },
+    {
+      "position_id": "river_full_tree_0",
+      "street": "river",
+      "mode": "full_tree",
+      "variant": "dcfr",
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.2533731078220871,
+      "solver_latency_ms": 236.70154198771343,
+      "wall_latency_ms": 236.7138330009766,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9907111502513831,
+          "ev_chips": -4.343758805041517
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.009105090656512592,
+          "ev_chips": -5.097230881456657
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.00018186505207400295,
+          "ev_chips": -6.249041823952938
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 1.8940400303736772e-06,
+          "ev_chips": -7.199996799047158
+        }
+      ]
+    },
+    {
+      "position_id": "river_full_tree_1",
+      "street": "river",
+      "mode": "full_tree",
+      "variant": "cfr",
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.1388415827147531,
+      "solver_latency_ms": 235.3291250183247,
+      "wall_latency_ms": 235.34562502754852,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.3940790514850262,
+          "ev_chips": 6.135295729123294
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.2701012546848166,
+          "ev_chips": 6.117959063605761
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.3287103806868475,
+          "ev_chips": 6.122294617489681
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.007109313143309568,
+          "ev_chips": 6.025
+        }
+      ]
+    },
+    {
+      "position_id": "river_full_tree_1",
+      "street": "river",
+      "mode": "full_tree",
+      "variant": "cfr+",
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.0034973968750557916,
+      "solver_latency_ms": 229.20733300270513,
+      "wall_latency_ms": 229.22295902390033,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.4247264495049193,
+          "ev_chips": 6.0034669497775575
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.21220805681573526,
+          "ev_chips": 6.0030626949004935
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.36293166417814565,
+          "ev_chips": 6.002993631915678
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.00013382950119971484,
+          "ev_chips": 6.000248756218905
+        }
+      ]
+    },
+    {
+      "position_id": "river_full_tree_1",
+      "street": "river",
+      "mode": "full_tree",
+      "variant": "dcfr",
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 7.282817835640998e-05,
+      "solver_latency_ms": 242.63866699766368,
+      "wall_latency_ms": 242.65512498095632,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.48808770501897036,
+          "ev_chips": 6.000072601316285
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.1930717252251871,
+          "ev_chips": 6.000070006860989
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.3188387000339424,
+          "ev_chips": 6.000050485729556
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 1.8697219002233707e-06,
+          "ev_chips": 6.0000018610190935
+        }
+      ]
+    },
+    {
+      "position_id": "river_full_tree_2",
+      "street": "river",
+      "mode": "full_tree",
+      "variant": "cfr",
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.16558461919349465,
+      "solver_latency_ms": 223.85633300291374,
+      "wall_latency_ms": 223.87016704306006,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.972131431327661,
+          "ev_chips": -6.0521073982111115
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.021138347897250352,
+          "ev_chips": -8.124332515377489
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0017388414647439634,
+          "ev_chips": -12.800609503452744
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.004991379310344807,
+          "ev_chips": -15.945
+        }
+      ]
+    },
+    {
+      "position_id": "river_full_tree_2",
+      "street": "river",
+      "mode": "full_tree",
+      "variant": "cfr+",
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.005669476985207922,
+      "solver_latency_ms": 226.32029198575765,
+      "wall_latency_ms": 226.33325000060722,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9986181374943786,
+          "ev_chips": -6.001903741218564
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.001264387752987229,
+          "ev_chips": -8.023476019743725
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 3.05816320301879e-05,
+          "ev_chips": -12.470617231988737
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 8.689312060387716e-05,
+          "ev_chips": -15.999452736318407
+        }
+      ]
+    },
+    {
+      "position_id": "river_full_tree_2",
+      "street": "river",
+      "mode": "full_tree",
+      "variant": "dcfr",
+      "iterations": 200,
+      "joint_deals": 4,
+      "nash_conv_chips": 0.00015197821491241825,
+      "solver_latency_ms": 235.28675001580268,
+      "wall_latency_ms": 235.29737500939518,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9999563028766545,
+          "ev_chips": -6.000050857435141
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 4.202312205028333e-05,
+          "ev_chips": -8.005322390575106
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 4.66905806949693e-07,
+          "ev_chips": -12.230757787517105
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 1.2070954882479843e-06,
+          "ev_chips": -15.999995905757993
+        }
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_0",
+      "street": "turn",
+      "mode": "full_tree",
+      "variant": "cfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.23994349081726707,
+      "solver_latency_ms": 1890.0314589845948,
+      "wall_latency_ms": 1890.04854101222,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.7567547873999684,
+          "ev_chips": 6.216936622590377
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.22643997504327423,
+          "ev_chips": 6.120319922387877
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.016805237556757377,
+          "ev_chips": 6.02
+        }
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_0",
+      "street": "turn",
+      "mode": "full_tree",
+      "variant": "cfr+",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.014290946453241027,
+      "solver_latency_ms": 1903.626749990508,
+      "wall_latency_ms": 1903.642375022173,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.6859890346432672,
+          "ev_chips": 6.013412125625289
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.31339799094338894,
+          "ev_chips": 6.006675483437599
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0006129744133436672,
+          "ev_chips": 6.0003960396039595
+        }
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_0",
+      "street": "turn",
+      "mode": "full_tree",
+      "variant": "dcfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.0007831388273205064,
+      "solver_latency_ms": 2183.87733300915,
+      "wall_latency_ms": 2183.897083043121,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9511239398439153,
+          "ev_chips": 6.00074584075088
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.048858723048917925,
+          "ev_chips": 6.000244390145637
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 1.7337107166799256e-05,
+          "ev_chips": 6.000005911038865
+        }
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_1",
+      "street": "turn",
+      "mode": "full_tree",
+      "variant": "cfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.19383858250119435,
+      "solver_latency_ms": 1953.1614580191672,
+      "wall_latency_ms": 1953.178416006267,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9717799430328451,
+          "ev_chips": -6.044263920845897
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.011694345739306087,
+          "ev_chips": -8.240151326744947
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.016525711227848832,
+          "ev_chips": -8.56318181818182
+        }
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_1",
+      "street": "turn",
+      "mode": "full_tree",
+      "variant": "cfr+",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.013054141825729282,
+      "solver_latency_ms": 1963.988250005059,
+      "wall_latency_ms": 1964.0054170158692,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9991816559739736,
+          "ev_chips": -5.997366905425417
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00031872029558282,
+          "ev_chips": -8.180388537422164
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0004996237304435318,
+          "ev_chips": -8.634914491449145
+        }
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_1",
+      "street": "turn",
+      "mode": "full_tree",
+      "variant": "dcfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.0009871299132058198,
+      "solver_latency_ms": 2065.0874999701045,
+      "wall_latency_ms": 2065.103667031508,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9999685885217593,
+          "ev_chips": -5.9994209685184545
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 1.6715983318242368e-05,
+          "ev_chips": -8.033720556099224
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 1.4695494922312427e-05,
+          "ev_chips": -8.636342007335061
+        }
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_2",
+      "street": "turn",
+      "mode": "full_tree",
+      "variant": "cfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.1454290282668511,
+      "solver_latency_ms": 1963.8271250296384,
+      "wall_latency_ms": 1963.8434579828754,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9244252181814601,
+          "ev_chips": -5.91382745366795
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.015392585019309218,
+          "ev_chips": -6.659919447400101
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.06018219679923074,
+          "ev_chips": -6.527954545454545
+        }
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_2",
+      "street": "turn",
+      "mode": "full_tree",
+      "variant": "cfr+",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.009490892164216724,
+      "solver_latency_ms": 1998.2668749871664,
+      "wall_latency_ms": 1998.2827079948038,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.99698388098752,
+          "ev_chips": -5.99283413132759
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.00043840858692998903,
+          "ev_chips": -6.650696650686386
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.002577710425550121,
+          "ev_chips": -6.589662466246625
+        }
+      ]
+    },
+    {
+      "position_id": "turn_full_tree_2",
+      "street": "turn",
+      "mode": "full_tree",
+      "variant": "dcfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.001027168310455906,
+      "solver_latency_ms": 2045.4484170186333,
+      "wall_latency_ms": 2045.4637500224635,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9998727066171879,
+          "ev_chips": -5.999051113827432
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 3.392233006888499e-05,
+          "ev_chips": -6.61129413923174
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 9.337105274328371e-05,
+          "ev_chips": -6.590890484570845
+        }
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_0",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "variant": "cfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.22975595725777787,
+      "solver_latency_ms": 49.44420896936208,
+      "wall_latency_ms": 49.455667030997574,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.019540223025098984,
+          "ev_chips": 4.546390887547872
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.18769849515138967,
+          "ev_chips": 5.995891043635253
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.7458376156018587,
+          "ev_chips": 6.1625754186381485
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.04692366622165259,
+          "ev_chips": 6.028181818181818
+        }
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_0",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "variant": "cfr+",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.018580057221676327,
+      "solver_latency_ms": 48.71779103996232,
+      "wall_latency_ms": 48.728082969319075,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.002228528934766478,
+          "ev_chips": 4.373766678242203
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0348230911773228,
+          "ev_chips": 5.8333439789723895
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.8178598092424405,
+          "ev_chips": 6.008600970183454
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.14508857064547026,
+          "ev_chips": 6.00055805580558
+        }
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_0",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "variant": "dcfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.0008255090218884931,
+      "solver_latency_ms": 52.025915996637195,
+      "wall_latency_ms": 52.03620804240927,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.00010656121539693438,
+          "ev_chips": 4.3640496390253025
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.001927933427821527,
+          "ev_chips": 5.818724768356775
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.8925741082297879,
+          "ev_chips": 6.000300602326672
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.10539139712699364,
+          "ev_chips": 6.000008329191127
+        }
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_1",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "variant": "cfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.26918301588520954,
+      "solver_latency_ms": 48.55775000760332,
+      "wall_latency_ms": 48.56775002554059,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.05101368426487525,
+          "ev_chips": 5.710842011930336
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.4564364260599183,
+          "ev_chips": 6.238213242889057
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.4782575528638462,
+          "ev_chips": 6.235212846901415
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.014292336811360272,
+          "ev_chips": 6.042727272727272
+        }
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_1",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "variant": "cfr+",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.021159507486494533,
+      "solver_latency_ms": 49.25045900745317,
+      "wall_latency_ms": 49.259375024121255,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.014032920589225452,
+          "ev_chips": 5.468232931533391
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.3566969422863146,
+          "ev_chips": 6.0135015132679985
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.5478624141516742,
+          "ev_chips": 6.011998355881175
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.08140772297278571,
+          "ev_chips": 6.000846084608461
+        }
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_1",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "variant": "dcfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.001051402404359969,
+      "solver_latency_ms": 51.72216595383361,
+      "wall_latency_ms": 51.73104099230841,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.0006672066867153335,
+          "ev_chips": 5.455111486014224
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.4101114040608142,
+          "ev_chips": 6.000687468928716
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.5278283983680572,
+          "ev_chips": 6.000423750435922
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.06139299088441329,
+          "ev_chips": 6.000012628128484
+        }
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_2",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "variant": "cfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.23734015647039186,
+      "solver_latency_ms": 48.66575001506135,
+      "wall_latency_ms": 48.67483297130093,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9543263464554818,
+          "ev_chips": -6.038176338877732
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.028565958949988497,
+          "ev_chips": -8.06099400202486
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.002948097222180871,
+          "ev_chips": -10.293930414063325
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.014159597372348847,
+          "ev_chips": -10.824545454545456
+        }
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_2",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "variant": "cfr+",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.016066976984746795,
+      "solver_latency_ms": 48.66695898817852,
+      "wall_latency_ms": 48.676000034902245,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9966899230988855,
+          "ev_chips": -6.0029927677595945
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0026800130807887812,
+          "ev_chips": -8.02474911679808
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 9.996236414953505e-05,
+          "ev_chips": -10.292743571258526
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0005301014561762737,
+          "ev_chips": -10.907416741674169
+        }
+      ]
+    },
+    {
+      "position_id": "turn_showdown_cutoff_2",
+      "street": "turn",
+      "mode": "showdown_cutoff",
+      "variant": "dcfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.0007508635663997509,
+      "solver_latency_ms": 51.65933299576864,
+      "wall_latency_ms": 51.667958963662386,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9998283428833873,
+          "ev_chips": -6.000187057079984
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0001542369606742828,
+          "ev_chips": -8.006918077005047
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 2.6519608221807896e-06,
+          "ev_chips": -10.407268894388908
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 1.4768195116172544e-05,
+          "ev_chips": -10.909065921517524
+        }
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_0",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "variant": "cfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.3225361012171666,
+      "solver_latency_ms": 408.2802910124883,
+      "wall_latency_ms": 408.29554200172424,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9427283179685508,
+          "ev_chips": -6.104782158794433
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.04294629137163154,
+          "ev_chips": -8.093075059013735
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0034682874859217005,
+          "ev_chips": -12.098760993182673
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0108571031738959,
+          "ev_chips": -14.474888888888891
+        }
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_0",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "variant": "cfr+",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.02201152925819372,
+      "solver_latency_ms": 414.68916699523106,
+      "wall_latency_ms": 414.70304201357067,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9946192425062556,
+          "ev_chips": -6.007923477721289
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.004877206393236773,
+          "ev_chips": -8.02245565530063
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.00012202791300673696,
+          "ev_chips": -11.917812866299833
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0003815231875007776,
+          "ev_chips": -14.575740374037405
+        }
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_0",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "variant": "dcfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.00134311233176021,
+      "solver_latency_ms": 414.3895420129411,
+      "wall_latency_ms": 414.40408397465944,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9996602671226167,
+          "ev_chips": -6.000471069637025
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0003254870723279584,
+          "ev_chips": -8.00517166733471
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 3.7160050540702326e-06,
+          "ev_chips": -11.798920213323404
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 1.0529800001196651e-05,
+          "ev_chips": -14.577747368766726
+        }
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_1",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "variant": "cfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.1326614874875025,
+      "solver_latency_ms": 411.8500000331551,
+      "wall_latency_ms": 411.8650830350816,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9571530237134557,
+          "ev_chips": -5.950417493362204
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.018580483037501986,
+          "ev_chips": -7.540771467400609
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0025672010610168663,
+          "ev_chips": -8.58165367935437
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.02169929218802553,
+          "ev_chips": -7.527979797979797
+        }
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_1",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "variant": "cfr+",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.008099906302712512,
+      "solver_latency_ms": 412.3342919629067,
+      "wall_latency_ms": 412.34770900337026,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.997671280108711,
+          "ev_chips": -5.996112131640727
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0013418622275216485,
+          "ev_chips": -7.600524216118695
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.00013049374962770713,
+          "ev_chips": -7.857291381787126
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.000856363914139698,
+          "ev_chips": -7.5946134613461345
+        }
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_1",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "variant": "dcfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.00036163313494252947,
+      "solver_latency_ms": 423.84624999249354,
+      "wall_latency_ms": 423.86108299251646,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9999184762180857,
+          "ev_chips": -5.999771934126427
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 5.9131925030758006e-05,
+          "ev_chips": -7.598415004864031
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 2.803816999599674e-06,
+          "ev_chips": -7.7723303912163715
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 1.9588039884099183e-05,
+          "ev_chips": -7.5959395043982
+        }
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_2",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "variant": "cfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.17139352614507963,
+      "solver_latency_ms": 416.37462499784306,
+      "wall_latency_ms": 416.3877500104718,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9608324825275626,
+          "ev_chips": -6.013091782256841
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.020857907538556663,
+          "ev_chips": -7.9780231750469195
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0028081916933708085,
+          "ev_chips": -9.20926642369145
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.015501418240509901,
+          "ev_chips": -8.878767676767678
+        }
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_2",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "variant": "cfr+",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.009314607259326202,
+      "solver_latency_ms": 410.96966702025384,
+      "wall_latency_ms": 410.98408302059397,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.997756908817617,
+          "ev_chips": -6.003124302597693
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0015574168299810564,
+          "ev_chips": -8.012495603727608
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 0.0001032781375365835,
+          "ev_chips": -8.918790751562248
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0005823962148654322,
+          "ev_chips": -8.952054805480548
+        }
+      ]
+    },
+    {
+      "position_id": "flop_showdown_cutoff_2",
+      "street": "flop",
+      "mode": "showdown_cutoff",
+      "variant": "dcfr",
+      "iterations": 100,
+      "joint_deals": 1,
+      "nash_conv_chips": 0.000409732303607413,
+      "solver_latency_ms": 421.4267089846544,
+      "wall_latency_ms": 421.4407500112429,
+      "selected_actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9999046568760862,
+          "ev_chips": -6.000176937014673
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 7.608825974821573e-05,
+          "ev_chips": -8.004567373406273
+        },
+        {
+          "kind": "bet",
+          "amount": 6,
+          "frequency": 2.712992309072901e-06,
+          "ev_chips": -8.858166645549431
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 1.6541871856523872e-05,
+          "ev_chips": -8.953513255803191
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Tiny synthetic ranges only; no broad-range or live range inference.",
+    "Cutoff modes omit later betting and are separate games from full trees.",
+    "Single run per fixture/variant; runtime noise and seed uncertainty are not estimated.",
+    "NashConv values compare variants only within the same fixture and game."
+  ]
+}
