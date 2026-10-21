@@ -689,3 +689,15 @@ The highest-residual river fixture was held fixed and deepened from 200 to 500 t
 **Verification.** API tests confirm the Shark-style river pot-20 menu returns bet targets 6/13/20 plus all-in 100, reports the selected tree, and rejects unknown tree names. Chrome headless selected this option in Solver Lab and verified the actual response's menu, frequencies, EV rows, and range grid. The existing gameplay/demo flow still passed in the same browser run. Full suite results are recorded with this commit.
 
 **Limit.** This is a menu preset inspired by Shark 2.0's documented sizing pattern, not a reproduction of its complete solver or tree policies. Cutoff profiles retain their own fixed menu; preflop and full flop remain unavailable in the product UI.
+
+## E064 — 2026-10-21 — deepen the widest validated river range
+
+**Question.** Do the action values and mixed strategy remain stable when the slowest 8-combo-per-seat case is solved beyond the 500-iteration range-width screening budget?
+
+**Method.** Selected `river_8x8_00`, the slower of two 8x8 cases in E062 (board `6s 3c 5s 4c Js`, pot 12, stacks 16, 64 compatible weighted deals, Shark-inspired river tree). Solved the same request at 500, 1,000, and 2,000 CFR+ iterations without early stopping. Compared the selected hero combo's conditional action EV and strategy to the 2,000-iteration finite reference. The first script invocation failed because running a file directly omitted the repository root from Python's import path; rerunning with `PYTHONPATH=.` completed. Raw requests/results: `experiments/deepen_widest_river_range.json`.
+
+**Results.** Exact restricted NashConv declined **0.09274 → 0.05218 → 0.03197 chips** at **9.98 → 20.15 → 39.64 seconds**. The selected `Jc Td` hand's action-EV MAE versus the 2,000-iteration result was **0.24557 chips** at 500 and **0.09367** at 1,000. Strategy L1 distance was **0.03789 / 0.00972**, and root policy regret evaluated on the 2,000-iteration EVs was **0.01229 / 0.00591 chips**. The 500-iteration point met E062's 0.1-chip NashConv threshold, but still had visibly larger per-action EV differences than the deeper finite reference.
+
+**Interpretation.** A NashConv threshold alone can obscure action-value movement in a specific hand. The deeper run reduced both residual and action discrepancies, at roughly linear wall-time cost. This is one synthetic hand/range and the 2,000-iteration result is not ground truth; it supports reporting both exploitability within the restricted game and downstream action-EV/regret stability. No solver equations changed.
+
+**Verification.** The experiment script reconstructs the serialized board, ranges, weights, root actor, stack, and Shark-inspired abstraction; the checked-in JSON captures every action frequency/EV and machine/runtime metadata. Full unit and browser suites are rerun for the experiment checkpoint.

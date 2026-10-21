@@ -1,0 +1,275 @@
+{
+  "experiment": "deepen_widest_shark_river_range_fixture",
+  "date": "2026-10-21",
+  "seed": 20261023,
+  "source_scenario_id": "river_8x8_00",
+  "source_revision": "10b0a3c80321d461cec09c37e26d51f6aaa9a1a8",
+  "revision": "5d11ebc85d49fed8af7e7335191431c655172142",
+  "working_tree": "dirty",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "position": {
+    "board": [
+      "6s",
+      "3c",
+      "5s",
+      "4c",
+      "Js"
+    ],
+    "pot": 12,
+    "stacks": [
+      16,
+      16
+    ],
+    "current_player": 0,
+    "street_actions": [],
+    "ranges": [
+      {
+        "hands": [
+          [
+            "Td",
+            "Jc"
+          ],
+          [
+            "Kh",
+            "2h"
+          ],
+          [
+            "7d",
+            "Kd"
+          ],
+          [
+            "6h",
+            "7s"
+          ],
+          [
+            "Jd",
+            "4h"
+          ],
+          [
+            "4d",
+            "As"
+          ],
+          [
+            "5h",
+            "3s"
+          ],
+          [
+            "5d",
+            "Kc"
+          ]
+        ],
+        "weights": [
+          0.02564102564102564,
+          0.2564102564102564,
+          0.07692307692307693,
+          0.07692307692307693,
+          0.10256410256410256,
+          0.20512820512820512,
+          0.15384615384615385,
+          0.10256410256410256
+        ]
+      },
+      {
+        "hands": [
+          [
+            "Ks",
+            "Ad"
+          ],
+          [
+            "Qd",
+            "8s"
+          ],
+          [
+            "9d",
+            "7h"
+          ],
+          [
+            "2d",
+            "8d"
+          ],
+          [
+            "8c",
+            "9c"
+          ],
+          [
+            "Qc",
+            "6d"
+          ],
+          [
+            "Ts",
+            "Ac"
+          ],
+          [
+            "3d",
+            "9s"
+          ]
+        ],
+        "weights": [
+          0.09375,
+          0.1875,
+          0.0625,
+          0.125,
+          0.03125,
+          0.03125,
+          0.1875,
+          0.28125
+        ]
+      }
+    ],
+    "compatible_joint_deals": 64,
+    "action_tree": "Shark 2.0-inspired postflop menu"
+  },
+  "runs": [
+    {
+      "iteration_budget": 500,
+      "iterations": 500,
+      "nash_conv_chips": 0.09273709642202244,
+      "latency_ms": 9975.913957983721,
+      "wall_latency_ms": 9975.934207963292,
+      "hero_hand": [
+        "Jc",
+        "Td"
+      ],
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9768061821666073,
+          "ev_chips": 3.1311003325364233
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.017079651070898306,
+          "ev_chips": 2.658432529113638
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.001056432982779323,
+          "ev_chips": 2.2834431800625143
+        },
+        {
+          "kind": "bet",
+          "amount": 12,
+          "frequency": 0.0007428961300633843,
+          "ev_chips": 2.371249381747704
+        },
+        {
+          "kind": "bet",
+          "amount": 16,
+          "frequency": 0.0043148376496516365,
+          "ev_chips": 2.353168083322669
+        }
+      ]
+    },
+    {
+      "iteration_budget": 1000,
+      "iterations": 1000,
+      "nash_conv_chips": 0.052179980807999904,
+      "latency_ms": 20149.16029199958,
+      "wall_latency_ms": 20149.181207991205,
+      "hero_hand": [
+        "Jc",
+        "Td"
+      ],
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9888938398203846,
+          "ev_chips": 3.1989162132987357
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.0055150410041791215,
+          "ev_chips": 2.69185787979193
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.003688952279372189,
+          "ev_chips": 2.5195794702471326
+        },
+        {
+          "kind": "bet",
+          "amount": 12,
+          "frequency": 0.0002920850493892013,
+          "ev_chips": 2.59481291347796
+        },
+        {
+          "kind": "bet",
+          "amount": 16,
+          "frequency": 0.0016100818466748242,
+          "ev_chips": 2.5517437596279424
+        }
+      ]
+    },
+    {
+      "iteration_budget": 2000,
+      "iterations": 2000,
+      "nash_conv_chips": 0.03196968466834349,
+      "latency_ms": 39636.25941699138,
+      "wall_latency_ms": 39636.27991703106,
+      "hero_hand": [
+        "Jc",
+        "Td"
+      ],
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.9937546138087443,
+          "ev_chips": 3.225733300160999
+        },
+        {
+          "kind": "bet",
+          "amount": 4,
+          "frequency": 0.002690995682605327,
+          "ev_chips": 2.701434369520492
+        },
+        {
+          "kind": "bet",
+          "amount": 8,
+          "frequency": 0.0030551384916913307,
+          "ev_chips": 2.689560041667985
+        },
+        {
+          "kind": "bet",
+          "amount": 12,
+          "frequency": 9.653039563940027e-05,
+          "ev_chips": 2.7409311177886977
+        },
+        {
+          "kind": "bet",
+          "amount": 16,
+          "frequency": 0.00040272162131971365,
+          "ev_chips": 2.667593422790445
+        }
+      ]
+    }
+  ],
+  "comparisons_vs_2000_iteration_finite_reference": [
+    {
+      "iterations": 500,
+      "hero_action_ev_mae_chips_vs_2000": 0.24557174902913398,
+      "hero_strategy_l1_vs_2000": 0.03789427430209789,
+      "reference_policy_regret_chips": 0.012289714528722406
+    },
+    {
+      "iterations": 1000,
+      "hero_action_ev_mae_chips_vs_2000": 0.09366840309698352,
+      "hero_strategy_l1_vs_2000": 0.009721547976719277,
+      "reference_policy_regret_chips": 0.0059097020188279
+    }
+  ],
+  "limitations": [
+    "One seeded synthetic river fixture; no statistical population claim.",
+    "2,000 iterations is a finite-run comparison reference, not ground truth.",
+    "Action EV/frequency comparison is for the selected hero combo only.",
+    "Exact NashConv applies only to this supplied range and restricted action tree."
+  ]
+}
