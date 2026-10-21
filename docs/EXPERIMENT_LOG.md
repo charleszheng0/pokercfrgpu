@@ -679,3 +679,13 @@ The highest-residual river fixture was held fixed and deepened from 200 to 500 t
 **Results.** All **16/16** requests were supported and met the 0.1-chip target. Median/worst NashConv by width: 2 combos **0.01584/0.04522** chips; 3 **0.04170/0.09146**; 4 **0.03138/0.03825**; 6 **0.03688/0.07297**; 8 **0.04969/0.09274**. Median/p95 latency was **0.687/1.529 s**, **0.927/4.225 s**, **3.299/5.799 s**, **1.395/2.167 s**, and **5.571/10.059 s**, respectively. The non-monotonic timings reflect different sampled board/range/action trees and only two fixtures at widths six/eight; do not interpret as a smooth scaling law. Full raw inputs and action outputs are in `experiments/river_range_width_validation.json`.
 
 **Interpretation.** The current exact river implementation reaches a useful residual on 64 compatible deals in this tiny sample, but a solve can take around ten seconds even with a 500-iteration cap. That is acceptable for offline cache generation or a user-triggered wait, not instant feedback. It does not validate 1,326-combo ranges; the product API's eight-combo input ceiling is a hard sparse-range cap. The next scale work should profile memory and per-iteration traversal at 64 deals and measure cache/state hit rate before raising that cap.
+
+## E063 — 2026-10-21 — expose the Shark-inspired tree in Scenario Lab
+
+**Observation.** The 30/20-position Shark-style batches exercised `ActionAbstraction.shark_style_postflop()` through the typed solver API, but ordinary Scenario Lab requests always used the default half-pot/pot menu. Users could not reproduce the measured tree from the interface.
+
+**Change.** Added an advanced `Betting tree` selector with `Default` and `Shark-inspired (2.0)` choices. `/api/solve` validates the selected enum and passes the corresponding `ActionAbstraction` into the same shared solver. Results include the tree identifier and a readable label; action frequencies/EVs are computed from the chosen tree. Existing omitted-field requests remain on the default tree. No CFR update equations or payoff calculations changed.
+
+**Verification.** API tests confirm the Shark-style river pot-20 menu returns bet targets 6/13/20 plus all-in 100, reports the selected tree, and rejects unknown tree names. Chrome headless selected this option in Solver Lab and verified the actual response's menu, frequencies, EV rows, and range grid. The existing gameplay/demo flow still passed in the same browser run. Full suite results are recorded with this commit.
+
+**Limit.** This is a menu preset inspired by Shark 2.0's documented sizing pattern, not a reproduction of its complete solver or tree policies. Cutoff profiles retain their own fixed menu; preflop and full flop remain unavailable in the product UI.

@@ -18,7 +18,8 @@ from poker_cpu.engine import Action, HoldemGame
 from poker_cpu.ranges import canonical_hand, preset_catalog
 from poker_cpu.river_solver import WeightedRange
 from poker_cpu.rollout_feedback import estimate_action_evs
-from poker_cpu.solve import BettingContext, SolveRequest, SolverConfig, request_from_game, solve
+from poker_cpu.solve import (ActionAbstraction, BettingContext, SolveRequest,
+                             SolverConfig, request_from_game, solve)
 from .demo import DEMO_DESCRIPTION, DEMO_RIVER_REQUEST
 from .recruiter_demo import HANDS as SHOWCASE_HANDS, new_game as new_showcase_game
 from .solve_debug import log_event
@@ -99,6 +100,9 @@ def analyze_river_position(payload):
     range_source = payload.get("range_source", "manual_assumption")
     if range_source not in ("manual_assumption", "illustrative_preset", "fixed_demo_inputs", "offline_sampled_range"):
         raise ValueError("Unknown range source")
+    betting_tree = payload.get("betting_tree", "default")
+    if betting_tree not in ("default", "shark_2_0_inspired"):
+        raise ValueError("Unknown betting tree; choose default or shark_2_0_inspired")
     try:
         board = parse_cards(payload.get("board", ""))
         hero_hand = canonical_hand(payload.get("hero_hand", ""))
@@ -175,13 +179,15 @@ def analyze_river_position(payload):
                   nash_conv_chips=cached["nash_conv_chips"])
         return result
 
+    abstraction = (ActionAbstraction.shark_style_postflop()
+                   if betting_tree == "shark_2_0_inspired" else ActionAbstraction())
     report = solve(SolveRequest(
         board=board, street=street, pot_before_street=pot,
         stacks_at_street_start=tuple(stacks),
         betting=BettingContext(button=1 - first_actor,
                                first_actor=first_actor, current_player=0,
                                street_actions=tuple(actions)),
-        ranges=beliefs, config=SolverConfig(
+        ranges=beliefs, abstraction=abstraction, config=SolverConfig(
             iterations=iterations,
             target_nash_conv_chips=payload.get("target_nash_conv_chips"),
             max_time_ms=10000 if street != "river" else None,
@@ -208,9 +214,12 @@ def analyze_river_position(payload):
                 "ev_loss_bb": row.ev_loss_bb} for row in hero_rows]
     delta = report.nash_conv_chips - report.halfway_nash_conv_chips
     trend = "decreased" if delta < -1e-9 else "increased" if delta > 1e-9 else "unchanged"
+    betting_tree_label = ("Shark-inspired (2.0)" if betting_tree == "shark_2_0_inspired"
+                          else "default")
     return {
         "status": f"restricted_{street}_analysis",
-        "label": f"Restricted {street} game · supplied ranges · CFR+",
+        "label": f"Restricted {street} game · {betting_tree_label} tree · supplied ranges · CFR+",
+        "betting_tree": betting_tree,
         "validation_status": "exact NashConv for this finite restricted game",
         "board": board,
         "street": street,

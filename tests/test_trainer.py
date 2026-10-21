@@ -96,6 +96,23 @@ class TrainerTests(unittest.TestCase):
         self.assertIsNone(report["target_nash_conv_chips"])
         self.assertTrue(report["convergence_trace"])
 
+    def test_scenario_lab_exposes_the_shark_inspired_betting_tree(self):
+        payload = self.river_payload()
+        payload["betting_tree"] = "shark_2_0_inspired"
+        report = analyze_river_position(payload)
+        self.assertEqual(report["betting_tree"], "shark_2_0_inspired")
+        self.assertIn("Shark-inspired (2.0)", report["label"])
+        bet_sizes = {row["action"]["amount"] for row in report["action_evs"]
+                     if row["action"]["kind"] == "bet"}
+        self.assertEqual(bet_sizes, {6, 13, 20, 100})
+        self.assertAlmostEqual(sum(row["frequency"] for row in report["frequencies"]), 1)
+
+    def test_scenario_lab_rejects_unknown_betting_tree(self):
+        payload = self.river_payload()
+        payload["betting_tree"] = "pretend_gto"
+        with self.assertRaisesRegex(ValueError, "Unknown betting tree"):
+            analyze_river_position(payload)
+
     def test_scenario_lab_uses_only_an_exact_qualified_offline_cache_hit(self):
         cached_result = {"status": "restricted_river_analysis", "frequencies": [],
                          "action_evs": [], "nash_conv": 0.05}

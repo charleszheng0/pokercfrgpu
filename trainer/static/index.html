@@ -320,6 +320,7 @@
       <div class="analysis-grid lab-solver-settings">
         <label>Street<select id="lab-street"><option value="river">River · restricted solve</option><option value="turn">Turn · tiny-range exact chance</option><option value="flop">Flop · experimental, unavailable here</option><option value="preflop">Preflop · unavailable</option></select></label>
         <label>Stacks (chips)<input id="river-stacks" value="100, 100" autocomplete="off"></label>
+        <label>Betting tree<select id="river-tree"><option value="default">Default · ½ pot / pot</option><option value="shark_2_0_inspired">Shark-inspired · street sizes</option></select></label>
         <input id="lab-position" type="hidden" value="river_example">
       </div>
       <p class="study-note">Preset ranges are illustrative and are not inferred from betting. Edit them here when you have better assumptions for this spot.</p>
@@ -997,6 +998,7 @@
           board: $('river-board').value.trim(), hero_hand: $('river-hero').value.trim(),
           pot: Number($('river-pot').value), stacks, iterations: Number($('river-iterations').value),
           ranges: RangeEditor.payloadRanges(),
+          betting_tree: $('river-tree').value,
           range_source: $('lab-position').value === 'fixed_demo' ? 'fixed_demo_inputs' :
             (['hero', 'opponent'].every(seat => RangeEditor.currentPreset(seat) !== 'custom') ? 'illustrative_preset' : 'manual_assumption'),
         };
@@ -1162,7 +1164,7 @@
     });
     $('river-pot').addEventListener('input', () => { markLabCustom(); updateRiverActionControls(); invalidateRiverAnalysis(); });
     $('river-prior-bet').addEventListener('change', () => { markLabCustom(); updateRiverActionControls(); invalidateRiverAnalysis(); });
-    for (const id of ['river-spot', 'river-prior-raise', 'river-iterations', 'river-nashconv-target']) $(id).addEventListener('change', () => { markLabCustom(); updateRiverActionControls(); invalidateRiverAnalysis(); });
+    for (const id of ['river-spot', 'river-prior-raise', 'river-iterations', 'river-nashconv-target', 'river-tree']) $(id).addEventListener('change', () => { markLabCustom(); updateRiverActionControls(); invalidateRiverAnalysis(); });
     updateRiverActionControls();
     $('submit-wager').onclick = () => {
       const s = window.currentPokerState;

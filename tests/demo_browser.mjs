@@ -200,9 +200,14 @@ try {
   assert.equal(await page.locator('#opponent-range-card').isVisible(), true);
   assert.equal(await page.locator('#hero-range-card').isVisible(), false);
   await page.locator('#range-view-hero').click();
+  await page.locator('#river-tree').selectOption('shark_2_0_inspired');
   const labResponse = page.waitForResponse(response => response.url().endsWith('/api/solve'));
   await page.locator('#run-river-analysis').click();
   const labData = await (await labResponse).json();
+  assert.equal(labData.betting_tree, 'shark_2_0_inspired');
+  assert.ok(labData.label.includes('Shark-inspired (2.0)'));
+  assert.deepEqual(labData.action_evs.filter(row => row.action.kind === 'bet')
+    .map(row => row.action.amount), [6, 13, 20, 100]);
   await page.locator('#river-output .lab-action-row').first().waitFor();
   assert.equal(await page.locator('#river-output .lab-action-row').count(), labData.action_evs.length);
   assert.equal(await page.locator('#river-output .strategy-cell').count(), 169);
