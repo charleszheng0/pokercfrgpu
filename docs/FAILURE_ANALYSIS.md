@@ -222,3 +222,7 @@ At the first budgets, 4/30 scenarios exceeded 0.1-chip exact restricted NashConv
 ## E061: selected-hand identity must follow the decision actor through history replay
 
 The first river bet/raise harness run selected seat 1's hand even though the replayed two-action line ended with seat 0 acting; the solver correctly rejected the request because the selected hand had no compatible mass for the acting range. The flop-after-check generator had the inverse mismatch. The request builder now derives the selected hand from `current_player`, and tests assert that correspondence for every generated history state. After correction, all 20 history cases reached supported solver outputs and met the declared 0.1-chip restricted-game target. This verifies the harness/API state mapping for these lines; it does not validate inferred ranges after those actions.
+
+## E062: wider river ranges meet the residual target but are not instant
+
+At 8 exact combos per seat (64 compatible deals), both seeded river fixtures met the 0.1-chip restricted NashConv target, but required 1.08 and 10.06 seconds. The latency spread was driven by the concrete action/state tree and board/range details; the two samples are insufficient to explain its variance. This is a compute ceiling, not a solver rejection. Do not raise the ordinary UI's sparse-range limit or promise immediate output from this evidence. Next profile time by traversal component on representative 64-deal fixtures and add end-to-end latency percentiles across more boards.

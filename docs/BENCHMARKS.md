@@ -309,3 +309,9 @@ These are exact NashConv values inside tiny supplied-range trees, not full-game 
 Twenty more seeded states cover river facing a bet+raise, turn full-tree facing a bet, turn cutoff facing a bet, flop cutoff facing a bet, and flop cutoff after check. Four per group, all actual solver requests were supported and all met the 0.1-chip exact restricted NashConv target. Target-solve median latency was 68 ms for river raise responses, 115 ms for full-turn facing-bet states, 98 ms for turn cutoff facing-bet, 1.58 s for flop cutoff facing-bet, and 1.67 s for flop cutoff after check. The combined root/action history cohort is now 50 deterministic states; detailed inputs/results are in [history_postflop_batch.json](../experiments/history_postflop_batch.json).
 
 This adds decision histories but not broad ranges or full-game coverage. The flop/turn cutoff values exclude later betting, and the tree residual cannot reveal off-tree abstraction error.
+
+## River range-width sweep — 2026-10-21
+
+Sixteen Shark-inspired river cases measured 2/3/4/6/8 exact combos per seat (4/9/16/36/64 compatible deals). All 16 met ≤0.1-chip exact restricted NashConv within their configured caps. Median residual/wall latency: 2 combos **0.01584 chips / 0.687 s**, 3 **0.04170 / 0.927 s**, 4 **0.03138 / 3.299 s**, 6 **0.03688 / 1.395 s**, and 8 **0.04969 / 5.571 s**. The 8-combo p95 was **10.06 s** (two observations); board/tree variation makes latency non-monotonic in this small sample. Raw positions and strategies: [river_range_width_validation.json](../experiments/river_range_width_validation.json).
+
+This reaches the current sparse API limit, not full 1,326-combo ranges. The exact residual is for each supplied weighted-range game and does not validate the ranges or action abstraction.
