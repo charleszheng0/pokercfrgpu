@@ -323,3 +323,17 @@ The slowest E062 8x8 case was rerun at 500/1,000/2,000 CFR+ iterations. Exact re
 ### Exact sparse ranges beyond the current UI cap — 2026-10-21
 
 One seeded 10x10 river game (100 compatible deals) reached **0.00748-chip** exact restricted NashConv at 500 iterations / **15.32 s**. One 11x11 game (121 deals) reached **0.07445 chips** at 1,000 iterations / **36.70 s**, after residuals of 0.45604/0.17346/0.11870 at 100/300/500 iterations. At 11x11, selected-hand action-EV MAE versus the 1,000-iteration finite reference was 0.08081/0.06950/0.04788 chips for 100/300/500; policy regret was 0.06753/0.01311/0.01062 chips. The 100-iteration strategy differed substantially (L1 0.5082); 300/500 were closer (0.0232/0.0248). These are two single seeded boards and finite-iteration references, not general performance or GTO validation. The app's eight-combo limit remains unchanged. Reproducible raw results: [range scaling](../experiments/river_range_width_extension.json) and [convergence](../experiments/deepen_river_range_width_extension.json).
+
+### Default Scenario Lab hand audit — 2026-10-22
+
+On `As Kh Qd 7c 2s` with `Jc Tc`, a 20-chip pot, 100-chip stacks, and the two illustrative three-combo ranges, a continuing CFR+ run produced the following exact restricted-game results:
+
+| Iterations | NashConv (chips) | Jam frequency | Jam decision EV (chips) | Conditional opponent call probability |
+| ---: | ---: | ---: | ---: | ---: |
+| 500 | 0.489393 | 87.377% | +36.8015 | 16.8015% |
+| 2,000 | 0.051061 | 98.297% | +36.6659 | 16.6659% |
+| 5,000 | 0.031288 | 99.100% | +36.6571 | 16.6571% |
+
+The hero hand is an ace-high straight against three weaker entered hands. The jam EV independently equals `20 + 100 × conditional opponent call probability` to <1e-9 chips. The payoff arithmetic is therefore coherent for this finite game; the default 500-iteration strategy had a 2.45%-of-pot restricted residual and moved visibly with deeper search. Single continuing-run elapsed times were 3.14/12.20/30.28 seconds; separate cold API calls took about 9.62/31.43/83.74 seconds. This is a synthetic nine-deal game, not realistic range inference. [Raw audit](../experiments/audit_default_lab_river.json).
+
+A separate Chrome end-to-end check used the Shark-inspired menu with modified manual ranges: initial restricted NashConv was **0.406520 chips**, and clicking **Refine** returned **0.094469 chips at 1,400 iterations**. The page displayed the actual API frequencies/EVs and range assumptions; this verifies UI wiring, not general strategy quality.

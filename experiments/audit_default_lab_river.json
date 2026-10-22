@@ -1,0 +1,234 @@
+{
+  "experiment": "default_scenario_lab_river_ev_strategy_audit",
+  "date": "2026-10-22",
+  "revision": "0ed25c808a425d12b0a49468285e8c06cabb3ddd",
+  "working_tree": "dirty",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "position": {
+    "board": [
+      "As",
+      "Kh",
+      "Qd",
+      "7c",
+      "2s"
+    ],
+    "hero_hand": [
+      "Jc",
+      "Tc"
+    ],
+    "pot": 20,
+    "stack": 100,
+    "hero_range": {
+      "hands": [
+        [
+          "4c",
+          "4d"
+        ],
+        [
+          "9c",
+          "8c"
+        ],
+        [
+          "Jc",
+          "Tc"
+        ]
+      ],
+      "weights": [
+        0.3333333333333333,
+        0.3333333333333333,
+        0.3333333333333333
+      ]
+    },
+    "opponent_range": {
+      "hands": [
+        [
+          "8h",
+          "8s"
+        ],
+        [
+          "Jd",
+          "Jh"
+        ],
+        [
+          "Ac",
+          "Ad"
+        ]
+      ],
+      "weights": [
+        0.25,
+        0.5,
+        0.25
+      ]
+    },
+    "compatible_joint_deals": 9,
+    "hero_hand_rank": [
+      4,
+      14
+    ],
+    "opponent_hand_ranks": {
+      "8h 8s": [
+        1,
+        8,
+        14,
+        13,
+        12
+      ],
+      "Jd Jh": [
+        1,
+        11,
+        14,
+        13,
+        12
+      ],
+      "Ac Ad": [
+        3,
+        14,
+        13,
+        12
+      ]
+    },
+    "abstraction": "default half-pot/pot/minimum/all-in, one raise per street"
+  },
+  "runs": [
+    {
+      "iterations": 500,
+      "elapsed_wall_ms": 3137.659708998399,
+      "nash_conv_chips": 0.48939258145028175,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 0.001402229302050723,
+          "pot_centered_ev_chips": 13.68049765364041,
+          "decision_ev_chips": 23.68049765364041
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 0.0009699223712555559,
+          "pot_centered_ev_chips": 14.265146481477013,
+          "decision_ev_chips": 24.26514648147701
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.015483888185821958,
+          "pot_centered_ev_chips": 19.047663403688485,
+          "decision_ev_chips": 29.047663403688485
+        },
+        {
+          "kind": "bet",
+          "amount": 20,
+          "frequency": 0.10837371495777152,
+          "pot_centered_ev_chips": 24.635988790233625,
+          "decision_ev_chips": 34.635988790233625
+        },
+        {
+          "kind": "bet",
+          "amount": 100,
+          "frequency": 0.8737702451831003,
+          "pot_centered_ev_chips": 26.801549697580494,
+          "decision_ev_chips": 36.8015496975805
+        }
+      ],
+      "jam_call_probability_given_hero": 0.16801549697580495,
+      "jam_ev_from_independent_payoff_identity": 36.8015496975805
+    },
+    {
+      "iterations": 2000,
+      "elapsed_wall_ms": 12196.75283399556,
+      "nash_conv_chips": 0.05106064537209232,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 8.777072467858707e-05,
+          "pot_centered_ev_chips": 13.410409285956833,
+          "decision_ev_chips": 23.41040928595683
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 6.071103298338738e-05,
+          "pot_centered_ev_chips": 14.109534475540636,
+          "decision_ev_chips": 24.109534475540634
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.0009691939006867549,
+          "pot_centered_ev_chips": 18.200066212629892,
+          "decision_ev_chips": 28.200066212629892
+        },
+        {
+          "kind": "bet",
+          "amount": 20,
+          "frequency": 0.015907706019669853,
+          "pot_centered_ev_chips": 22.473839279592116,
+          "decision_ev_chips": 32.47383927959211
+        },
+        {
+          "kind": "bet",
+          "amount": 100,
+          "frequency": 0.9829746183219814,
+          "pot_centered_ev_chips": 26.665924292229505,
+          "decision_ev_chips": 36.665924292229505
+        }
+      ],
+      "jam_call_probability_given_hero": 0.16665924292229503,
+      "jam_ev_from_independent_payoff_identity": 36.665924292229505
+    },
+    {
+      "iterations": 5000,
+      "elapsed_wall_ms": 30278.830458999437,
+      "nash_conv_chips": 0.03128790629462719,
+      "actions": [
+        {
+          "kind": "check",
+          "amount": 0,
+          "frequency": 1.4047528100928045e-05,
+          "pot_centered_ev_chips": 13.397866075637973,
+          "decision_ev_chips": 23.39786607563797
+        },
+        {
+          "kind": "bet",
+          "amount": 2,
+          "frequency": 9.716678824215817e-06,
+          "pot_centered_ev_chips": 14.100806764602478,
+          "decision_ev_chips": 24.100806764602478
+        },
+        {
+          "kind": "bet",
+          "amount": 10,
+          "frequency": 0.00015511753611471293,
+          "pot_centered_ev_chips": 18.15252757169379,
+          "decision_ev_chips": 28.15252757169379
+        },
+        {
+          "kind": "bet",
+          "amount": 20,
+          "frequency": 0.008816920524744806,
+          "pot_centered_ev_chips": 22.227077072447333,
+          "decision_ev_chips": 32.22707707244733
+        },
+        {
+          "kind": "bet",
+          "amount": 100,
+          "frequency": 0.9910041977322154,
+          "pot_centered_ev_chips": 26.65709911170965,
+          "decision_ev_chips": 36.65709911170965
+        }
+      ],
+      "jam_call_probability_given_hero": 0.16657099111709647,
+      "jam_ev_from_independent_payoff_identity": 36.65709911170965
+    }
+  ],
+  "payoff_check": "Hero's Broadway straight beats every entered opponent combo. When hero jams 100 into a 20-chip pot, opponent fold yields +20 decision EV and opponent call yields +120; therefore jam EV = 20 + 100 * conditional opponent call probability. This identity is asserted at each checkpoint.",
+  "limitations": [
+    "The two three-combo ranges are illustrative assumptions, not inferred from play.",
+    "NashConv is exact only for the supplied nine-deal restricted betting tree.",
+    "This audit verifies a payoff identity and convergence trend, not full-game GTO."
+  ]
+}

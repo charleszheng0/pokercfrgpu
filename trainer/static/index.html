@@ -138,6 +138,11 @@
     .analysis-results { display: grid; gap: 12px; }
     .analysis-diagnostics { display: flex; flex-wrap: wrap; gap: 8px; }
     .diagnostic { padding: 7px 10px; border: 1px solid #394443; border-radius: 7px; background: #202627; font-size: .8rem; font-variant-numeric: tabular-nums; }
+    .lab-quality { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 10px 0 18px; padding: 10px 12px; border: 1px solid #4c5f56; border-radius: 8px; color: #d7e5dc; background: #1b2a26; font-size: .86rem; }
+    .lab-quality.preliminary { border-color: #8a7043; color: #f3deb0; background: #30291e; }
+    .lab-quality button { padding: 7px 12px; border: 1px solid currentColor; color: inherit; background: transparent; font-weight: 700; }
+    .lab-quality button:hover { background: #ffffff18; }
+    .analysis-warning { color: #f3deb0; }
     .analysis-result-row { display: grid; grid-template-columns: minmax(120px, 1fr) 1fr 60px minmax(160px, 1.2fr); align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #303839; font-size: .82rem; }
     .analysis-result-row select { min-width: 0; }
     .analysis-error { color: #f2c48b; }
@@ -314,7 +319,7 @@
         <label>Your range<select id="hero-preset"></select><small id="hero-range-summary"></small><span id="hero-preset-note" hidden></span></label>
         <label>Opponent range<select id="opponent-preset"></select><small id="opponent-range-summary"></small><span id="opponent-preset-note" hidden></span></label>
       </div>
-      <div class="lab-run"><button id="run-river-analysis" class="new-hand" type="button" disabled>Analyze</button> <span id="analysis-status" class="muted">Ready</span></div>
+      <div class="lab-run"><button id="run-river-analysis" class="new-hand" type="button" disabled>Analyze</button> <span id="analysis-status" class="muted" role="status" aria-atomic="true">Ready</span></div>
       <div id="river-output" class="analysis-results"><span class="empty">Action frequencies and EVs appear here.</span></div>
       <details id="lab-advanced" class="solver-details lab-advanced"><summary>Edit ranges · solver settings</summary>
       <div class="analysis-grid lab-solver-settings">
@@ -861,17 +866,40 @@
       const output = $('river-output'); output.replaceChildren();
       const toCall = Math.max(0, (result.street_paid?.[1] || 0) - (result.street_paid?.[0] || 0));
       const diagnostics = document.createElement('div'); diagnostics.className = 'analysis-diagnostics';
+      const target = result.target_nash_conv_chips;
+      const targetMet = target !== null && result.nash_conv <= target + 1e-9;
       const chips = [
-        result.label, `Restricted NashConv ${result.nash_conv.toFixed(4)} chips`,
-        ...(result.target_nash_conv_chips === null ? [] : [`Target ${result.target_nash_conv_chips} · ${result.solver_quality_status === 'restricted_target_met' ? 'met' : 'unmet'}`]),
+        result.label, `NashConv ${result.nash_conv.toFixed(4)} chips${result.pot > 0 ? ` · ${(100 * result.nash_conv / result.pot).toFixed(2)}% pot` : ''}`,
+        ...(target === null ? [] : [`Restricted-game screen ${targetMet ? 'met' : 'unmet'} · ≤${target.toFixed(3)} chips`]),
       ];
       chips.forEach(text => { const item = document.createElement('span'); item.className = 'diagnostic'; item.textContent = text; diagnostics.append(item); });
       output.append(diagnostics);
+      const quality = document.createElement('div');
+      quality.className = `lab-quality${target !== null && !targetMet ? ' preliminary' : ''}`;
+      quality.title = 'This screen measures convergence only inside the supplied finite game. It does not validate the ranges or establish full-game GTO accuracy.';
+      const qualityText = document.createElement('span');
+      qualityText.textContent = target !== null && !targetMet
+        ? `Preliminary solve. Residual ${result.nash_conv.toFixed(3)} exceeds the ${target.toFixed(3)}-chip screen; EVs and frequencies may move. ${result.range_note}`
+        : `Restricted-game ${targetMet ? 'residual screen met' : 'residual measured'}. ${result.range_note}`;
+      quality.append(qualityText);
+      if (result.street === 'river' && target !== null && !targetMet && result.iterations < 5000) {
+        const nextBudget = result.iterations < 2000 ? 2000 : 5000;
+        const refine = document.createElement('button');
+        refine.id = 'river-refine'; refine.type = 'button';
+        refine.textContent = `Refine · up to ${nextBudget.toLocaleString()} iters`;
+        refine.onclick = () => {
+          $('river-iterations').value = String(nextBudget);
+          $('river-nashconv-target').value = String(target);
+          $('run-river-analysis').click();
+        };
+        quality.append(refine);
+      }
+      output.append(quality);
       const details = document.createElement('details'); details.className = 'solver-details lab-solver-info';
       const summary = document.createElement('summary'); summary.textContent = 'Assumptions & solver info'; details.append(summary);
-      const quality = document.createElement('p'); quality.className = 'study-note';
-      quality.textContent = `${result.iterations.toLocaleString()} CFR+ iterations in ${result.latency_ms.toFixed(1)} ms. Measured NashConv ${result.nash_conv_trend} from ${result.nash_conv_halfway.toFixed(4)} to ${result.nash_conv.toFixed(4)} chips. ${result.joint_deals} compatible deals. ${result.supported_state}`;
-      details.append(quality);
+      const solverInfo = document.createElement('p'); solverInfo.className = 'study-note';
+      solverInfo.textContent = `${result.iterations.toLocaleString()} CFR+ iterations in ${result.latency_ms.toFixed(1)} ms. Measured NashConv ${result.nash_conv_trend} from ${result.nash_conv_halfway.toFixed(4)} to ${result.nash_conv.toFixed(4)} chips. ${result.joint_deals} compatible deals. ${result.supported_state}`;
+      details.append(solverInfo);
       if (result.convergence_trace && result.convergence_trace.length > 1) {
         const checkpoints = document.createElement('p'); checkpoints.className = 'study-note';
         checkpoints.textContent = `Measured NashConv checkpoints: ${result.convergence_trace.map(point => `${point.iterations} iterations: ${point.nash_conv_chips.toFixed(4)} chips`).join(' · ')}.`;
@@ -893,6 +921,7 @@
         const option = document.createElement('option'); option.value = JSON.stringify(row.action);
         option.textContent = `${actionLabel(row.action, toCall)} · ${(row.frequency * 100).toFixed(1)}%`; select.append(option);
       });
+      select.value = JSON.stringify(result.frequencies.reduce((best, row) => row.frequency > best.frequency ? row : best).action);
       const loss = document.createElement('span'); loss.className = 'diagnostic';
       const matrix = document.createElement('div'); matrix.className = 'matrix-grid';
       matrix.setAttribute('role', 'grid'); matrix.setAttribute('aria-label', 'Solved range action frequency by hand class');
@@ -918,7 +947,7 @@
         line.onclick = () => { select.value = line.dataset.action; updateLoss(); };
         line.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); line.click(); } };
         const action = document.createElement('span'); action.className = 'demo-action-name'; action.textContent = actionLabel(row.action, toCall);
-        if (Math.abs(estimate.ev - bestEV) < 1e-9) { const best = document.createElement('small'); best.textContent = 'Best EV'; action.append(best); }
+        if (Math.abs(estimate.ev - bestEV) < 1e-9) { const best = document.createElement('small'); best.textContent = 'Highest EV estimate'; action.append(best); }
         const track = document.createElement('span'); track.className = 'frequency-track';
         const fill = document.createElement('span'); fill.className = 'frequency-fill'; fill.style.width = `${Math.max(0, Math.min(100, row.frequency * 100))}%`; track.append(fill);
         const freq = document.createElement('span'); freq.className = 'demo-action-percent'; freq.textContent = `${(row.frequency * 100).toFixed(1)}%`;
@@ -1005,6 +1034,7 @@
         status.textContent = 'Solving this restricted game on CPU…';
         const targetText = $('river-nashconv-target').value.trim();
         if (targetText !== '') payload.target_nash_conv_chips = Number(targetText);
+        else if (street === 'river') payload.target_nash_conv_chips = Math.max(0.01, Math.round(payload.pot * 0.005 * 10000) / 10000);
         if ($('river-spot').value === 'checked_to_hero') {
           payload.first_actor = 1;
           payload.river_actions = [{kind: 'check', amount: 0}];
@@ -1023,7 +1053,10 @@
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Analysis request failed');
         renderRiverAnalysis(data);
-        status.textContent = `Analysis complete · restricted ${street} game`;
+        status.textContent = data.target_nash_conv_chips !== null && data.nash_conv > data.target_nash_conv_chips
+          ? 'Preliminary result · refine solve for steadier estimates'
+          : `Analysis complete · restricted ${street} game`;
+        status.className = data.target_nash_conv_chips !== null && data.nash_conv > data.target_nash_conv_chips ? 'analysis-warning' : 'muted';
       } catch (error) {
         const message = document.createElement('p'); message.className = 'analysis-error'; message.textContent = error.message;
         output.append(message); status.textContent = 'Analysis unavailable for this input'; status.className = 'analysis-error';

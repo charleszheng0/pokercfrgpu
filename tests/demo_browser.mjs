@@ -205,11 +205,14 @@ try {
   await page.locator('#run-river-analysis').click();
   const labData = await (await labResponse).json();
   assert.equal(labData.betting_tree, 'shark_2_0_inspired');
+  assert.equal(labData.target_nash_conv_chips, Math.max(0.01, Math.round(labData.pot * 0.005 * 10000) / 10000));
   assert.ok(labData.label.includes('Shark-inspired (2.0)'));
   assert.deepEqual(labData.action_evs.filter(row => row.action.kind === 'bet')
     .map(row => row.action.amount), [6, 13, 20, 100]);
   await page.locator('#river-output .lab-action-row').first().waitFor();
   assert.equal(await page.locator('#river-output .lab-action-row').count(), labData.action_evs.length);
+  const mostPlayedLabAction = labData.frequencies.reduce((best, row) => row.frequency > best.frequency ? row : best);
+  assert.equal(await page.locator('#river-chosen-action').inputValue(), JSON.stringify(mostPlayedLabAction.action));
   assert.equal(await page.locator('#river-output .strategy-cell').count(), 169);
   assert.equal(await page.locator('#river-output .lab-range-result').isVisible(), true);
   assert.ok((await page.locator('#river-output .strategy-mix-cell:not(.blocked)').count()) > 0);
@@ -226,6 +229,22 @@ try {
   assert.equal(await page.locator('#river-chosen-action').inputValue(), JSON.stringify(labData.action_evs[lastLab].action));
   assert.ok((await page.locator('#river-output .analysis-diagnostics').last().innerText()).includes(signedEV(labData.action_evs[lastLab].decision_ev_bb)));
   assert.equal(await page.locator('#river-output .lab-solver-info').evaluate(node => node.open), false);
+  let refinedNashConv = null;
+  let refinedIterations = null;
+  if (labData.nash_conv > labData.target_nash_conv_chips) {
+    assert.ok((await page.locator('#river-output .lab-quality').innerText()).includes('Preliminary solve'));
+    assert.equal(await page.locator('#river-refine').isVisible(), true);
+    const refinedResponse = page.waitForResponse(response => response.url().endsWith('/api/solve'), {timeout: 120000});
+    await page.locator('#river-refine').click();
+    const refinedData = await (await refinedResponse).json();
+    assert.ok(refinedData.iterations > labData.iterations);
+    assert.equal(refinedData.target_nash_conv_chips, labData.target_nash_conv_chips);
+    assert.ok(Number.isFinite(refinedData.nash_conv));
+    refinedNashConv = refinedData.nash_conv;
+    refinedIterations = refinedData.iterations;
+    await page.locator('#river-output .lab-action-row').first().waitFor();
+    assert.ok((await page.locator('#river-output .lab-quality').innerText()).includes(refinedData.range_note));
+  }
   await page.locator('#lab-quick-position').selectOption('turn_example');
   assert.equal(await page.locator('#lab-street').inputValue(), 'turn');
   assert.equal(await page.locator('#hero-preset').inputValue(), 'turn_mechanics_hero');
@@ -261,7 +280,9 @@ try {
     gameplay_review_nash_conv_chips: reviewData.analysis.nash_conv_chips,
     gameplay_review_latency_ms: reviewData.analysis.latency_ms,
     early_street_reviews: earlyReviews,
-    lab_nash_conv_chips: labData.nash_conv}));
+    lab_nash_conv_chips: labData.nash_conv,
+    lab_refined_nash_conv_chips: refinedNashConv,
+    lab_refined_iterations: refinedIterations}));
 } finally {
   if (browser) await browser.close();
   server.kill('SIGTERM');
