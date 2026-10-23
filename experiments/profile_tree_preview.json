@@ -1,0 +1,237 @@
+{
+  "experiment": "scenario_lab_public_tree_preview",
+  "date": "2026-10-22",
+  "revision_before_commit": "727496b0579aa899247bdefb2950c019826aeba3",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.10.6 (v3.10.6:9c7b4bd164, Aug  1 2022, 17:13:48) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "method": "Fifty sequential in-process calls per river tree/spot after module import; p95 is sorted sample 48/50. No HTTP, JavaScript, CFR, or hand evaluation included.",
+  "inputs": {
+    "board": "As Kh Qd 7c 2s",
+    "pot": 20,
+    "stacks": [
+      100,
+      100
+    ]
+  },
+  "rows": [
+    {
+      "tree": "default",
+      "spot": "opening",
+      "median_ms": 1.7564164991199505,
+      "p95_ms": 6.091165996622294,
+      "public_decision_states": 34,
+      "public_action_edges": 98,
+      "legal_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 2
+        },
+        {
+          "kind": "bet",
+          "amount": 10
+        },
+        {
+          "kind": "bet",
+          "amount": 20
+        },
+        {
+          "kind": "bet",
+          "amount": 100
+        }
+      ],
+      "prior_bet_targets": [
+        2,
+        10,
+        20,
+        100
+      ],
+      "prior_raise_targets": []
+    },
+    {
+      "tree": "default",
+      "spot": "facing_bet",
+      "median_ms": 2.3386459979519714,
+      "p95_ms": 12.700499995844439,
+      "public_decision_states": 34,
+      "public_action_edges": 98,
+      "legal_actions": [
+        {
+          "kind": "fold",
+          "amount": 0
+        },
+        {
+          "kind": "call",
+          "amount": 0
+        },
+        {
+          "kind": "raise",
+          "amount": 4
+        },
+        {
+          "kind": "raise",
+          "amount": 14
+        },
+        {
+          "kind": "raise",
+          "amount": 26
+        },
+        {
+          "kind": "raise",
+          "amount": 100
+        }
+      ],
+      "prior_bet_targets": [
+        2,
+        10,
+        20,
+        100
+      ],
+      "prior_raise_targets": [
+        4,
+        14,
+        26,
+        100
+      ]
+    },
+    {
+      "tree": "default",
+      "spot": "facing_raise",
+      "median_ms": 1.72602100064978,
+      "p95_ms": 5.78312500147149,
+      "public_decision_states": 34,
+      "public_action_edges": 98,
+      "legal_actions": [
+        {
+          "kind": "fold",
+          "amount": 0
+        },
+        {
+          "kind": "call",
+          "amount": 0
+        }
+      ],
+      "prior_bet_targets": [
+        2,
+        10,
+        20
+      ],
+      "prior_raise_targets": [
+        4,
+        14,
+        26,
+        100
+      ]
+    },
+    {
+      "tree": "shark_2_0_inspired",
+      "spot": "opening",
+      "median_ms": 0.8915209982660599,
+      "p95_ms": 2.726582999457605,
+      "public_decision_states": 28,
+      "public_action_edges": 80,
+      "legal_actions": [
+        {
+          "kind": "check",
+          "amount": 0
+        },
+        {
+          "kind": "bet",
+          "amount": 6
+        },
+        {
+          "kind": "bet",
+          "amount": 13
+        },
+        {
+          "kind": "bet",
+          "amount": 20
+        },
+        {
+          "kind": "bet",
+          "amount": 100
+        }
+      ],
+      "prior_bet_targets": [
+        6,
+        13,
+        20,
+        100
+      ],
+      "prior_raise_targets": []
+    },
+    {
+      "tree": "shark_2_0_inspired",
+      "spot": "facing_bet",
+      "median_ms": 1.8773334995785262,
+      "p95_ms": 16.414207995694596,
+      "public_decision_states": 28,
+      "public_action_edges": 80,
+      "legal_actions": [
+        {
+          "kind": "fold",
+          "amount": 0
+        },
+        {
+          "kind": "call",
+          "amount": 0
+        },
+        {
+          "kind": "raise",
+          "amount": 22
+        },
+        {
+          "kind": "raise",
+          "amount": 38
+        },
+        {
+          "kind": "raise",
+          "amount": 100
+        }
+      ],
+      "prior_bet_targets": [
+        6,
+        13,
+        20,
+        100
+      ],
+      "prior_raise_targets": [
+        22,
+        38,
+        100
+      ]
+    },
+    {
+      "tree": "shark_2_0_inspired",
+      "spot": "facing_raise",
+      "median_ms": 0.9779790016182233,
+      "p95_ms": 2.265791001264006,
+      "public_decision_states": 28,
+      "public_action_edges": 80,
+      "legal_actions": [
+        {
+          "kind": "fold",
+          "amount": 0
+        },
+        {
+          "kind": "call",
+          "amount": 0
+        }
+      ],
+      "prior_bet_targets": [
+        6,
+        13,
+        20
+      ],
+      "prior_raise_targets": [
+        22,
+        38,
+        100
+      ]
+    }
+  ]
+}

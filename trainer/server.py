@@ -23,6 +23,7 @@ from poker_cpu.solve import (ActionAbstraction, BettingContext, SolveRequest,
 from .demo import DEMO_DESCRIPTION, DEMO_RIVER_REQUEST
 from .recruiter_demo import HANDS as SHOWCASE_HANDS, new_game as new_showcase_game
 from .solve_debug import log_event
+from .tree_preview import preview_betting_tree
 from . import offline_training
 from .solution_cache import demo_solution, sample_demo_action
 
@@ -926,7 +927,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND)
 
     def do_POST(self):
-        if self.path not in ("/api/new", "/api/action", "/api/showcase/start", "/api/showcase/next", "/api/live-estimate", "/api/river-analysis", "/api/solve", "/api/demo-analysis", "/api/cached-demo-action", "/api/review-decision", "/api/training/config", "/api/training/start", "/api/training/stop"):
+        if self.path not in ("/api/new", "/api/action", "/api/showcase/start", "/api/showcase/next", "/api/live-estimate", "/api/river-analysis", "/api/solve", "/api/tree-preview", "/api/demo-analysis", "/api/cached-demo-action", "/api/review-decision", "/api/training/config", "/api/training/start", "/api/training/stop"):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         length = int(self.headers.get("Content-Length", "0"))
@@ -950,6 +951,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if self.path in ("/api/river-analysis", "/api/solve"):
                 self._json(analyze_river_position(payload))
+                return
+            if self.path == "/api/tree-preview":
+                self._json(preview_betting_tree(payload))
                 return
             if self.path == "/api/demo-analysis":
                 self._json(demo_solution(analyze_demo_position))

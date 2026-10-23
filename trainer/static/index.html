@@ -314,6 +314,7 @@
         <label id="river-prior-raise-wrap" hidden>Raise target<select id="river-prior-raise"></select></label>
       </div>
       <p id="lab-street-support" class="study-note">River · restricted bet sizes · assumed ranges</p>
+      <p id="lab-tree-preview" class="study-note" role="status">Loading betting options…</p>
       <p id="lab-range-source" class="study-note">Assumed ranges · not inferred</p>
       <div class="range-preset-row">
         <label>Your range<select id="hero-preset"></select><small id="hero-range-summary"></small><span id="hero-preset-note" hidden></span></label>
@@ -989,27 +990,36 @@
       });
       if (targets.includes(Number(prior))) select.value = prior;
     }
-    function riverOpeningTargets() {
-      const pot = Number($('river-pot').value);
-      const stacks = $('river-stacks').value.split(',').map(value => Number(value.trim()));
-      const cap = Math.min(...stacks);
-      if (!Number.isInteger(pot) || pot < 0 || stacks.length !== 2 || !Number.isInteger(cap) || cap < 1) return [];
-      if (cap < 2) return [cap];
-      return [...new Set([2, Math.min(cap, Math.max(2, Math.floor(pot / 2))), Math.min(cap, Math.max(2, pot)), cap])].sort((a, b) => a - b);
-    }
-    function updateRiverActionControls() {
+    let treePreviewVersion = 0;
+    async function updateRiverActionControls(preferredBet = null) {
+      const version = ++treePreviewVersion;
       const spot = $('river-spot').value;
       $('river-prior-bet-wrap').hidden = spot === 'opening' || spot === 'checked_to_hero';
       $('river-prior-raise-wrap').hidden = spot !== 'facing_raise';
-      replaceTargets('river-prior-bet', riverOpeningTargets());
-      const first = Number($('river-prior-bet').value);
-      const pot = Number($('river-pot').value);
-      const cap = Math.min(...$('river-stacks').value.split(',').map(value => Number(value.trim())));
-      const minimum = first * 2;
-      const potAfterCall = pot + first * 2;
-      const raises = !first || !Number.isInteger(cap) || cap <= first ? [] : cap < minimum ? [cap] :
-        [...new Set([minimum, Math.min(cap, first + Math.max(first, Math.floor(potAfterCall / 2))), Math.min(cap, first + Math.max(first, potAfterCall)), cap])].filter(value => value > first).sort((a, b) => a - b);
-      replaceTargets('river-prior-raise', raises);
+      const payload = {
+        board: $('river-board').value.trim(), pot: Number($('river-pot').value),
+        stacks: $('river-stacks').value.split(',').map(value => Number(value.trim())),
+        betting_tree: $('river-tree').value, spot,
+        prior_bet: preferredBet ?? Number($('river-prior-bet').value),
+        prior_raise: Number($('river-prior-raise').value),
+      };
+      try {
+        const response = await fetch('/api/tree-preview', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Betting tree unavailable');
+        if (version !== treePreviewVersion) return null;
+        replaceTargets('river-prior-bet', data.prior_bet_targets);
+        replaceTargets('river-prior-raise', data.prior_raise_targets);
+        if (data.selected_prior_bet != null) $('river-prior-bet').value = String(data.selected_prior_bet);
+        if (data.selected_prior_raise != null) $('river-prior-raise').value = String(data.selected_prior_raise);
+        const toCall = Math.max(...data.paid) - data.paid[0];
+        $('lab-tree-preview').textContent = `Pot ${data.pot_at_decision} · ${data.legal_actions.map(action => actionLabel(action, toCall)).join(' / ')} · ${data.current_street_public_decisions} betting nodes`;
+        $('lab-tree-preview').title = `Current street only: ${data.current_street_public_decisions} public decisions and ${data.current_street_public_action_edges} action edges. This does not count private-hand information sets or future runouts.`;
+        return data;
+      } catch (error) {
+        if (version === treePreviewVersion) $('lab-tree-preview').textContent = `Betting options unavailable: ${error.message}`;
+        return null;
+      }
     }
     $('run-river-analysis').onclick = async () => {
       const button = $('run-river-analysis');
@@ -1017,6 +1027,8 @@
       const output = $('river-output'); output.replaceChildren();
       status.textContent = 'Solving this restricted game on CPU…'; status.className = 'muted'; button.disabled = true;
       try {
+        const treePreview = await updateRiverActionControls();
+        if (!treePreview) throw new Error('Enter a supported board, pot, stack, and decision sequence.');
         const street = $('lab-street').value;
         if (street === 'preflop') throw new Error('Preflop analysis is unavailable: no validated blueprint or full-hand CFR solve exists.');
         if (street === 'flop') throw new Error('Flop-to-river search is experimental and not enabled for trainer feedback yet.');
@@ -1035,20 +1047,8 @@
         const targetText = $('river-nashconv-target').value.trim();
         if (targetText !== '') payload.target_nash_conv_chips = Number(targetText);
         else if (street === 'river') payload.target_nash_conv_chips = Math.max(0.01, Math.round(payload.pot * 0.005 * 10000) / 10000);
-        if ($('river-spot').value === 'checked_to_hero') {
-          payload.first_actor = 1;
-          payload.river_actions = [{kind: 'check', amount: 0}];
-        }
-        if ($('river-spot').value === 'facing_bet') payload.river_actions = [
-          {kind: 'check', amount: 0}, {kind: 'bet', amount: Number($('river-prior-bet').value)},
-        ];
-        if ($('river-spot').value === 'facing_bet_first') {
-          payload.first_actor = 1;
-          payload.river_actions = [{kind: 'bet', amount: Number($('river-prior-bet').value)}];
-        }
-        if ($('river-spot').value === 'facing_raise') payload.river_actions = [
-          {kind: 'bet', amount: Number($('river-prior-bet').value)}, {kind: 'raise', amount: Number($('river-prior-raise').value)},
-        ];
+        payload.first_actor = treePreview.first_actor;
+        payload.river_actions = treePreview.history;
         const response = await fetch('/api/solve', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Analysis request failed');
@@ -1121,8 +1121,7 @@
         $('river-nashconv-target').value = '';
         RangeEditor.usePreset('hero', position.ranges[0]);
         RangeEditor.usePreset('opponent', position.ranges[1]);
-        updateRiverActionControls();
-        if (position.bet) $('river-prior-bet').value = String(position.bet);
+        updateRiverActionControls(position.bet ?? null);
         RangeEditor.refresh();
       } finally { loadingLabPosition = false; }
       updateLabRangeSource();
@@ -1157,7 +1156,10 @@
     }
     $('range-view-hero').onclick = () => showRangeSeat('hero');
     $('range-view-opponent').onclick = () => showRangeSeat('opponent');
-    for (const id of ['river-board', 'river-hero']) $(id).addEventListener('input', () => { markLabCustom(); RangeEditor.refresh(); });
+    for (const id of ['river-board', 'river-hero']) $(id).addEventListener('input', () => {
+      markLabCustom(); RangeEditor.refresh(); invalidateRiverAnalysis();
+      if (id === 'river-board') updateRiverActionControls();
+    });
     $('lab-street').addEventListener('change', () => {
       const street = $('lab-street').value;
       const cards = $('river-board').value.trim().split(/\s+/).filter(Boolean);

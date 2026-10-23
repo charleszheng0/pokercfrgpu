@@ -201,6 +201,23 @@ try {
   assert.equal(await page.locator('#hero-range-card').isVisible(), false);
   await page.locator('#range-view-hero').click();
   await page.locator('#river-tree').selectOption('shark_2_0_inspired');
+  const treePreviewResponse = page.waitForResponse(response => response.url().endsWith('/api/tree-preview')
+    && JSON.parse(response.request().postData()).spot === 'facing_bet');
+  await page.locator('#river-spot').selectOption('facing_bet');
+  const treePreview = await (await treePreviewResponse).json();
+  assert.deepEqual(treePreview.prior_bet_targets, [6, 13, 20, 100]);
+  assert.equal(treePreview.selected_prior_bet, 6);
+  assert.equal(await page.locator('#river-prior-bet').inputValue(), '6');
+  assert.ok((await page.locator('#lab-tree-preview').innerText()).includes('Raise to'));
+  const facingResponse = page.waitForResponse(response => response.url().endsWith('/api/solve'));
+  await page.locator('#run-river-analysis').click();
+  const facingSolve = await facingResponse;
+  assert.equal(facingSolve.status(), 200, await facingSolve.text());
+  const facingData = await facingSolve.json();
+  assert.deepEqual(facingData.street_actions, treePreview.history);
+  assert.deepEqual(facingData.action_evs.map(row => row.action), treePreview.legal_actions);
+  assert.ok(Number.isFinite(facingData.nash_conv));
+  await page.locator('#river-spot').selectOption('opening');
   const labResponse = page.waitForResponse(response => response.url().endsWith('/api/solve'));
   await page.locator('#run-river-analysis').click();
   const labData = await (await labResponse).json();
