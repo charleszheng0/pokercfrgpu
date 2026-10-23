@@ -9,6 +9,7 @@ import json
 import math
 import os
 import random
+import statistics
 import subprocess
 import sys
 import time
@@ -17,7 +18,7 @@ from pathlib import Path
 
 import torch
 
-from experiments.holdem_nfsp import evaluate
+from experiments.holdem_nfsp import evaluate, evaluate_head_to_head
 from poker_cpu.nfsp import HoldemNFSPAgent, play_self_play_hand
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -159,6 +160,34 @@ def _resume(agents, snapshot):
         agent.q_updates = saved["q_updates"]
 
 
+def paired_policy_difference(candidate_gains, incumbent_gains):
+    """Common-seed, same-seat per-hand candidate minus incumbent interval.
+
+    The normal interval is a screening statistic, not proof of general poker
+    strength. Games may diverge after the first different policy action.
+    """
+    if len(candidate_gains) != len(incumbent_gains) or len(candidate_gains) < 2:
+        raise ValueError("Paired evaluation requires equal lists of at least two hands")
+    differences = [float(new) - float(old) for new, old in
+                   zip(candidate_gains, incumbent_gains)]
+    if any(not math.isfinite(value) for value in differences):
+        raise ValueError("Paired evaluation gains must be finite")
+    mean = statistics.mean(differences)
+    se = statistics.stdev(differences) / math.sqrt(len(differences))
+    return {"hands": len(differences), "mean_chips_per_hand": mean,
+            "standard_error": se, "ci95_normal": [mean - 1.96 * se,
+                                                     mean + 1.96 * se]}
+
+
+def _promotion_gate(row, evaluation_hands):
+    """Require both fixed-opponent and seat-specific direct evidence."""
+    pair = row.get("paired_heuristic_difference")
+    direct = row.get("head_to_head_incumbent")
+    return bool(evaluation_hands >= 100 and pair and direct
+                and pair["ci95_normal"][0] > 0
+                and direct["ci95_normal"][0] > 0)
+
+
 def improve_demo_blueprint(iterations, output=STORE):
     """Re-solve one explicit-range river spot; promote by exact restricted NashConv.
 
@@ -266,9 +295,13 @@ def run_once(settings=None, *, output=STORE, allow_promotion=True):
         return {"state": "stopped", "run_id": run_id, "hands": completed}
     for p, agent in enumerate(agents):
         torch.save(agent.policy.state_dict(), run_dir / f"policy_player_{p}.pt")
-    agents[1].mode = "average"
-    evaluations = [evaluate(agents[1], opponent, settings["evaluation_hands"], seed + 100000)
+    for agent in agents:
+        agent.mode = "average"
+    evaluations = [evaluate(agents[1], opponent, settings["evaluation_hands"],
+                            seed + 100000, return_gains=opponent == "heuristic",
+                            agent_seat=1)
                    for opponent in ("random", "heuristic")]
+    candidate_heuristic_gains = evaluations[1].pop("per_hand_gains")
     row = {"run_id": run_id, "date": datetime.now(timezone.utc).isoformat(),
            "seed": seed, "settings": settings, "training_hands": completed,
            "cumulative_training_hands": experience_before + completed,
@@ -284,16 +317,32 @@ def run_once(settings=None, *, output=STORE, allow_promotion=True):
         incumbent = HoldemNFSPAgent(hidden=active["hidden_layers"] if active else (128, 128))
         incumbent.policy.load_state_dict(torch.load(baseline, map_location="cpu", weights_only=True))
         incumbent.mode = "average"
-        old_eval = evaluate(incumbent, "heuristic", settings["evaluation_hands"], seed + 100000)
+        old_eval = evaluate(incumbent, "heuristic", settings["evaluation_hands"],
+                            seed + 100000, return_gains=True, agent_seat=1)
+        incumbent_heuristic_gains = old_eval.pop("per_hand_gains")
         row["incumbent_heuristic"] = old_eval
         new_eval = evaluations[1]
+        row["paired_heuristic_difference"] = paired_policy_difference(
+            candidate_heuristic_gains, incumbent_heuristic_gains)
         margin = 1.96 * math.sqrt((new_eval["standard_error"] or 0) ** 2 +
                                    (old_eval["standard_error"] or 0) ** 2)
         row["heuristic_delta_chips"] = new_eval["mean_chips_per_hand"] - old_eval["mean_chips_per_hand"]
         row["delta_95ci_independent"] = [row["heuristic_delta_chips"] - margin,
                                          row["heuristic_delta_chips"] + margin]
-        if allow_promotion and settings["evaluation_hands"] >= 100 and row["delta_95ci_independent"][0] > 0:
-            row["promotion"] = "promoted_vs_incumbent_heuristic"
+        baseline_seat0 = baseline.with_name("policy_player_0.pt")
+        if baseline_seat0.is_file():
+            incumbent_seat0 = HoldemNFSPAgent(
+                hidden=active["hidden_layers"] if active else (128, 128))
+            incumbent_seat0.policy.load_state_dict(torch.load(
+                baseline_seat0, map_location="cpu", weights_only=True))
+            incumbent_seat0.mode = "average"
+            row["head_to_head_incumbent"] = evaluate_head_to_head(
+                tuple(agents), (incumbent_seat0, incumbent),
+                max(1000, settings["evaluation_hands"] * 10), seed + 200000)
+        else:
+            row["head_to_head_unavailable"] = "Incumbent seat-0 policy missing"
+        if allow_promotion and _promotion_gate(row, settings["evaluation_hands"]):
+            row["promotion"] = "promoted_paired_heuristic_and_direct_match"
     elif allow_promotion and settings["evaluation_hands"] >= 100:
         row["promotion"] = "initial_checkpoint_no_incumbent"
     if row["promotion"] != "candidate_only":

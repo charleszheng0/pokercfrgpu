@@ -1,0 +1,49 @@
+{
+  "experiment": "saved_nfsp_candidate_vs_incumbent_paired_random",
+  "date": "2026-10-22",
+  "revision": "ac71731472a92b23580e093a02af4213521d851d",
+  "working_tree_dirty": true,
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "rules": "20-chip heads-up Hold'em, 1/2 blinds, preset wager actions; alternating seat/button; random legal-action opponent",
+  "method": "Candidate and incumbent separately play the same seeded deals, seat/button schedule, and opponent RNG seeds. Per-hand candidate-minus-incumbent chip returns form a paired normal-approximation 95% interval. No training or promotion occurs.",
+  "hands": 1000,
+  "evaluation_seed": 930000,
+  "candidate_run_id": "run-1792525882292-31216",
+  "candidate_sha256": "f444841dc58f0cb83c136b884c50fda2051f2f3e5c05695c9df88447993bbd07",
+  "incumbent_sha256": "a66a44144b837f93c4c22cac0218c767685e3b5889b8a267d056d2ad87ce5efc",
+  "candidate": {
+    "opponent": "random",
+    "hands": 1000,
+    "mean_chips_per_hand": 1.983,
+    "standard_error": 0.4317419508365062,
+    "wins": 704,
+    "ties": 25
+  },
+  "incumbent": {
+    "opponent": "random",
+    "hands": 1000,
+    "mean_chips_per_hand": 2.064,
+    "standard_error": 0.4459986758038849,
+    "wins": 644,
+    "ties": 17
+  },
+  "paired_difference": {
+    "hands": 1000,
+    "mean_chips_per_hand": -0.081,
+    "standard_error": 0.38031707834395245,
+    "ci95_normal": [
+      -0.8264214735541467,
+      0.6644214735541468
+    ]
+  },
+  "elapsed_seconds": 2.0277298750006594,
+  "limitations": [
+    "One heuristic opponent is not a full strength suite.",
+    "A positive interval would not establish Nash proximity or strength against other agents.",
+    "Shared seeds reduce deal variance but policies induce different later histories."
+  ],
+  "interpretation_status": "invalid_for_seat_specific_policy_promotion",
+  "interpretation_note": "This historical run moved a saved seat-1 policy into seat 0 for part of evaluation, while seat identity is an observation feature. It remains a measured result but cannot support promotion of the seat-specific deployed policy. See E068 and the corrected seat1/seat-specific files."
+}

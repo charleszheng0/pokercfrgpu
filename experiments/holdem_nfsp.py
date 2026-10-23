@@ -17,14 +17,18 @@ from poker_cpu.engine import HoldemGame
 from poker_cpu.nfsp import HoldemNFSPAgent, STACK, play_self_play_hand
 
 
-def evaluate(agent, opponent, hands, seed):
+def evaluate(agent, opponent, hands, seed, *, return_gains=False, agent_seat=None):
     # Pair policy-action randomness across checkpoints on the same dealt hands.
+    if agent_seat not in (None, 0, 1):
+        raise ValueError("agent_seat must be 0, 1, or None")
     torch.manual_seed(seed)
     gains = []
     wins = ties = 0
     for i in range(hands):
-        seat = i % 2
-        game = HoldemGame(stacks=(STACK, STACK), button=(i // 2) % 2, seed=seed + i)
+        seat = i % 2 if agent_seat is None else agent_seat
+        game = HoldemGame(stacks=(STACK, STACK),
+                          button=(i // 2) % 2 if agent_seat is None else i % 2,
+                          seed=seed + i)
         bot = (
             RandomAgent(seed + 10000 + i)
             if opponent == "random"
@@ -39,14 +43,48 @@ def evaluate(agent, opponent, hands, seed):
         gains.append(gain)
         wins += gain > 0
         ties += gain == 0
-    return {
+    report = {
         "opponent": opponent,
         "hands": hands,
         "mean_chips_per_hand": statistics.mean(gains),
         "standard_error": statistics.stdev(gains) / hands**0.5 if hands > 1 else None,
         "wins": wins,
         "ties": ties,
+        "agent_seat": seat if agent_seat is not None else "alternating",
     }
+    if return_gains:
+        report["per_hand_gains"] = gains
+    return report
+
+
+def evaluate_head_to_head(candidate, incumbent, hands, seed):
+    """Match two seat-specific policy pairs with alternating team assignment."""
+    if hands < 2:
+        raise ValueError("Head-to-head evaluation requires at least two hands")
+    if len(candidate) != 2 or len(incumbent) != 2:
+        raise ValueError("Each checkpoint needs its seat-0 and seat-1 policies")
+    torch.manual_seed(seed)
+    gains = []
+    wins = ties = 0
+    for i in range(hands):
+        seat = i % 2
+        game = HoldemGame(stacks=(STACK, STACK), button=(i // 2) % 2,
+                          seed=seed + i)
+        while not game.done:
+            player = game.current_player
+            policy = candidate[player] if player == seat else incumbent[player]
+            game.step(policy.act(game.observe(player), record=False)[1])
+        gain = game.rewards()[seat]
+        gains.append(gain)
+        wins += gain > 0
+        ties += gain == 0
+    mean = statistics.mean(gains)
+    se = statistics.stdev(gains) / hands**0.5
+    return {"opponent": "incumbent_nfsp", "hands": hands,
+            "policy_scope": "seat_specific_checkpoint_pair",
+            "mean_chips_per_hand": mean, "standard_error": se,
+            "ci95_normal": [mean - 1.96 * se, mean + 1.96 * se],
+            "wins": wins, "ties": ties}
 
 
 def run_seed(seed, hands, eval_hands, output_root):

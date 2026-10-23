@@ -1,4 +1,5 @@
 import json
+import math
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -6,13 +7,66 @@ from unittest.mock import patch
 
 import torch
 
-from trainer.offline_training import DEFAULT, run_once, validate_config
+from trainer.offline_training import DEFAULT, _promotion_gate, paired_policy_difference, run_once, validate_config
 from trainer.solution_cache import get, put, sample_demo_action
 from trainer.demo import DEMO_RIVER_REQUEST
 from trainer.server import analyze_demo_position
+from experiments.holdem_nfsp import evaluate, evaluate_head_to_head
 
 
 class OfflineTrainingTests(unittest.TestCase):
+    def test_paired_difference_uses_per_hand_deltas(self):
+        row = paired_policy_difference([2, 1, -1, 3], [1, 0, -1, 2])
+        self.assertEqual(row["hands"], 4)
+        self.assertAlmostEqual(row["mean_chips_per_hand"], 0.75)
+        self.assertGreater(row["ci95_normal"][0], 0)
+        with self.assertRaisesRegex(ValueError, "equal lists"):
+            paired_policy_difference([1, 2], [1])
+
+    def test_promotion_requires_both_paired_and_direct_lower_bounds(self):
+        row = {"paired_heuristic_difference": {"ci95_normal": [0.1, 1.0]},
+               "head_to_head_incumbent": {"ci95_normal": [0.01, 0.5]}}
+        self.assertTrue(_promotion_gate(row, 100))
+        self.assertFalse(_promotion_gate(row, 99))
+        self.assertFalse(_promotion_gate({**row,
+            "head_to_head_incumbent": {"ci95_normal": [-0.01, 0.5]}}, 100))
+        self.assertFalse(_promotion_gate({"paired_heuristic_difference": row[
+            "paired_heuristic_difference"]}, 100))
+
+    def test_direct_match_reports_seat_balanced_chip_return(self):
+        class Passive:
+            def act(self, obs, record=False):
+                action = next(action for action in obs["legal_actions"]
+                              if action.kind in ("check", "call"))
+                return 0, action
+
+        row = evaluate_head_to_head((Passive(), Passive()),
+                                    (Passive(), Passive()), 4, 73)
+        self.assertEqual(row["hands"], 4)
+        self.assertEqual(row["policy_scope"], "seat_specific_checkpoint_pair")
+        self.assertTrue(math.isfinite(row["mean_chips_per_hand"]))
+        self.assertAlmostEqual(row["ci95_normal"][0] + row["ci95_normal"][1],
+                               2 * row["mean_chips_per_hand"])
+
+    def test_deployed_policy_evaluation_keeps_its_training_seat(self):
+        class SeatRecorder:
+            def __init__(self):
+                self.seats = set()
+
+            def act(self, obs, record=False):
+                self.seats.add(obs["player"])
+                action = next(action for action in obs["legal_actions"]
+                              if action.kind in ("check", "call"))
+                return 0, action
+
+        fixed = SeatRecorder()
+        report = evaluate(fixed, "random", 4, 113, agent_seat=1)
+        self.assertEqual(fixed.seats, {1})
+        self.assertEqual(report["agent_seat"], 1)
+        alternating = SeatRecorder()
+        evaluate(alternating, "random", 4, 113)
+        self.assertEqual(alternating.seats, {0, 1})
+
     def test_rejects_invalid_hyperparameters(self):
         for setting in ({"learning_rate": float("nan")}, {"batch_size": 0},
                         {"hidden_layers": [16, 0]}, {"epsilon": 1.2},
@@ -85,6 +139,29 @@ class OfflineTrainingTests(unittest.TestCase):
             self.assertEqual(saved_second["experience_hands"], 16)
             self.assertGreater(len(saved_second["agents"][0]["rl"]),
                                len(saved_first["agents"][0]["rl"]))
+
+    def test_candidate_comparison_records_paired_result_without_hand_records(self):
+        settings = {"hands_per_run": 8, "checkpoint_every": 4, "batch_size": 4,
+                    "evaluation_hands": 4, "hidden_layers": [16, 16],
+                    "rl_capacity": 32, "sl_capacity": 32}
+        with TemporaryDirectory() as directory:
+            output = Path(directory)
+            first = run_once(settings, output=output, allow_promotion=False)
+            (output / "active.json").write_text(json.dumps({
+                "run_id": first["run_id"], "model_dir": first["model_dir"],
+                "hidden_layers": [16, 16]}))
+            second = run_once(settings, output=output, allow_promotion=False)
+            pair = second["paired_heuristic_difference"]
+            self.assertEqual(pair["hands"], 4)
+            self.assertAlmostEqual(pair["mean_chips_per_hand"],
+                                   second["heuristic_delta_chips"])
+            self.assertNotIn("per_hand_gains", second["evaluation"][1])
+            self.assertNotIn("per_hand_gains", second["incumbent_heuristic"])
+            self.assertEqual(second["evaluation"][1]["agent_seat"], 1)
+            self.assertEqual(second["incumbent_heuristic"]["agent_seat"], 1)
+            self.assertEqual(second["head_to_head_incumbent"]["policy_scope"],
+                             "seat_specific_checkpoint_pair")
+            self.assertEqual(second["promotion"], "candidate_only")
 
 
 if __name__ == "__main__":

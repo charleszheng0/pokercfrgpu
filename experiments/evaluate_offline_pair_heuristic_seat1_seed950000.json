@@ -1,0 +1,49 @@
+{
+  "experiment": "saved_nfsp_candidate_vs_incumbent_paired_heuristic",
+  "date": "2026-10-22",
+  "revision": "ac71731472a92b23580e093a02af4213521d851d",
+  "working_tree_dirty": true,
+  "python": "3.10.6",
+  "torch": "2.10.0",
+  "machine": "arm64",
+  "rules": "20-chip heads-up Hold'em, 1/2 blinds, preset wager actions; seat-1 policy stays in seat 1, button alternates; 32-sample heuristic opponent",
+  "method": "Candidate and incumbent seat-1 policies separately play seat 1 on the same seeded deals and alternating buttons. Opponent RNG seeds match. Per-hand candidate-minus-incumbent chip returns form a paired normal-approximation 95% interval. No training or promotion occurs.",
+  "hands": 1000,
+  "evaluation_seed": 950000,
+  "candidate_run_id": "run-1792525882292-31216",
+  "candidate_sha256": "f444841dc58f0cb83c136b884c50fda2051f2f3e5c05695c9df88447993bbd07",
+  "incumbent_sha256": "a66a44144b837f93c4c22cac0218c767685e3b5889b8a267d056d2ad87ce5efc",
+  "candidate": {
+    "opponent": "heuristic",
+    "hands": 1000,
+    "mean_chips_per_hand": -1.362,
+    "standard_error": 0.4446174092865018,
+    "wins": 638,
+    "ties": 20,
+    "agent_seat": 1
+  },
+  "incumbent": {
+    "opponent": "heuristic",
+    "hands": 1000,
+    "mean_chips_per_hand": -2.023,
+    "standard_error": 0.4148669492567293,
+    "wins": 599,
+    "ties": 24,
+    "agent_seat": 1
+  },
+  "paired_difference": {
+    "hands": 1000,
+    "mean_chips_per_hand": 0.661,
+    "standard_error": 0.3040864146053676,
+    "ci95_normal": [
+      0.06499062737347949,
+      1.2570093726265206
+    ]
+  },
+  "elapsed_seconds": 74.44496395799797,
+  "limitations": [
+    "One heuristic opponent is not a full strength suite.",
+    "A positive interval would not establish Nash proximity or strength against other agents.",
+    "Shared seeds reduce deal variance but policies induce different later histories."
+  ]
+}

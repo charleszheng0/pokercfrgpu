@@ -71,7 +71,9 @@
         `${run.training_seconds.toFixed(1)} s`,
         ...run.evaluation.map(e => `${e.opponent}: ${e.mean_chips_per_hand.toFixed(2)} ± ${e.standard_error?.toFixed(2) ?? '—'} chips/hand`)];
       if (run.continued_from_run_id) metrics.push('continued learner checkpoint');
-      if (run.delta_95ci_independent) metrics.push(`Δ vs incumbent 95% CI [${run.delta_95ci_independent.map(x => x.toFixed(2)).join(', ')}] chips`);
+      if (run.paired_heuristic_difference) metrics.push(`Paired Δ vs incumbent 95% CI [${run.paired_heuristic_difference.ci95_normal.map(x => x.toFixed(2)).join(', ')}] chips/hand`);
+      else if (run.delta_95ci_independent) metrics.push(`Unpaired Δ vs incumbent 95% CI [${run.delta_95ci_independent.map(x => x.toFixed(2)).join(', ')}] chips/hand`);
+      if (run.head_to_head_incumbent) metrics.push(`Direct match ${run.head_to_head_incumbent.mean_chips_per_hand.toFixed(2)} chips/hand · 95% CI [${run.head_to_head_incumbent.ci95_normal.map(x => x.toFixed(2)).join(', ')}]`);
       metrics.forEach(value => { const chip = document.createElement('span'); chip.textContent = value; info.append(chip); });
       node.append(info); box.append(node);
     });
