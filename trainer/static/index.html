@@ -872,6 +872,7 @@
       const chips = [
         result.label, `NashConv ${result.nash_conv.toFixed(4)} chips${result.pot > 0 ? ` · ${(100 * result.nash_conv / result.pot).toFixed(2)}% pot` : ''}`,
         ...(target === null ? [] : [`Restricted-game screen ${targetMet ? 'met' : 'unmet'} · ≤${target.toFixed(3)} chips`]),
+        ...(result.cache_status === 'exact_database_hit' || result.cache_status === 'exact_scenario_cache_hit' ? ['Exact cached solve'] : []),
       ];
       chips.forEach(text => { const item = document.createElement('span'); item.className = 'diagnostic'; item.textContent = text; diagnostics.append(item); });
       output.append(diagnostics);
@@ -899,7 +900,7 @@
       const details = document.createElement('details'); details.className = 'solver-details lab-solver-info';
       const summary = document.createElement('summary'); summary.textContent = 'Assumptions & solver info'; details.append(summary);
       const solverInfo = document.createElement('p'); solverInfo.className = 'study-note';
-      solverInfo.textContent = `${result.iterations.toLocaleString()} CFR+ iterations in ${result.latency_ms.toFixed(1)} ms. Measured NashConv ${result.nash_conv_trend} from ${result.nash_conv_halfway.toFixed(4)} to ${result.nash_conv.toFixed(4)} chips. ${result.joint_deals} compatible deals. ${result.supported_state}`;
+      solverInfo.textContent = `${result.iterations.toLocaleString()} CFR+ iterations · original solve ${result.latency_ms.toFixed(1)} ms${result.response_latency_ms != null ? ` · this request ${result.response_latency_ms.toFixed(1)} ms` : ''}. Measured NashConv ${result.nash_conv_trend} from ${result.nash_conv_halfway.toFixed(4)} to ${result.nash_conv.toFixed(4)} chips. ${result.joint_deals} compatible deals. ${result.supported_state}`;
       details.append(solverInfo);
       if (result.convergence_trace && result.convergence_trace.length > 1) {
         const checkpoints = document.createElement('p'); checkpoints.className = 'study-note';

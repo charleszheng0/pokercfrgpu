@@ -6,3 +6,4 @@ artifacts/offline_training/
 artifacts/solution_cache/
 artifacts/cfr_scenario_worker/
 artifacts/cfr_scenario_cache/
+artifacts/scenario_solves.sqlite3*

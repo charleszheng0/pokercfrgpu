@@ -26,6 +26,7 @@ from .solve_debug import log_event
 from .tree_preview import preview_betting_tree
 from . import offline_training
 from .solution_cache import demo_solution, sample_demo_action
+from . import scenario_db
 
 STATIC = Path(__file__).with_name("static")
 EXPERIMENTS = Path(__file__).resolve().parents[1] / "experiments"
@@ -91,8 +92,9 @@ def live_analysis_availability(street, history, game=None):
             "solver_api_status": shared.status}
 
 
-def analyze_river_position(payload):
+def analyze_river_position(payload, *, use_database=False):
     """Analyze a supplied-range postflop decision through the shared solver."""
+    request_started = time.perf_counter()
     if not isinstance(payload, dict):
         raise ValueError("Request body must be a JSON object")
     street = payload.get("street", "river")
@@ -171,14 +173,30 @@ def analyze_river_position(payload):
     # Reuse offline analysis only for the exact request and current solver
     # fingerprint. Cached samples are not generalized to other hands or lines.
     from .cfr_scenario_worker import get_qualified_scenario
-    cached = get_qualified_scenario(payload)
+    requested_target = payload.get("target_nash_conv_chips")
+    cache_ceiling = (min(0.1, requested_target)
+                     if type(requested_target) in (int, float) and requested_target >= 0
+                     else 0.1)
+    cached = get_qualified_scenario(payload, max_nash_conv_chips=cache_ceiling)
     if cached is not None:
         result = dict(cached["result"])
         result["cache_status"] = "exact_scenario_cache_hit"
+        result["response_latency_ms"] = (time.perf_counter() - request_started) * 1000
         log_event("scenario_cache_hit", solve_id=cached["solve_id"],
                   scenario_id=cached["scenario_id"],
                   nash_conv_chips=cached["nash_conv_chips"])
         return result
+
+    # Reuse only the identical request under the current solver code and a
+    # measured restricted-game quality ceiling. Unqualified runs remain in the
+    # database for audit but are never offered as advice.
+    stored = (scenario_db.lookup(payload, quality_ceiling_chips=cache_ceiling)
+              if use_database else None)
+    if stored is not None:
+        log_event("scenario_database_hit", street=street,
+                  nash_conv_chips=stored["nash_conv"])
+        return {**stored, "cache_status": "exact_database_hit",
+                "response_latency_ms": (time.perf_counter() - request_started) * 1000}
 
     abstraction = (ActionAbstraction.shark_style_postflop()
                    if betting_tree == "shark_2_0_inspired" else ActionAbstraction())
@@ -217,7 +235,7 @@ def analyze_river_position(payload):
     trend = "decreased" if delta < -1e-9 else "increased" if delta > 1e-9 else "unchanged"
     betting_tree_label = ("Shark-inspired (2.0)" if betting_tree == "shark_2_0_inspired"
                           else "default")
-    return {
+    result = {
         "status": f"restricted_{street}_analysis",
         "label": f"Restricted {street} game · {betting_tree_label} tree · supplied ranges · CFR+",
         "betting_tree": betting_tree,
@@ -286,6 +304,11 @@ def analyze_river_position(payload):
         }[range_source],
         "supported_state": f"{street.capitalize()} decision after the supplied abstract action history; pot is the amount before {street} betting, and supplied ranges must already reflect observed actions. Restricted bet sizes and one raise maximum.",
     }
+    if use_database:
+        qualified = scenario_db.record(payload, result, quality_ceiling_chips=cache_ceiling)
+        result["cache_status"] = "fresh_qualified_database_record" if qualified else "fresh_candidate_database_record"
+    result["response_latency_ms"] = (time.perf_counter() - request_started) * 1000
+    return result
 
 
 def analyze_demo_position():
@@ -885,6 +908,9 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"results": experiment_results()})
         elif self.path == "/api/range-presets":
             self._json({"presets": preset_catalog()})
+        elif self.path == "/api/scenario-cache/stats":
+            self._json({"by_street": scenario_db.stats(),
+                        "scope": "exact local solve requests; counts are not gameplay coverage"})
         elif self.path == "/api/state":
             token, session = self._session()
             self._json(session.state(), token=token)
@@ -950,7 +976,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(offline_training.stop())
                 return
             if self.path in ("/api/river-analysis", "/api/solve"):
-                self._json(analyze_river_position(payload))
+                self._json(analyze_river_position(payload, use_database=True))
                 return
             if self.path == "/api/tree-preview":
                 self._json(preview_betting_tree(payload))

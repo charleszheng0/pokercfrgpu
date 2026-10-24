@@ -4,6 +4,8 @@
 
 For a visual map of working components, blockers, evidence, and the next dependency chain, see [Where the project stands](docs/CURRENT_STATE.md).
 
+The [postflop Scenario Lab specification](docs/POSTFLOP_SCENARIO_SPEC.md) states the zero-rake game, assumed BTN/BB ranges, compact betting menu, street limits, and exact-request SQLite backend. Successful Lab solves are recorded in `artifacts/scenario_solves.sqlite3`; only measured, qualified exact matches are served from that database. No cloud account is needed. Set `POKER_SCENARIO_DB` to choose another path. Cache hits report original solve time and current retrieval time separately.
+
 The trainer's visual hierarchy, responsive range-grid behavior, and accessibility conventions are recorded in [UI design notes](docs/UI_DESIGN.md).
 
 ## Run

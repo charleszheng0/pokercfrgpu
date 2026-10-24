@@ -389,6 +389,7 @@ def solve(request: SolveRequest) -> SolveResult:
     )
     assumptions = (
         range_assumption,
+        "Heads-up zero-rake cash-game chip utility; no ICM or tournament payout model",
         "Exact best response only inside this small abstract game",
         "No safe re-solving or opponent counterfactual-value constraints",
         ("Bet/raise sizing: " + "; ".join(

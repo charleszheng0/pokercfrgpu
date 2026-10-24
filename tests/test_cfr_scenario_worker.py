@@ -13,6 +13,15 @@ from trainer.cfr_scenario_worker import (
 
 
 class CFRScenarioWorkerTests(unittest.TestCase):
+    def setUp(self):
+        self.database_temp = tempfile.TemporaryDirectory()
+        self.database_env = patch.dict("os.environ", {
+            "POKER_SCENARIO_DB": str(Path(self.database_temp.name) / "scenario.sqlite3")
+        })
+        self.database_env.start()
+        self.addCleanup(self.database_env.stop)
+        self.addCleanup(self.database_temp.cleanup)
+
     def test_scenario_sampling_is_reproducible_and_card_legal(self):
         first = make_request(701, iterations=20)
         second = make_request(701, iterations=20)

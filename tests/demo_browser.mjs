@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { get } from 'node:http';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { chromium } from 'playwright';
 
 function signedEV(value, places = 3) {
@@ -20,8 +22,10 @@ async function freePort() {
 
 const port = await freePort();
 const base = `http://127.0.0.1:${port}`;
+const databaseDir = await mkdtemp(join(tmpdir(), 'poker-scenario-db-'));
 const server = spawn('python3', ['-m', 'tests.review_browser_server', String(port)], {
   cwd: process.cwd(), stdio: ['ignore', 'pipe', 'pipe'],
+  env: {...process.env, POKER_SCENARIO_DB: join(databaseDir, 'solves.sqlite3')},
 });
 let serverErrors = '';
 server.stderr.on('data', chunk => { serverErrors += chunk.toString(); });
@@ -274,6 +278,7 @@ try {
   await page.locator('#lab-quick-position').selectOption('fixed_demo');
   assert.equal(await page.locator('#river-hero').inputValue(), '8h 8s');
   assert.ok((await page.locator('#lab-range-source').innerText()).includes('Saved assumptions'));
+  await page.locator('#river-nashconv-target').evaluate(node => { node.value = '0.1'; });
   const fixedLabResponse = page.waitForResponse(response => response.url().endsWith('/api/solve'));
   await page.locator('#run-river-analysis').click();
   const fixedLabData = await (await fixedLabResponse).json();
@@ -281,6 +286,13 @@ try {
   assert.equal(fixedLabData.range_source, 'fixed_demo_inputs');
   assert.equal(fixedLabData.joint_deals, 4);
   assert.equal(await page.locator('#river-output .strategy-mix-cell').count(), 169);
+  const cachedLabResponse = page.waitForResponse(response => response.url().endsWith('/api/solve'));
+  await page.locator('#run-river-analysis').click();
+  const cachedLabData = await (await cachedLabResponse).json();
+  assert.equal(cachedLabData.cache_status, 'exact_database_hit');
+  assert.deepEqual(cachedLabData.frequencies, fixedLabData.frequencies);
+  assert.deepEqual(cachedLabData.action_evs, fixedLabData.action_evs);
+  assert.ok((await page.locator('#river-output .analysis-diagnostics').first().innerText()).includes('Exact cached solve'));
   if (process.env.SAVE_DEMO_SCREENSHOT === '1') {
     await page.screenshot({path: 'artifacts/solver_lab.png', fullPage: true});
   }
@@ -303,4 +315,5 @@ try {
 } finally {
   if (browser) await browser.close();
   server.kill('SIGTERM');
+  await rm(databaseDir, {recursive: true, force: true});
 }

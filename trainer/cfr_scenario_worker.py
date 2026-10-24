@@ -24,8 +24,10 @@ STORE = Path(os.environ.get("POKER_CFR_SCENARIO_STORE", ROOT / "artifacts" / "cf
 CACHE = ROOT / "artifacts" / "cfr_scenario_cache"
 SOLVER_SOURCE_FILES = (
     "poker_cpu/cards.py",
+    "poker_cpu/engine.py",
     "poker_cpu/ranges.py",
     "poker_cpu/solve.py",
+    "poker_cpu/one_street_solver.py",
     "poker_cpu/river_solver.py",
     "poker_cpu/multi_street.py",
     "trainer/server.py",
@@ -143,7 +145,7 @@ def solve_one(seed, *, iterations=2000, combos_per_range=4, threshold_chips=0.1,
 
     request = make_request(seed, iterations, combos_per_range)
     started = time.perf_counter()
-    report = analyze_river_position(request)
+    report = analyze_river_position(request, use_database=True)
     elapsed = time.perf_counter() - started
     scenario_id = scenario_key(request)
     fingerprint = solver_fingerprint()
