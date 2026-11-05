@@ -1,9 +1,0 @@
-# Trainer interface design
-
-The web trainer is an operating interface: a player should see the board, legal actions, and measured strategy data without reading research notes first. The interface uses a quiet dark study-table palette with green for the current path, warm gold for the main action, and distinct colors only where action frequencies need them. The implementation lives in `trainer/static/index.html`, `polish.css`, and `demo.css`.
-
-The three top-level tasks are **Play & Learn**, **Solver Lab**, and **ML Training**. Solver Demo belongs to Play & Learn. Its restricted river study puts conditional action EV, frequency, and the action selector together; the hand-range matrix follows as a drill-down. Solver assumptions remain in an expandable section. Playable demo hands use the same game controls but explicitly say when no matching CFR solve exists. The training screen leads with measured runs and versions, with hyperparameters collapsed until needed.
-
-The primary surface tokens in `polish.css` are `--canvas` (`#0d1314`), `--surface` (`#151d1f`), `--hairline` (`#2c3b3d`), `--ink` (`#eef4f0`), `--secondary-ink` (`#abc0b9`), `--signal` (`#8bd8b0`), and `--warm` (`#e6c881`). Controls use a visible focus ring, at least 40–44 px height for primary decision controls, and reduced-motion support. On narrow screens the range matrix scrolls inside its section; the page itself should not scroll horizontally.
-
-This treatment was informed by [Impeccable](https://github.com/pbakaus/impeccable)'s distillation and operating-interface guidance and [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)'s data-dense dashboard and accessibility guidance. They are development references, not app runtime dependencies. Poker logic, solver outputs, and training data are outside this visual system and were not changed for the redesign.
