@@ -7,39 +7,43 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <style>
-  :root { --fg:#fff; --bg:#000; --dim:#888; --yel:#ffd400; --org:#ff8c1a; --red:#ff2a2a; --grn:#3ddc5a; --blu:#3fa9f5; }
+  :root { --fg:#fff; --bg:#000; --dim:#888; --red:#ff2a2a; --grn:#3ddc5a; --blu:#3fa9f5; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font-family:"VT323", ui-monospace, Menlo, monospace; font-size:21px; line-height:1.15; }
   .wrap { max-width:1240px; margin:0 auto; padding:18px 16px 40px; }
-  .box { border:4px solid var(--fg); padding:12px 16px; margin-bottom:16px; }
+  /* Panels: thin double-line frame with a title cut into the top edge. */
+  .box { border:3px double var(--fg); padding:16px 16px 12px; margin:14px 0 16px; position:relative; }
+  .box[data-t]::before { content:"[ " attr(data-t) " ]"; position:absolute; top:-13px; left:12px; background:var(--bg); padding:0 6px; color:var(--dim); font-size:19px; line-height:22px; }
   h1 { font-size:34px; margin:0; letter-spacing:2px; font-weight:normal; }
   .sub { color:var(--dim); }
   .grid2 { display:grid; grid-template-columns: 380px 1fr; gap:16px; align-items:start; }
   @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
-  label { display:block; margin-top:8px; color:var(--yel); }
-  input, textarea { width:100%; background:#000; color:#fff; border:2px solid #fff; font:inherit; padding:3px 6px; }
+  label { display:block; margin-top:8px; color:var(--dim); }
+  input, textarea { width:100%; background:#000; color:#fff; border:1px solid #666; font:inherit; padding:3px 6px; }
   textarea { height:74px; resize:vertical; font-size:18px; }
-  input:focus, textarea:focus { outline:none; border-color:var(--yel); }
+  input:focus, textarea:focus { outline:none; border-color:#fff; }
   .row { display:flex; gap:8px; } .row > div { flex:1; }
-  .btn { background:#000; color:var(--org); border:3px solid var(--org); font:inherit; font-size:24px; padding:2px 14px; cursor:pointer; margin:8px 8px 0 0; position:relative; }
-  .btn:hover, .btn.sel { color:var(--yel); border-color:var(--yel); }
-  .btn:hover::before, .btn.sel::before { content:"\2665"; color:var(--red); position:absolute; left:-20px; }
+  /* Buttons: outlined; hover/selected inverts the colors (like a terminal selection). */
+  .btn { --c:#fff; background:#000; color:var(--c); border:2px solid var(--c); font:inherit; font-size:24px; padding:1px 14px; cursor:pointer; margin:8px 8px 0 0; }
+  .btn:hover, .btn.sel { background:var(--c); color:#000; }
   .btn.small { font-size:20px; padding:0 10px; }
-  .presets .btn { color:#fff; border-color:#fff; }
   .dialog { min-height:64px; white-space:pre-wrap; }
+  .dialog::after { content:"_"; animation:blink 1s steps(1) infinite; }
+  .dialog:empty::after, #nodeHead::after { content:none; }
+  @keyframes blink { 50% { opacity:0; } }
   .err { color:var(--red); }
   .bars { white-space:pre; font-size:21px; }
   .crumbs { color:var(--dim); margin-bottom:6px; }
   .crumbs span { color:#fff; }
-  .acts { display:flex; flex-wrap:wrap; margin-left:18px; }
+  .acts { display:flex; flex-wrap:wrap; }
   .cards { display:grid; grid-template-columns: repeat(13, 44px); gap:5px; margin-top:6px; }
   .card { border:2px solid #fff; text-align:center; cursor:pointer; padding:1px 0; }
-  .card:hover { border-color:var(--yel); color:var(--yel); }
+  .card:hover { background:#fff; color:#000; }
   .s-h, .s-d { color:var(--red); }
   table.rg { border-collapse:collapse; user-select:none; }
   table.rg td { width:44px; height:30px; border:1px solid #222; text-align:center; font-size:17px; cursor:default; position:relative; padding:0; }
   table.rg td.off { color:#333; }
-  table.rg td:hover { outline:2px solid var(--yel); z-index:2; }
+  table.rg td:hover { outline:2px solid #fff; z-index:2; }
   table.rg td span { position:relative; text-shadow:0 0 2px #000, 0 0 2px #000; }
   .detail { white-space:pre; font-size:19px; min-height:160px; overflow-x:auto; }
   .legend span { margin-right:14px; }
@@ -50,13 +54,13 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="box">
-    <h1>* POKER LAB</h1>
+  <div class="box" data-t="v0.1 · dcfr · c++">
+    <h1>POKER LAB</h1>
     <div class="dialog" id="intro"></div>
   </div>
 
   <div class="grid2">
-    <div class="box">
+    <div class="box" data-t="spot">
       <div class="presets">
         <button class="btn small" data-preset="river">RIVER</button>
         <button class="btn small" data-preset="turn">TURN</button>
@@ -87,11 +91,11 @@
     </div>
 
     <div>
-      <div class="box">
-        <div class="dialog" id="status">* Choose a spot. Then press SOLVE.</div>
+      <div class="box" data-t="solver">
+        <div class="dialog" id="status">&gt; Choose a spot. Then press SOLVE.</div>
         <div class="bars" id="progress"></div>
       </div>
-      <div class="box hide" id="result">
+      <div class="box hide" id="result" data-t="strategy">
         <div class="crumbs" id="crumbs"></div>
         <div id="nodeHead" class="dialog"></div>
         <div class="acts" id="acts"></div>
@@ -100,7 +104,7 @@
           <table class="rg" id="rg"></table>
           <div style="flex:1; min-width:300px">
             <div class="legend" id="legend"></div>
-            <div class="detail" id="detail">* Point at a cell to see its hands.</div>
+            <div class="detail" id="detail">&gt; Point at a cell to see its hands.</div>
           </div>
         </div>
       </div>
@@ -125,11 +129,8 @@ const $ = id => document.getElementById(id);
 const form = $("spot");
 let path = [], polling = null, lastNode = null;
 
-function typeText(el, text, speed = 14) {
-  el._t && clearInterval(el._t);
-  let i = 0; el.textContent = "";
-  el._t = setInterval(() => { el.textContent = text.slice(0, ++i); if (i >= text.length) clearInterval(el._t); }, speed);
-}
+// Status text appears at once; a blinking "_" cursor (CSS) follows it.
+function typeText(el, text) { el.textContent = text; }
 function setPreset(name) {
   const p = PRESETS[name];
   for (const [k, v] of Object.entries(p)) if (form.elements[k]) form.elements[k].value = v;
@@ -137,7 +138,7 @@ function setPreset(name) {
 }
 document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => setPreset(b.dataset.preset));
 setPreset("river");
-typeText($("intro"), "* A heads-up postflop solver. Vector-form DCFR in C++.\n* Every hand of both players moves through the tree at once.");
+typeText($("intro"), "> A heads-up postflop solver. Vector-form DCFR in C++.\n> Every hand of both players moves through the tree at once.");
 
 function bar(frac, width = 24) {
   const n = Math.max(0, Math.min(width, Math.round(frac * width)));
@@ -164,8 +165,8 @@ form.onsubmit = async (e) => {
   $("result").classList.add("hide");
   const r = await fetch("/api/solve", { method:"POST", body });
   const j = await r.json();
-  if (!j.ok) { $("status").innerHTML = '<span class="err">* ' + esc(j.error) + "</span>"; return; }
-  typeText($("status"), "* The solver is thinking...");
+  if (!j.ok) { $("status").innerHTML = '<span class="err">> ' + esc(j.error) + "</span>"; return; }
+  typeText($("status"), "> The solver is thinking...");
   path = [];
   clearInterval(polling);
   polling = setInterval(poll, 250);
@@ -174,7 +175,7 @@ $("stop").onclick = () => fetch("/api/stop", { method:"POST" });
 
 async function poll() {
   const s = await (await fetch("/api/status")).json();
-  if (s.state === "error") { clearInterval(polling); $("status").innerHTML = '<span class="err">* ' + esc(s.error) + "</span>"; $("progress").textContent = ""; return; }
+  if (s.state === "error") { clearInterval(polling); $("status").innerHTML = '<span class="err">> ' + esc(s.error) + "</span>"; $("progress").textContent = ""; return; }
   const e = s.expl_pct < 0 ? "..." : s.expl_pct.toFixed(3) + "%";
   const goal = s.expl_pct < 0 ? 0 : Math.min(1, Math.log10(Math.max(s.expl_pct, 1e-4) / 100) / Math.log10(s.target_pct / 100));
   $("progress").textContent =
@@ -184,9 +185,9 @@ async function poll() {
   if (s.state === "done") {
     clearInterval(polling);
     const ok = s.expl_pct <= s.target_pct;
-    typeText($("status"), (ok ? "* The solve converged." : "* The solve stopped before the goal.") +
-      `\n* ${s.hands[0]} vs ${s.hands[1]} combos. ${s.nodes} nodes. ${s.memory_mb.toFixed(1)} MB.` +
-      `\n* EV: OOP ${s.ev[0].toFixed(2)}  IP ${s.ev[1].toFixed(2)} (of a ${s.pot} pot).`);
+    typeText($("status"), (ok ? "> The solve converged." : "> The solve stopped before the goal.") +
+      `\n> ${s.hands[0]} vs ${s.hands[1]} combos. ${s.nodes} nodes. ${s.memory_mb.toFixed(1)} MB.` +
+      `\n> EV: OOP ${s.ev[0].toFixed(2)}  IP ${s.ev[1].toFixed(2)} (of a ${s.pot} pot).`);
     loadNode();
   }
 }
@@ -203,19 +204,19 @@ function suitHtml(cards) { return cards.replace(/([2-9TJQKA])([cdhs])/g, (m, r, 
 async function loadNode() {
   const r = await fetch("/api/node?path=" + encodeURIComponent(path.join(",")));
   const n = await r.json();
-  if (n.error) { $("status").innerHTML = '<span class="err">* ' + esc(n.error) + "</span>"; return; }
+  if (n.error) { $("status").innerHTML = '<span class="err">> ' + esc(n.error) + "</span>"; return; }
   lastNode = n;
   $("result").classList.remove("hide");
   const back = path.length ? ' <button class="btn small" id="back">BACK</button> <button class="btn small" id="root">ROOT</button>' : "";
   $("crumbs").innerHTML = "ROOT" + (n.history.length ? " > " + n.history.map(h => "<span>" + esc(h) + "</span>").join(" > ") : "") + back;
   if (path.length) { $("back").onclick = () => { path.pop(); loadNode(); }; $("root").onclick = () => { path = []; loadNode(); }; }
-  const head = `* Board ${suitHtml(n.board)}   Pot ${n.pot}`;
+  const head = `> Board ${suitHtml(n.board)}   Pot ${n.pot}`;
   $("acts").innerHTML = ""; $("freq").textContent = ""; $("rg").innerHTML = ""; $("legend").innerHTML = "";
-  $("detail").textContent = n.type === "action" ? "* Point at a cell to see its hands." : "";
-  if (n.type === "fold") { $("nodeHead").innerHTML = head + `\n* ${n.winner ? "IP" : "OOP"} wins the pot. The hand ends.`; return; }
-  if (n.type === "showdown") { $("nodeHead").innerHTML = head + "\n* Showdown. The hand ends."; return; }
+  $("detail").textContent = n.type === "action" ? "> Point at a cell to see its hands." : "";
+  if (n.type === "fold") { $("nodeHead").innerHTML = head + `\n> ${n.winner ? "IP" : "OOP"} wins the pot. The hand ends.`; return; }
+  if (n.type === "showdown") { $("nodeHead").innerHTML = head + "\n> Showdown. The hand ends."; return; }
   if (n.type === "chance") {
-    $("nodeHead").innerHTML = head + "\n* Choose the next card.";
+    $("nodeHead").innerHTML = head + "\n> Choose the next card.";
     const order = "AKQJT98765432";
     const cards = n.cards.slice().sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]) || "shdc".indexOf(a[1]) - "shdc".indexOf(b[1]));
     $("acts").innerHTML = '<div class="cards">' + cards.map(c => `<div class="card" data-c="${c}">${suitHtml(c)}</div>`).join("") + "</div>";
@@ -223,9 +224,9 @@ async function loadNode() {
     return;
   }
   const who = n.player === 0 ? "OOP" : "IP";
-  $("nodeHead").innerHTML = head + `\n* ${who} to act. ${n.combos.toFixed(1)} combos reach here.`;
+  $("nodeHead").innerHTML = head + `\n> ${who} to act. ${n.combos.toFixed(1)} combos reach here.`;
   const cols = colorsFor(n.actions);
-  $("acts").innerHTML = n.actions.map((a, i) => `<button class="btn" data-i="${i}" style="color:${cols[i]};border-color:${cols[i]}">${esc(a.toUpperCase())}</button>`).join("");
+  $("acts").innerHTML = n.actions.map((a, i) => `<button class="btn" data-i="${i}" style="--c:${cols[i]}">${esc(a.toUpperCase())}</button>`).join("");
   document.querySelectorAll("#acts .btn").forEach(b => b.onclick = () => { path.push(b.dataset.i); loadNode(); });
   const w = Math.max(...n.actions.map(a => a.length));
   $("freq").innerHTML = n.actions.map((a, i) => `<span style="color:${cols[i]}">${esc(a.padEnd(w))}  ${bar(n.freq[i], 30)} ${(n.freq[i] * 100).toFixed(1).padStart(5)}%</span>`).join("\n");

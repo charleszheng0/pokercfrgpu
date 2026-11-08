@@ -8,7 +8,7 @@ Read SPEC.md first. It is the contract: scope, acceptance tests, limits.
 - Every change to terminal values or the traversal must keep `./build/tests` green,
   especially `[0]` (fast vs slow terminal math) and `[3]` (toy game vs theory).
 - Report exploitability in % of pot. Do not claim speed without a measured number.
-- UI style: ASCII, Undertale-like (black, white mono text, heart cursor, block bars).
+- UI style: ASCII terminal (black, white mono text, double-line titled panels, inverted selection, block bars). No heart cursor or other Undertale details.
 
 ## Commands
 - Build: `cmake -S . -B build && cmake --build build -j8`
