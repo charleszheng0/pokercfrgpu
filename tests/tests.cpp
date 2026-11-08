@@ -205,12 +205,70 @@ void test_turn_speed() {
   CHECK(s < 60.0, "took %.1f s", s);
 }
 
+// Suit isomorphism must not change the game: the same iterations with and without it give
+// the same exploitability, EVs and strategies, also at a card that has no subtree of its own.
+void test_isomorphism() {
+  std::printf("[6] suit isomorphism == full tree\n");
+  auto f = srp_spot("Ks 9s 5s 2d");  // clubs and hearts are absent: they are symmetric
+  f["bets"] = "50";
+  f["raises"] = "none";
+  f["max_raises"] = "0";
+  f["allin"] = "0";
+  GameConfig a = config_from_fields(f);
+  f["iso"] = "0";
+  GameConfig b = config_from_fields(f);
+  Game ga(a), gb(b);
+  std::printf("  dealt cards solved: %zu of %zu (iso) vs %zu of %zu (full)\n", ga.chance_cards_solved(),
+              ga.chance_cards_total(), gb.chance_cards_solved(), gb.chance_cards_total());
+  CHECK(ga.chance_cards_solved() < gb.chance_cards_solved(), "isomorphism should skip cards on this board");
+  for (int i = 0; i < 40; ++i) ga.run_iteration(), gb.run_iteration();
+  double ea = ga.exploitability(), eb = gb.exploitability();
+  auto va = ga.expected_values(), vb = gb.expected_values();
+  std::printf("  exploitability %.6f vs %.6f, EV OOP %.6f vs %.6f\n", ea, eb, va[0], vb[0]);
+  CHECK(std::fabs(ea - eb) < 1e-3 * a.pot, "exploitability differs");
+  CHECK(std::fabs(va[0] - vb[0]) < 1e-3, "EV differs");
+  // Both suits of the river: one is the representative, the other uses the permutation.
+  for (const char* card : {"7c", "7h"}) {
+    std::vector<std::string> path = {"0", "0", card};  // check, check, river card
+    std::string ja = ga.node_json(path), jb = gb.node_json(path);
+    auto freq = [](const std::string& js) { size_t p = js.find("\"freq\":"); return js.substr(p, js.find(']', p) - p); };
+    auto hand = [](const std::string& js, const std::string& c) {
+      size_t p = js.find("{\"c\":\"" + c + "\"");
+      return p == std::string::npos ? std::string("missing") : js.substr(p, js.find('}', p) - p);
+    };
+    std::printf("  river %s: %s | %s\n", card, freq(ja).c_str(), freq(jb).c_str());
+    CHECK(freq(ja) == freq(jb), "frequencies differ at river %s", card);
+    CHECK(hand(ja, "AhKh") == hand(jb, "AhKh") && hand(ja, "AcKc") == hand(jb, "AcKc"),
+          "hand strategies differ at river %s", card);
+    CHECK(ja.find("\"board\":\"Ks9s5s2d" + std::string(card) + "\"") != std::string::npos, "board label at %s", card);
+  }
+}
+
+// 16-bit storage must still converge.
+void test_compression() {
+  std::printf("[7] 16-bit storage\n");
+  GameConfig cfg = config_from_fields(srp_spot("Ks 9d 5c 2h 2d"));
+  cfg.compress = 1;
+  Game g(cfg);
+  double expl = 100;
+  int it = 0;
+  while (it < 2000 && expl >= 0.5) {
+    for (int k = 0; k < 25; ++k, ++it) g.run_iteration();
+    expl = g.exploitability() / cfg.pot * 100;
+  }
+  std::printf("  memory %.1f MB (16-bit), %d iterations, exploitability %.3f%%\n", g.memory_bytes() / 1e6, it, expl);
+  CHECK(g.compressed(), "storage should be 16-bit");
+  CHECK(expl < 0.5, "16-bit exploitability %.3f%%", expl);
+}
+
 int main(int argc, char** argv) {
   bool quick = argc > 1 && std::string(argv[1]) == "--quick";
   test_ranges();
   test_terminals();
   test_toy_river();
+  test_compression();
   if (!quick) {
+    test_isomorphism();
     test_evaluator();
     test_river_speed();
     test_turn_speed();

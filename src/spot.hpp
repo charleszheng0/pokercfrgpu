@@ -76,6 +76,8 @@ inline GameConfig config_from_fields(const std::map<std::string, std::string>& f
   cfg.add_allin = parse_number(f, "allin", 1) != 0;
   cfg.threads = static_cast<int>(parse_number(f, "threads", 0));
   cfg.mem_limit_gb = parse_number(f, "mem_gb", 3.0);
+  cfg.compress = static_cast<int>(parse_number(f, "compress", -1));  // -1 auto, 0 off, 1 on
+  cfg.isomorphism = parse_number(f, "iso", 1) != 0;
   return cfg;
 }
 

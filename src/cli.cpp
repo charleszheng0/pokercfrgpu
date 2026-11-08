@@ -36,6 +36,8 @@ int main(int argc, char** argv) {
     std::printf("hands: OOP %d, IP %d | nodes %zu (action %zu) | memory %.1f MB | build %.0f ms\n",
                 game.num_hands(0), game.num_hands(1), game.num_nodes(), game.num_action_nodes(),
                 game.memory_bytes() / 1e6, std::chrono::duration<double, std::milli>(t1 - t0).count());
+    std::printf("storage %s | dealt cards solved %zu of %zu (suit symmetry)\n", game.compressed() ? "16-bit" : "32-bit",
+                game.chance_cards_solved(), game.chance_cards_total());
     double expl_pct = 100;
     int next_check = 10;
     for (int it = 1; it <= max_iters; ++it) {

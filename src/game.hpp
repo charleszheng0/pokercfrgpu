@@ -34,6 +34,11 @@ struct GameConfig {
   double allin_threshold = 0.67;  // a bet above this share of the stack becomes all-in
   double mem_limit_gb = 3.0;
   int threads = 0;  // 0 = all hardware threads
+  // Storage of regrets and strategy sums: 0 = 32-bit floats, 1 = 16-bit with one scale
+  // per node, -1 = auto (16-bit only when 32-bit does not fit in mem_limit_gb).
+  int compress = -1;
+  // Solve one card of each group of suit-symmetric cards and copy the result to the others.
+  bool isomorphism = true;
 };
 
 enum class NodeType : uint8_t { Action, Fold, Showdown, Chance };
@@ -51,10 +56,19 @@ struct Node {
   uint8_t dealt = 255;     // card dealt to reach this node (child of a chance node)
   uint32_t num_children = 0;
   uint32_t first_child = 0;   // children are nodes_[first_child .. +num_children)
-  uint32_t first_action = 0;  // into actions_ (Action nodes)
+  uint32_t first_action = 0;  // into actions_ (Action nodes) or chance_entries_ (Chance nodes)
+  uint32_t slot = 0;          // action node number (index of its 16-bit scales)
   uint32_t board_id = 0;
   uint64_t data = 0;  // offset into the arenas (Action nodes)
   double contrib[2] = {0, 0};  // chips each player has in the pot (incl. starting pot halves)
+};
+
+// One dealable card of a chance node: the card, the child (a representative card) that
+// holds its subtree, and the suit permutation that maps the representative to the card.
+struct ChanceEntry {
+  Card card;
+  uint8_t perm;
+  uint16_t child;
 };
 
 struct HandInfo {
@@ -70,7 +84,10 @@ class Game {
   const GameConfig& config() const { return cfg_; }
   size_t num_nodes() const { return nodes_.size(); }
   size_t num_action_nodes() const { return num_action_nodes_; }
-  double memory_bytes() const { return static_cast<double>(arena_size_) * 2 * sizeof(float); }
+  double memory_bytes() const;  // regrets + strategy sums
+  bool compressed() const { return compressed_; }
+  size_t chance_cards_solved() const { return chance_solved_; }  // dealt cards with their own subtree
+  size_t chance_cards_total() const { return chance_total_; }    // all dealt cards
   int num_hands(int p) const { return static_cast<int>(hands_[p].size()); }
   int iterations() const { return iteration_; }
 
@@ -108,6 +125,13 @@ class Game {
   void walk(uint32_t idx, int p, const float* opp, float* out, Mode mode);
   void current_strategy(const Node& n, float* sigma) const;
   void average_strategy(const Node& n, float* sigma) const;
+  // Regrets and strategy sums go through these, so the 32-bit and 16-bit layouts share code.
+  void load_regrets(const Node& n, float* dst) const;
+  void store_regrets(const Node& n, const float* src);
+  void load_strategy_sum(const Node& n, float* dst) const;
+  void store_strategy_sum(const Node& n, const float* src);
+  void prepare_symmetry();
+  std::vector<int> symmetry_group(const std::vector<Card>& board) const;
   void compat_sums(int p, const float* opp, float* out) const;  // sum of compatible opp reach
   void fold_values(const Node& n, int p, const float* opp, float* out) const;
   void showdown_values(const Node& n, int p, const float* opp, float* out) const;
@@ -122,7 +146,17 @@ class Game {
   std::vector<Showdown> showdowns_;
   std::vector<HandInfo> hands_[2];
   std::vector<int32_t> same_combo_[2];  // index of the same combo in the other list, or -1
-  std::vector<float> regrets_, strategy_sum_;
+  std::vector<float> regrets_, strategy_sum_;     // 32-bit layout
+  std::vector<int16_t> regrets16_;                 // 16-bit layout: value = q * scale
+  std::vector<uint16_t> strategy_sum16_;
+  std::vector<float> regret_scale_, strategy_scale_;  // per action node
+  bool compressed_ = false;
+  // Suit symmetry: perm id 0..23; usable_[k] = the ranges and the starting board do not
+  // change under perm k. hand_perm_[k][p][h] = index of the image of hand h.
+  bool usable_[24] = {};
+  std::vector<uint16_t> hand_perm_[24][2];
+  std::vector<ChanceEntry> chance_entries_;
+  size_t chance_solved_ = 0, chance_total_ = 0;
   uint64_t arena_size_ = 0;
   size_t num_action_nodes_ = 0;
   int iteration_ = 0;
