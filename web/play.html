@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poker Lab Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root { --fg:#fff; --bg:#000; --dim:#888; --red:#ff2a2a; --grn:#3ddc5a; }
+  * { box-sizing: border-box; }
+  html, body { overflow-x:hidden; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:"VT323", ui-monospace, Menlo, monospace; font-size:21px; line-height:1.15; }
+  .wrap { max-width:1240px; margin:0 auto; padding:18px 16px 40px; }
+  /* Panels: double-line frame with a title cut into the top edge (same as index.html). */
+  .box { border:3px double var(--fg); padding:16px 16px 12px; margin:14px 0 16px; position:relative; min-width:0; }
+  .box[data-t]::before { content:"[ " attr(data-t) " ]"; position:absolute; top:-13px; left:12px; background:var(--bg); padding:0 6px; color:var(--dim); font-size:19px; line-height:22px; }
+  h1 { font-size:34px; margin:0; letter-spacing:2px; font-weight:normal; }
+  .sub, .dim { color:var(--dim); }
+  .btn { --c:#fff; background:#000; color:var(--c); border:2px solid var(--c); font:inherit; font-size:24px; padding:1px 14px; cursor:pointer; margin:8px 8px 0 0; text-decoration:none; display:inline-block; }
+  .btn:hover, .btn.sel { background:var(--c); color:#000; }
+  .btn.small { font-size:20px; padding:0 10px; }
+  .btn:disabled { cursor:default; }
+  .btn:disabled:not(.sel) { --c:#555; }
+  .btn:disabled:hover:not(.sel) { background:#000; color:var(--c); }
+  .btn .k { color:var(--dim); }
+  .btn:hover .k, .btn.sel .k { color:#000; }
+  .head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+  .grid2 { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:16px; align-items:start; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0,1fr); } }
+  .err { color:var(--red); }
+  .good { color:var(--grn); }
+  .s-h, .s-d { color:var(--red); }
+  .hide { display:none !important; }
+
+  /* Table */
+  .felt { border:1px solid #555; padding:14px 10px; text-align:center; }
+  .seat { display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap; }
+  .pos { border:2px solid #fff; padding:0 8px; font-size:24px; }
+  .pos.hero { background:#fff; color:#000; }
+  .dbtn { border:1px solid #fff; border-radius:50%; width:24px; height:24px; line-height:22px; font-size:18px; display:inline-block; text-align:center; }
+  .stack { font-size:24px; }
+  .who { color:var(--dim); }
+  .pc { display:inline-block; border:2px solid #fff; min-width:46px; padding:2px 4px; font-size:30px; text-align:center; margin:0 2px; background:#000; }
+  .pc.down { color:#555; border-color:#777; }
+  .hc { white-space:nowrap; }
+  @media (max-width: 520px) {
+    .seat { gap:8px; }
+    .pc { min-width:34px; font-size:24px; padding:1px 2px; }
+    .pos, .stack, .pot, .last { font-size:21px; }
+  }
+  .chips { color:var(--fg); min-height:24px; margin:6px 0; }
+  .mid { margin:14px 0; }
+  .pot { margin-top:6px; font-size:24px; }
+  .story { white-space:pre-wrap; color:var(--dim); margin-top:12px; }
+  .story b { color:#fff; font-weight:normal; }
+  .last { margin-top:8px; background:#fff; color:#000; padding:2px 8px; font-size:24px; display:inline-block; }
+
+  /* Actions and feedback */
+  .acts { display:flex; flex-wrap:wrap; }
+  .grade { font-size:34px; letter-spacing:2px; }
+  .rows { margin-top:10px; overflow-x:auto; }
+  .row { white-space:pre; padding:0 4px; }
+  .row.me { background:#fff; color:#000; }
+  .row.me .dim { color:#333; }
+  .expl { margin-top:10px; white-space:pre-wrap; }
+  .stats { white-space:pre-wrap; }
+  .note { white-space:pre-wrap; }
+  a { color:#fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="box">
+    <div class="head">
+      <div>
+        <h1>POKER LAB · TRAINER</h1>
+        <div class="sub" id="dbline">&gt; Play one decision. See the solver answer at once.</div>
+      </div>
+      <a class="btn small" href="/" style="margin-top:4px">&lt; SOLVER</a>
+    </div>
+    <div id="cats"></div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <div class="box" data-t="table" id="tablebox">
+        <div class="note" id="spotline">&gt; Loading a spot...</div>
+        <div id="table"></div>
+      </div>
+      <div class="box" data-t="your action" id="actbox">
+        <div class="acts" id="acts"></div>
+        <div class="dim" id="keys" style="margin-top:8px"></div>
+      </div>
+      <div class="box hide" data-t="solver answer" id="answer">
+        <div id="gradeLine"></div>
+        <div class="rows" id="rows"></div>
+        <div class="expl" id="expl"></div>
+        <button class="btn" id="next">NEXT <span class="k">[ENTER]</span></button>
+      </div>
+    </div>
+    <div>
+      <div class="box" data-t="session">
+        <div class="stats" id="stats"></div>
+        <button class="btn small" id="reset">RESET</button>
+      </div>
+      <div class="box" data-t="grades">
+        <div class="stats dim" id="legend"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Settings =====
+// Grade rules. "freq" = GTO frequency of the chosen action for this hand (0..1).
+// "loss" = EV loss of the chosen action in % of the current pot.
+const GRADE = {
+  BEST:       { freq: 0.5, loss: 0.5 },  // freq >= 0.5 or loss < 0.5%
+  CORRECT:    { freq: 0.1, loss: 2 },    // freq >= 0.1 or loss < 2%
+  INACCURACY: { loss: 5 },               // loss < 5%
+  MISTAKE:    { loss: 15 },              // loss < 15%; else BLUNDER
+};
+const GOOD_GRADES = ["BEST", "CORRECT"];
+const CATEGORIES = [["any", "ANY"], ["mixed", "MIXED"], ["ev_loss", "EV LOSS"], ["bluff", "BLUFF"], ["fundamental", "FUNDAMENTALS"]];
+// Sample spots, used when the server has no /api/play routes.
+const FIXTURES = ["spot_river_bb_first.json", "spot_river_btn_vs_check.json", "spot_river_btn_vs_bet.json"];
+const RECENT_MAX = 30;
+const LS_SESSION = "pokerlab_play_session", LS_RECENT = "pokerlab_play_recent", LS_CAT = "pokerlab_play_cat";
+
+// ===== Helpers =====
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const SUIT = { c:"♣", d:"♦", h:"♥", s:"♠" };
+const cardHtml = c => `<span class="pc"><span class="s-${c[1]}">${c[0]}${SUIT[c[1]]}</span></span>`;
+const cardsOf = str => str.match(/[2-9TJQKA][cdhs]/g) || [];
+const suitText = str => str.replace(/([2-9TJQKA])([cdhs])/g, (m, r, s) => `<span class="s-${s}">${r}${SUIT[s]}</span>`);
+const bb = v => { const d = v !== 0 && Math.abs(v) < 0.1 ? 1000 : 100; return (Math.round(v * d) / d).toString(); };
+const pct = v => (v * 100).toFixed(0) + "%";
+const bar = (f, w) => { const n = Math.max(0, Math.min(w, Math.round(f * w))); return "█".repeat(n) + "░".repeat(w - n); };
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+// "Bet 1.82" -> {kind:"Bet", amt:1.82}. Amounts are chips ADDED by the action.
+function parseAct(label) {
+  const [kind, a] = label.split(" ");
+  return { kind, amt: a ? parseFloat(a) : 0 };
+}
+const isAggro = k => k === "Bet" || k === "Raise" || k === "All-in";
+
+// ===== State =====
+let cat = lsGet(LS_CAT, "any");
+let recent = lsGet(LS_RECENT, []);
+let session = lsGet(LS_SESSION, null) || newSession();
+let spot = null, ctx = null, hand = null, result = null, offline = false;
+let samplesOnly = false;   // set by SAMPLE SPOTS after a server error; lasts until reload
+function newSession() { return { played: 0, good: 0, evLost: 0, grades: {}, cats: {} }; }
+
+// ===== Loading =====
+async function fetchJson(url) {
+  const r = await fetch(url, { cache: "no-store" });
+  const type = r.headers.get("content-type") || "";
+  if (!type.includes("json")) throw new Error("not json");   // static server: 404 page
+  return r.json();
+}
+async function loadFixture() {
+  const pool = [];
+  for (const f of FIXTURES) pool.push(fetchJson("fixtures/" + f).catch(() => null));
+  const all = (await Promise.all(pool)).filter(s => s && s.node);
+  if (!all.length) throw new Error("no sample spots found in web/fixtures/");
+  let cand = all.filter(s => !recent.includes(s.id));
+  if (cat !== "any" && cand.some(s => s.category === cat)) cand = cand.filter(s => s.category === cat);
+  if (!cand.length) cand = all.filter(s => s.id !== recent[recent.length - 1]);
+  if (!cand.length) cand = all;
+  return cand[Math.floor(Math.random() * cand.length)];
+}
+async function loadSpot() {
+  if (document.activeElement) document.activeElement.blur();
+  $("answer").classList.add("hide");
+  $("acts").innerHTML = ""; $("keys").textContent = "";
+  $("spotline").textContent = "> Loading a spot...";
+  $("table").innerHTML = "";
+  result = null;
+  let s = null;
+  try {
+    if (samplesOnly) throw new Error("samples");
+    s = await fetchJson(`/api/play/spot?category=${encodeURIComponent(cat)}&exclude=${encodeURIComponent(recent.join(","))}`);
+    offline = false;
+  } catch (e) {
+    offline = true;
+  }
+  try {
+    if (offline) s = await loadFixture();
+  } catch (e) { return showError(e.message); }
+  if (s.error) return showError(s.error);
+  if (!s.node || s.node.type !== "action" || !s.node.hands) return showError("the spot has no decision node (type " + (s.node && s.node.type) + ")");
+  spot = s;
+  recent = recent.filter(id => id !== s.id).concat([s.id]).slice(-RECENT_MAX);
+  lsSet(LS_RECENT, recent);
+  ctx = buildContext(s);
+  hand = dealHand(s.node, cat === "any" ? s.category : cat);
+  if (!hand) return showError("no hand in this range reaches the spot");
+  render();
+}
+function showError(msg) {
+  spot = null;
+  $("spotline").innerHTML = `<span class="err">&gt; ${esc(msg)}</span>\n&gt; Fill the spot database, or practice with the sample spots.`;
+  $("table").innerHTML = "";
+  $("acts").innerHTML = `<button class="btn" id="retry">RETRY</button><button class="btn" id="sample">SAMPLE SPOTS</button>`;
+  $("retry").onclick = loadSpot;
+  $("sample").onclick = () => { samplesOnly = true; loadSpot(); };
+}
+async function loadStats() {
+  try {
+    const st = await fetchJson("/api/play/stats");
+    if (st && typeof st.spots === "number") {
+      const parts = Object.entries(st.by_category || {}).map(([k, v]) => `${k.replace("_", " ")} ${v}`);
+      $("dbline").textContent = `> Database: ${st.spots} spots` + (parts.length ? ` (${parts.join(", ")})` : "") + ".";
+    }
+  } catch (e) { /* stats are optional */ }
+}
+
+// ===== Spot context: replay this street's history =====
+// Returns names, the street start pot, stacks behind, and one text per action.
+function buildContext(s) {
+  const n = s.node;
+  const name = p => p === 0 ? s.oop_pos : s.ip_pos;
+  // Only actions after the last dealt card belong to this street.
+  let start = 0;
+  n.history.forEach((h, i) => { if (h.startsWith("deal ")) start = i + 1; });
+  const street = n.history.slice(start).map(h => { const sp = h.indexOf(" "); return { p: h.slice(0, sp) === "OOP" ? 0 : 1, ...parseAct(h.slice(sp + 1)) }; });
+  const startPot = n.pot - street.reduce((a, e) => a + e.amt, 0);
+  const put = [0, 0];        // chips each player put in on this street
+  let pot = startPot;
+  const lines = street.map(e => {
+    const toCall = Math.max(0, put[1 - e.p] - put[e.p]);
+    const t = describe(e.kind, e.amt, pot, toCall, put[e.p]);
+    put[e.p] += e.amt; pot += e.amt;
+    return { p: e.p, text: `${name(e.p)} ${t.verb}` };
+  });
+  const hero = n.player, opp = 1 - hero;
+  const behind = p => s.stack + startPot / 2 - n.contrib[p];
+  return { name, hero, opp, startPot, put, lines, behind, toCall: Math.max(0, n.contrib[opp] - n.contrib[hero]) };
+}
+// Text for one action. pot = pot before the action; put = chips this player already put in on this street.
+function describe(kind, amt, pot, toCall, put) {
+  if (kind === "Check") return { verb: "checks", short: "CHECK" };
+  if (kind === "Fold") return { verb: "folds", short: "FOLD" };
+  if (kind === "Call") return { verb: `calls ${bb(amt)} bb`, short: `CALL ${bb(amt)} bb` };
+  // Bets: % of the pot. Raises: raise part in % of the pot after the call (the solver's rule).
+  const size = toCall > 0 ? (amt - toCall) / (pot + toCall) : amt / pot;
+  const p = `${(size * 100).toFixed(0)}% pot`;
+  if (kind === "Bet") return { verb: `bets ${bb(amt)} bb (${p})`, short: `BET ${bb(amt)} bb`, size: p };
+  if (kind === "Raise") return { verb: `raises to ${bb(put + amt)} bb (${p})`, short: `RAISE TO ${bb(put + amt)} bb`, size: p };
+  return { verb: `goes all-in, ${bb(amt)} bb`, short: `ALL-IN ${bb(amt)} bb` };
+}
+function heroActions() {
+  const n = spot.node;
+  return n.actions.map(a => { const x = parseAct(a); return describe(x.kind, x.amt, n.pot, ctx.toCall, ctx.put[ctx.hero]); });
+}
+
+// ===== Deal the hero a hand =====
+// Weighted by reach; prefer hands that fit the category, else any hand.
+function dealHand(n, category) {
+  const live = n.hands.filter(h => h.w > 1e-3);
+  if (!live.length) return null;
+  const kinds = n.actions.map(a => parseAct(a).kind);
+  const top = h => Math.max(...h.s);
+  const fits = {
+    mixed: h => top(h) < 0.7,
+    fundamental: h => top(h) > 0.9,
+    // Big EV spread: best EV minus the worst non-all-in action, at least 15% of the pot.
+    ev_loss: h => Math.max(...h.ev) - Math.min(...h.ev.filter((v, i) => kinds[i] !== "All-in" || kinds.every(k => k === "All-in"))) >= 0.15 * n.pot,
+    // Low EV, but bets or raises often.
+    bluff: h => h.e < 0.25 * n.pot && h.s.reduce((a, f, i) => a + (isAggro(kinds[i]) ? f : 0), 0) >= 0.3,
+  }[category];
+  let pool = fits ? live.filter(fits) : live;
+  if (!pool.length) pool = live;
+  const W = pool.reduce((a, h) => a + h.w, 0);
+  let r = Math.random() * W;
+  for (const h of pool) { r -= h.w; if (r <= 0) return h; }
+  return pool[pool.length - 1];
+}
+
+// ===== Render the table =====
+function render() {
+  const s = spot, n = s.node, c = ctx;
+  const heroName = c.name(c.hero), oppName = c.name(c.opp);
+  const dealer = p => c.name(p) === "BTN" ? ` <span class="dbtn" title="dealer button">D</span>` : "";
+  const streetName = (s.street || "").toUpperCase();
+  $("spotline").innerHTML = `&gt; #${esc(s.id)} · ${esc(s.preset || "")} · ${esc(streetName)}` +
+    (s.category ? ` · ${esc(s.category.replace("_", " "))}` : "") +
+    (offline ? ` <span class="dim">· sample spot (no server data)</span>` : "");
+  const seat = (p, isHero) => {
+    const cardsHtml = `<span class="hc">` + (isHero ? cardsOf(hand.c).map(cardHtml).join("") : `<span class="pc down">▒▒</span><span class="pc down">▒▒</span>`) + `</span>`;
+    return `<div class="seat"><span class="pos ${isHero ? "hero" : ""}">${esc(c.name(p))}</span>${dealer(p)}` +
+      `<span class="stack">${bb(c.behind(p))} bb</span><span class="who">${isHero ? "YOU" : (p === 0 ? "OOP" : "IP")}</span>${cardsHtml}</div>`;
+  };
+  const chip = p => c.put[p] > 0 ? `in front: ${bb(c.put[p])} bb` : "";
+  // Story: earlier streets (from the server), then this street.
+  const board = cardsOf(n.board);
+  const lastCard = board[board.length - 1];
+  const streetLine = `${(s.street || "street").replace(/^./, m => m.toUpperCase())}${s.street === "flop" ? " " + board.slice(0, 3).join("") : " " + lastCard}: ` +
+    (c.lines.length ? c.lines.map(l => l.text).join(", ") : `${heroName} to act`);
+  const story = (s.story || []).map(l => esc(l)).concat([`<b>${esc(streetLine)}</b>`]).map(l => suitText(l)).join("\n");
+  const last = c.lines[c.lines.length - 1];
+  const lastHtml = last && last.p === c.opp
+    ? `<div class="last">&gt; ${esc(last.text)}</div>`
+    : `<div class="last">&gt; ${esc(oppName)} has not acted on the ${esc(s.street || "street")}. You act first.</div>`;
+  $("table").innerHTML =
+    `<div class="felt">${seat(c.opp, false)}<div class="chips">${chip(c.opp)}</div>` +
+    `<div class="mid">${board.map(cardHtml).join("")}<div class="pot">POT ${bb(n.pot)} bb</div></div>` +
+    `<div class="chips">${chip(c.hero)}</div>${seat(c.hero, true)}</div>` +
+    `<div class="story">${story}</div>${lastHtml}` +
+    `<div class="dim" style="margin-top:8px">&gt; You are ${esc(heroName)} (${c.hero === 0 ? "out of position" : "in position"}). Amounts in big blinds.</div>`;
+  const acts = heroActions();
+  $("acts").innerHTML = acts.map((a, i) =>
+    `<button class="btn" data-i="${i}"><span class="k">${i + 1}</span> ${esc(a.short)}${a.size ? ` <span class="k">${esc(a.size)}</span>` : ""}</button>`).join("");
+  $("acts").querySelectorAll(".btn").forEach(b => b.onclick = () => choose(+b.dataset.i));
+  $("keys").textContent = `> Keys 1-${acts.length} choose an action.`;
+}
+
+// ===== Grade =====
+function gradeOf(freq, lossPct) {
+  if (freq >= GRADE.BEST.freq || lossPct < GRADE.BEST.loss) return "BEST";
+  if (freq >= GRADE.CORRECT.freq || lossPct < GRADE.CORRECT.loss) return "CORRECT";
+  if (lossPct < GRADE.INACCURACY.loss) return "INACCURACY";
+  if (lossPct < GRADE.MISTAKE.loss) return "MISTAKE";
+  return "BLUNDER";
+}
+function choose(i) {
+  if (!spot || result) return;
+  if (document.activeElement) document.activeElement.blur();   // so ENTER/SPACE never re-click a button
+  const n = spot.node, h = hand;
+  let best = 0;
+  h.ev.forEach((v, k) => { if (v > h.ev[best]) best = k; });
+  const loss = Math.max(0, h.ev[best] - h.ev[i]);
+  const lossPct = loss / n.pot * 100;
+  const grade = gradeOf(h.s[i], lossPct);
+  result = { i, best, loss, lossPct, grade };
+  // Session
+  const good = GOOD_GRADES.includes(grade);
+  session.played++; if (good) session.good++;
+  session.evLost += loss;
+  session.grades[grade] = (session.grades[grade] || 0) + 1;
+  const k = spot.category || "other";
+  const cc = session.cats[k] || (session.cats[k] = { n: 0, good: 0 });
+  cc.n++; if (good) cc.good++;
+  lsSet(LS_SESSION, session);
+  renderStats();
+  $("acts").querySelectorAll(".btn").forEach(b => { b.disabled = true; b.classList.toggle("sel", +b.dataset.i === i); });
+  $("keys").textContent = "> Press ENTER or SPACE for the next hand.";
+  $("answer").classList.remove("hide");   // visible first, so the rows can be measured
+  renderAnswer();
+  $("answer").scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+// ===== Show the solver answer =====
+function renderAnswer() {
+  if (!result) return;
+  const n = spot.node, h = hand, r = result;
+  const acts = heroActions();
+  const good = GOOD_GRADES.includes(r.grade);
+  const cls = good ? "good" : r.grade === "INACCURACY" ? "" : "err";
+  $("gradeLine").innerHTML =
+    `<div class="grade ${cls}">${r.grade}</div>` +
+    `<div>&gt; You: ${esc(acts[r.i].short)}. Best EV: ${esc(acts[r.best].short)} (${bb(h.ev[r.best])} bb).</div>` +
+    `<div>&gt; EV loss: ${bb(r.loss)} bb = ${r.lossPct.toFixed(1)}% of the pot.</div>`;
+  // Layout in characters; a narrow screen gets two lines per action.
+  const wpx = $("rows").clientWidth || 300;
+  const chars = Math.floor(wpx / charWidth());
+  const nameW = Math.max(...acts.map(a => (a.short + (a.size ? " " + a.size : "")).length)) + 1;
+  const wide = chars >= nameW + 12 + 22;
+  const barW = Math.max(6, Math.min(24, wide ? chars - nameW - 24 : chars - 13));
+  let html = "";
+  if (wide) html += `<div class="row dim">${"ACTION".padEnd(nameW)}${"GTO, THIS HAND".padEnd(barW + 6)}${"EV bb".padStart(7)}${"LOSS".padStart(8)}</div>`;
+  acts.forEach((a, k) => {
+    const label = (a.short + (a.size ? " " + a.size : ""));
+    const lossK = h.ev[r.best] - h.ev[k];
+    const lossTxt = k === r.best ? "best" : lossK < 0.0005 ? "0" : "-" + bb(lossK);
+    const me = k === r.i ? " me" : "";
+    if (wide) {
+      html += `<div class="row${me}">${esc(label.padEnd(nameW))}${bar(h.s[k], barW)} ${pct(h.s[k]).padStart(4)} ${bb(h.ev[k]).padStart(7)}${lossTxt.padStart(8)}</div>`;
+      html += `<div class="row dim${me}">${" ".repeat(nameW)}${bar(n.freq[k], barW)} ${pct(n.freq[k]).padStart(4)} range</div>`;
+    } else {
+      html += `<div class="row${me}">${esc(a.short)}  EV ${bb(h.ev[k])}  ${lossTxt}</div>`;
+      html += `<div class="row${me}"> hand  ${bar(h.s[k], barW)} ${pct(h.s[k]).padStart(4)}</div>`;
+      html += `<div class="row dim${me}"> range ${bar(n.freq[k], barW)} ${pct(n.freq[k]).padStart(4)}</div>`;
+    }
+  });
+  $("rows").innerHTML = html;
+  $("expl").textContent = explain(acts, h, r);
+}
+// Width of one character of the row font, measured once.
+let cw = 0;
+function charWidth() {
+  if (cw) return cw;
+  const m = document.createElement("span");
+  m.className = "row"; m.style.cssText = "position:absolute; visibility:hidden"; m.textContent = "0░█".repeat(14);
+  $("rows").appendChild(m); const w = m.getBoundingClientRect().width / 42; m.remove();
+  if (w > 0 && (!document.fonts || document.fonts.status === "loaded")) cw = w;   // cache only after the font loads
+  return w || 10;
+}
+// One plain line built only from the numbers.
+function explain(acts, h, r) {
+  const low = a => a.short.toLowerCase().replace(" bb", "");
+  const order = acts.map((a, k) => k).filter(k => h.s[k] >= 0.05).sort((a, b) => h.s[b] - h.s[a]);
+  const top = order[0];
+  let s = h.s[top] >= 0.95
+    ? `> GTO plays ${hand.c} one way: ${low(acts[top])} ${pct(h.s[top])}.`
+    : `> GTO mixes ${hand.c}: ` + order.map(k => `${low(acts[k])} ${pct(h.s[k])}`).join(", ") + ".";
+  s += r.i === r.best
+    ? ` Your ${low(acts[r.i])} has the highest EV.`
+    : ` Your ${low(acts[r.i])} loses ${bb(r.loss)} bb (${r.lossPct.toFixed(1)}% of the pot).`;
+  if (top !== r.best && h.ev[r.best] - h.ev[top] < 0.005 * spot.node.pot)
+    s += `\n> ${low(acts[top])} and ${low(acts[r.best])} have almost the same EV (gap ${bb(h.ev[r.best] - h.ev[top])} bb).`;
+  return s;
+}
+
+// ===== Session panel =====
+function renderStats() {
+  const s = session;
+  const acc = s.played ? (100 * s.good / s.played).toFixed(0) + "%" : "-";
+  let t = `HANDS     ${s.played}\nACCURACY  ${acc}\nEV LOST   ${bb(s.evLost)} bb\n`;
+  if (s.played) t += `AVG LOSS  ${bb(s.evLost / s.played)} bb/hand\n`;
+  const cats = Object.entries(s.cats);
+  if (cats.length) t += "\nBY CATEGORY\n" + cats.map(([k, v]) => `${k.replace("_", " ").toUpperCase().padEnd(12)}${String(v.good).padStart(3)}/${v.n}`).join("\n") + "\n";
+  const gs = ["BEST", "CORRECT", "INACCURACY", "MISTAKE", "BLUNDER"].filter(g => s.grades[g]);
+  if (gs.length) t += "\nGRADES\n" + gs.map(g => `${g.padEnd(12)}${String(s.grades[g]).padStart(3)}`).join("\n");
+  $("stats").textContent = t;
+}
+$("reset").onclick = () => { session = newSession(); lsSet(LS_SESSION, session); renderStats(); };
+$("legend").textContent =
+  `BEST        GTO freq >= ${GRADE.BEST.freq * 100}%\n            or loss < ${GRADE.BEST.loss}% pot\n` +
+  `CORRECT     freq >= ${GRADE.CORRECT.freq * 100}%\n            or loss < ${GRADE.CORRECT.loss}% pot\n` +
+  `INACCURACY  loss < ${GRADE.INACCURACY.loss}% pot\nMISTAKE     loss < ${GRADE.MISTAKE.loss}% pot\nBLUNDER     loss >= ${GRADE.MISTAKE.loss}% pot\n\n` +
+  `Accuracy = BEST + CORRECT.\nEV = bb won from the pot\nfrom this point.`;
+
+// ===== Category filter =====
+function renderCats() {
+  $("cats").innerHTML = CATEGORIES.map(([k, l]) => `<button class="btn small${k === cat ? " sel" : ""}" data-c="${k}">${l}</button>`).join("");
+  $("cats").querySelectorAll(".btn").forEach(b => b.onclick = () => { cat = b.dataset.c; lsSet(LS_CAT, cat); renderCats(); loadSpot(); });
+}
+
+// ===== Keys =====
+$("next").onclick = loadSpot;
+addEventListener("keydown", e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (result && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); loadSpot(); return; }
+  if (!result && spot && /^[1-9]$/.test(e.key)) {
+    const i = +e.key - 1;
+    if (i < spot.node.actions.length) { e.preventDefault(); choose(i); }
+  }
+  if (!spot && e.key === "Enter" && $("retry")) { e.preventDefault(); loadSpot(); }
+});
+let rz = null;
+addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(renderAnswer, 120); });
+
+renderCats();
+renderStats();
+loadStats();
+loadSpot();
+</script>
+</body>
+</html>
