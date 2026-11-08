@@ -1,3 +1,0 @@
-# NFSP training, neural-value experiments, and the complete test suite.
-# The CPU Hold'em engine and browser table use only the Python standard library.
-torch>=2.0,<3

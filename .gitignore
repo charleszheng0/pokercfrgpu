@@ -1,9 +1,4 @@
-__pycache__/
-*.pyc
-.pytest_cache/
-node_modules/
-artifacts/offline_training/
-artifacts/solution_cache/
-artifacts/cfr_scenario_worker/
-artifacts/cfr_scenario_cache/
-artifacts/scenario_solves.sqlite3*
+build/
+.DS_Store
+.vscode/
+*.o
