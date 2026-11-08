@@ -27,6 +27,7 @@
   .btn { --c:#fff; background:#000; color:var(--c); border:2px solid var(--c); font:inherit; font-size:24px; padding:1px 14px; cursor:pointer; margin:8px 8px 0 0; }
   .btn:hover, .btn.sel { background:var(--c); color:#000; }
   .btn.small { font-size:20px; padding:0 10px; }
+  a.btn { display:inline-block; text-decoration:none; }
   .dialog { min-height:64px; white-space:pre-wrap; }
   .dialog::after { content:"_"; animation:blink 1s steps(1) infinite; }
   .dialog:empty::after, #nodeHead::after { content:none; }
@@ -55,7 +56,10 @@
 <body>
 <div class="wrap">
   <div class="box" id="t-head">
-    <button class="btn small" id="tourBtn" style="position:absolute; right:16px; top:8px">TOUR</button>
+    <div style="position:absolute; right:16px; top:8px">
+      <a class="btn small" id="playBtn" href="/play">PLAY &gt;</a>
+      <button class="btn small" id="tourBtn" style="margin-right:0">TOUR</button>
+    </div>
     <h1>POKER LAB</h1>
     <div class="dialog" id="intro"></div>
   </div>
