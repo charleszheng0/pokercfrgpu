@@ -66,6 +66,9 @@
   .expl { margin-top:10px; white-space:pre-wrap; }
   .stats { white-space:pre-wrap; }
   .note { white-space:pre-wrap; }
+  .log { white-space:pre-wrap; }
+  .log .now { background:#fff; color:#000; padding:0 6px; }
+  #handEnd:not(:empty) { margin-top:10px; }
   a { color:#fff; }
 </style>
 </head>
@@ -88,6 +91,10 @@
         <div class="note" id="spotline">&gt; Loading a spot...</div>
         <div id="table"></div>
       </div>
+      <div class="box hide" data-t="hand log" id="logbox">
+        <div class="log" id="log"></div>
+        <div class="log" id="handEnd"></div>
+      </div>
       <div class="box" data-t="your action" id="actbox">
         <div class="acts" id="acts"></div>
         <div class="dim" id="keys" style="margin-top:8px"></div>
@@ -96,7 +103,7 @@
         <div id="gradeLine"></div>
         <div class="rows" id="rows"></div>
         <div class="expl" id="expl"></div>
-        <button class="btn" id="next">NEXT <span class="k">[ENTER]</span></button>
+        <button class="btn hide" id="cont">CONTINUE <span class="k">[ENTER]</span></button><button class="btn" id="next">NEXT <span class="k" id="nextKey">[ENTER]</span></button>
       </div>
     </div>
     <div>
@@ -154,7 +161,11 @@ let recent = lsGet(LS_RECENT, []);
 let session = lsGet(LS_SESSION, null) || newSession();
 let spot = null, ctx = null, hand = null, result = null, offline = false;
 let samplesOnly = false;   // set by SAMPLE SPOTS after a server error; lasts until reload
-function newSession() { return { played: 0, good: 0, evLost: 0, grades: {}, cats: {} }; }
+let hs = null;             // the hand in play (see startHand); null = single decision only
+let gen = 0;               // bumped by every new spot; a running hand resolver stops when it changes
+let busy = false;          // the resolver is working (villain acts, cards come)
+const STEP_MS = 500;       // pause before each villain action or new card
+function newSession() { return { played: 0, good: 0, evLost: 0, grades: {}, cats: {}, hands: 0 }; }
 
 // ===== Loading =====
 async function fetchJson(url) {
@@ -176,7 +187,9 @@ async function loadFixture() {
 }
 async function loadSpot() {
   if (document.activeElement) document.activeElement.blur();
+  const g = ++gen; busy = false; hs = null;
   $("answer").classList.add("hide");
+  $("logbox").classList.add("hide");
   $("acts").innerHTML = ""; $("keys").textContent = "";
   $("spotline").textContent = "> Loading a spot...";
   $("table").innerHTML = "";
@@ -192,6 +205,7 @@ async function loadSpot() {
   try {
     if (offline) s = await loadFixture();
   } catch (e) { return showError(e.message); }
+  if (g !== gen) return;   // a newer request took over
   if (s.error) return showError(s.error);
   if (!s.node || s.node.type !== "action" || !s.node.hands) return showError("the spot has no decision node (type " + (s.node && s.node.type) + ")");
   spot = s;
@@ -200,6 +214,7 @@ async function loadSpot() {
   ctx = buildContext(s);
   hand = dealHand(s.node, cat === "any" ? s.category : cat);
   if (!hand) return showError("no hand in this range reaches the spot");
+  hs = startHand(s, hand);
   render();
 }
 function showError(msg) {
@@ -239,7 +254,9 @@ function buildContext(s) {
     return { p: e.p, text: `${name(e.p)} ${t.verb}` };
   });
   const hero = n.player, opp = 1 - hero;
-  const behind = p => s.stack + startPot / 2 - n.contrib[p];
+  // s.pot / s.stack are the solve's starting values (not this street's), so this also holds for
+  // river spots that continue a turn solve.
+  const behind = p => s.stack + s.pot / 2 - n.contrib[p];
   return { name, hero, opp, startPot, put, lines, behind, toCall: Math.max(0, n.contrib[opp] - n.contrib[hero]) };
 }
 // Text for one action. pot = pot before the action; put = chips this player already put in on this street.
@@ -286,17 +303,11 @@ function dealHand(n, category) {
 function render() {
   const s = spot, n = s.node, c = ctx;
   const heroName = c.name(c.hero), oppName = c.name(c.opp);
-  const dealer = p => c.name(p) === "BTN" ? ` <span class="dbtn" title="dealer button">D</span>` : "";
   const streetName = (s.street || "").toUpperCase();
   $("spotline").innerHTML = `&gt; #${esc(s.id)} · ${esc(s.preset || "")} · ${esc(streetName)}` +
     (s.category ? ` · ${esc(s.category.replace("_", " "))}` : "") +
+    (hs && hs.decisions.length ? ` <span class="dim">· same hand, decision ${hs.decisions.length + 1}</span>` : "") +
     (offline ? ` <span class="dim">· sample spot (no server data)</span>` : "");
-  const seat = (p, isHero) => {
-    const cardsHtml = `<span class="hc">` + (isHero ? cardsOf(hand.c).map(cardHtml).join("") : `<span class="pc down">▒▒</span><span class="pc down">▒▒</span>`) + `</span>`;
-    return `<div class="seat"><span class="pos ${isHero ? "hero" : ""}">${esc(c.name(p))}</span>${dealer(p)}` +
-      `<span class="stack">${bb(c.behind(p))} bb</span><span class="who">${isHero ? "YOU" : (p === 0 ? "OOP" : "IP")}</span>${cardsHtml}</div>`;
-  };
-  const chip = p => c.put[p] > 0 ? `in front: ${bb(c.put[p])} bb` : "";
   // Story: earlier streets (from the server), then this street.
   const board = cardsOf(n.board);
   const lastCard = board[board.length - 1];
@@ -309,16 +320,31 @@ function render() {
     ? `<div class="last">&gt; ${esc(last.text)}</div>`
     : `<div class="last">&gt; ${esc(oppName)} has not acted on the ${esc(s.street || "street")}. You act first.</div>`;
   $("table").innerHTML =
-    `<div class="felt">${seat(c.opp, false)}<div class="chips">${chip(c.opp)}</div>` +
-    `<div class="mid">${board.map(cardHtml).join("")}<div class="pot">POT ${bb(n.pot)} bb</div></div>` +
-    `<div class="chips">${chip(c.hero)}</div>${seat(c.hero, true)}</div>` +
-    `<div class="story">${story}</div>${lastHtml}` +
+    `<div id="felt">${feltHtml({ hero: c.hero, name: c.name, behind: c.behind, put: c.put, board, pot: n.pot, heroCards: hand.c, oppCards: null })}</div>` +
+    `<div class="story">${story}</div><div id="lastLine">${lastHtml}</div>` +
     `<div class="dim" style="margin-top:8px">&gt; You are ${esc(heroName)} (${c.hero === 0 ? "out of position" : "in position"}). Amounts in big blinds.</div>`;
   const acts = heroActions();
   $("acts").innerHTML = acts.map((a, i) =>
     `<button class="btn" data-i="${i}"><span class="k">${i + 1}</span> ${esc(a.short)}${a.size ? ` <span class="k">${esc(a.size)}</span>` : ""}</button>`).join("");
   $("acts").querySelectorAll(".btn").forEach(b => b.onclick = () => choose(+b.dataset.i));
   $("keys").textContent = `> Keys 1-${acts.length} choose an action.`;
+  renderLog();
+}
+// The felt: villain seat, board and pot, hero seat. o.oppCards = null keeps the villain's cards face down.
+function feltHtml(o) {
+  const opp = 1 - o.hero;
+  const dealer = p => o.name(p) === "BTN" ? ` <span class="dbtn" title="dealer button">D</span>` : "";
+  const down = `<span class="pc down">▒▒</span><span class="pc down">▒▒</span>`;
+  const seat = p => {
+    const isHero = p === o.hero, cards = isHero ? o.heroCards : o.oppCards;
+    const cardsHtml = `<span class="hc">` + (cards ? cardsOf(cards).map(cardHtml).join("") : down) + `</span>`;
+    return `<div class="seat"><span class="pos ${isHero ? "hero" : ""}">${esc(o.name(p))}</span>${dealer(p)}` +
+      `<span class="stack">${bb(Math.max(0, o.behind(p)))} bb</span><span class="who">${isHero ? "YOU" : (p === 0 ? "OOP" : "IP")}</span>${cardsHtml}</div>`;
+  };
+  const chip = p => o.put[p] > 0.005 ? `in front: ${bb(o.put[p])} bb` : "";
+  return `<div class="felt">${seat(opp)}<div class="chips">${chip(opp)}</div>` +
+    `<div class="mid">${o.board.map(cardHtml).join("")}<div class="pot">POT ${bb(o.pot)} bb</div></div>` +
+    `<div class="chips">${chip(o.hero)}</div>${seat(o.hero)}</div>`;
 }
 
 // ===== Grade =====
@@ -349,10 +375,14 @@ function choose(i) {
   cc.n++; if (good) cc.good++;
   lsSet(LS_SESSION, session);
   renderStats();
+  if (hs) {
+    hs.decisions.push({ street: spot.street, act: heroActions()[i].short, grade, loss, lossPct });
+    hs.evLost += loss;
+  }
   $("acts").querySelectorAll(".btn").forEach(b => { b.disabled = true; b.classList.toggle("sel", +b.dataset.i === i); });
-  $("keys").textContent = "> Press ENTER or SPACE for the next hand.";
   $("answer").classList.remove("hide");   // visible first, so the rows can be measured
   renderAnswer();
+  setButtons();
   $("answer").scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
@@ -418,12 +448,263 @@ function explain(acts, h, r) {
   return s;
 }
 
+// ===== Play the hand out =====
+// After each graded decision, CONTINUE plays the villain's GTO actions (from the stored nodes),
+// deals the next street (from the cards stored for the line) and stops at the hero's next decision,
+// until a fold, a showdown, or a line that is not stored.
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const cap = s => String(s).replace(/^./, m => m.toUpperCase());
+const comboKey = c => cardsOf(c).sort().join("");
+const joinPath = (p, t) => p === "" ? String(t) : p + "," + t;
+const NOT_STORED = "this line is not stored yet — hand ends here";
+function pickWeighted(items, weight) {
+  const W = items.reduce((a, x) => a + Math.max(0, weight(x)), 0);
+  if (!(W > 0)) return null;
+  let r = Math.random() * W;
+  for (const x of items) { r -= Math.max(0, weight(x)); if (r <= 0) return x; }
+  return items[items.length - 1];
+}
+const streetTitle = (street, board) => street === "flop" ? `Flop ${board.slice(0, 3).join("")}` : `${cap(street || "street")} ${board[board.length - 1]}`;
+const hsBehind = p => hs.stack0 + hs.pot0 / 2 - hs.contrib[p];
+
+// A new hand for this spot: the villain gets a hidden hand from the stored range (node.opp).
+function startHand(s, h) {
+  const n = s.node, board = cardsOf(n.board);
+  const dead = new Set(cardsOf(h.c).concat(board));
+  let V = null, oppNote = "";
+  if (Array.isArray(n.opp) && s.solve_id != null && s.path != null) {
+    const live = n.opp.filter(o => !cardsOf(o.c).some(c => dead.has(c)));
+    let o = pickWeighted(live, o => o.w);
+    // A line the villain almost never takes: every weight rounds to 0. Pick any listed combo.
+    if (!o && live.length) { o = live[Math.floor(Math.random() * live.length)]; oppNote = "villain reaches this spot almost never (weights round to 0): its hand is any combo of the stored range"; }
+    if (o) V = o.c;
+  }
+  const lastHist = n.history[n.history.length - 1] || "";
+  return {
+    solve: s.solve_id, path: s.path || "", heroP: n.player, H: h.c, V, oppNote, name: ctx.name,
+    pot0: s.pot, stack0: s.stack, pot: n.pot, contrib: n.contrib.slice(), put: ctx.put.slice(),
+    allin: / All-in /.test(lastHist + " "), board, street: s.street,
+    log: [{ title: streetTitle(s.street, board), acts: ctx.lines.map(l => l.text) }],
+    last: null, decisions: [], evLost: 0, over: false, endLines: null,
+  };
+}
+const canContinue = () => !!(hs && hs.V && !hs.over && !hs.pending && result && !busy);
+function setButtons() {
+  const cont = canContinue();
+  $("cont").classList.toggle("hide", !cont);
+  $("nextKey").textContent = cont ? "[N]" : "[ENTER]";
+  if (!result) return;   // the hero is deciding: the keys line lists 1..n
+  $("keys").textContent = hs && hs.pending ? "> All-in: keys 1-2 fold or call. The reply to an all-in is not stored, so this decision gets no grade."
+    : busy ? "> The hand goes on..."
+    : cont ? "> ENTER: continue the hand. N: new spot."
+    : hs && hs.over ? "> Hand over. ENTER or N for the next hand."
+    : "> Press ENTER or SPACE for the next hand.";
+}
+async function continueHand() {
+  if (!canContinue()) return;
+  if (document.activeElement) document.activeElement.blur();
+  const g = gen;
+  busy = true; setButtons();
+  try { await act(g, hs.heroP, result.i, spot.node.actions[result.i]); }
+  catch (e) { if (g === gen) endHand([`<span class="err">&gt; ${esc(e.message)}</span>`, `&gt; ${NOT_STORED}.`]); }
+  if (g !== gen) return;
+  busy = false; setButtons();
+}
+// Player p takes action idx (label from the node) at hs.path.
+async function act(g, p, idx, label) {
+  const x = parseAct(label);
+  const toCall = Math.max(0, hs.contrib[1 - p] - hs.contrib[p]);
+  const d = describe(x.kind, x.amt, hs.pot, toCall, hs.put[p]);
+  const facingAllin = hs.allin;
+  hs.contrib[p] += x.amt; hs.pot += x.amt; hs.put[p] += x.amt;
+  hs.path = joinPath(hs.path, idx);
+  logAct(`${hs.name(p)} ${d.verb}`);
+  if (x.kind === "Fold") return endFold(p);
+  if (x.kind === "All-in") hs.allin = true;
+  if (x.kind === "Call") return (facingAllin || hsBehind(0) < 0.01 || hsBehind(1) < 0.01) ? runout(g) : streetEnd(g);
+  if (x.kind === "Check" && p === 1) return streetEnd(g);
+  return nextNode(g);   // OOP check, bet, raise, all-in: the other player acts
+}
+async function getNode(path) {
+  const r = await fetch(`/api/play/node?solve=${encodeURIComponent(hs.solve)}&path=${encodeURIComponent(path)}`, { cache: "no-store" });
+  if (r.status === 404) return null;
+  const j = await r.json();
+  if (!r.ok || j.error) throw new Error(j.error || "server error " + r.status);
+  return j;
+}
+async function nextNode(g) {
+  const env = await getNode(hs.path);
+  if (g !== gen) return;
+  if (!env || !env.node || env.node.type !== "action" || !env.node.hands) return hs.allin ? assumeCall(g) : endHand([`&gt; ${cap(NOT_STORED)}.`]);
+  const n = env.node;
+  if (Math.abs(n.pot - hs.pot) > 0.02) console.warn("pot mismatch", hs.path, n.pot, hs.pot);
+  hs.pot = n.pot; hs.contrib = n.contrib.slice();
+  if (n.player === hs.heroP) return heroTurn(env);
+  await sleep(STEP_MS);
+  if (g !== gen) return;
+  // Villain: its own hand's GTO mix; the range mix if its hand is not stored here (tiny weight).
+  const mine = n.hands.find(h => comboKey(h.c) === comboKey(hs.V));
+  const k = pickWeighted(n.actions.map((a, i) => i), i => (mine ? mine.s : n.freq)[i]);
+  return act(g, n.player, k == null ? 0 : k, n.actions[k == null ? 0 : k]);
+}
+// The reply to an all-in is not stored. The hero chooses (no grade); the villain is played as a call.
+async function assumeCall(g) {
+  const p = hs.contrib[0] < hs.contrib[1] ? 0 : 1;
+  const amt = Math.min(hs.contrib[1 - p] - hs.contrib[p], Math.max(0, hsBehind(p)));
+  if (p === hs.heroP) return heroFacesAllin(g, amt);
+  hs.contrib[p] += amt; hs.pot += amt; hs.put[p] += amt;
+  logAct(`${hs.name(p)} calls ${bb(amt)} bb (reply to the all-in not stored: call assumed)`);
+  return runout(g);
+}
+function heroFacesAllin(g, amt) {
+  hs.pending = { g, amt };
+  busy = false;
+  $("acts").innerHTML = `<button class="btn" data-i="0"><span class="k">1</span> FOLD</button><button class="btn" data-i="1"><span class="k">2</span> CALL ${bb(amt)} bb</button>`;
+  $("acts").querySelectorAll(".btn").forEach(b => b.onclick = () => allinReply(+b.dataset.i));
+  $("actbox").scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+async function allinReply(i) {
+  const pend = hs && hs.pending;
+  if (!pend || pend.g !== gen) return;
+  if (document.activeElement) document.activeElement.blur();
+  hs.pending = null;
+  $("acts").querySelectorAll(".btn").forEach(b => { b.disabled = true; b.classList.toggle("sel", +b.dataset.i === i); });
+  const p = hs.heroP;
+  if (i === 0) { logAct(`${hs.name(p)} folds (not stored: no grade)`); return endFold(p); }
+  hs.contrib[p] += pend.amt; hs.pot += pend.amt; hs.put[p] += pend.amt;
+  logAct(`${hs.name(p)} calls ${bb(pend.amt)} bb (not stored: no grade)`);
+  busy = true; setButtons();
+  await runout(pend.g);
+  if (pend.g === gen) { busy = false; setButtons(); }
+}
+function heroTurn(env) {
+  const n = env.node;
+  const h = n.hands.find(x => comboKey(x.c) === comboKey(hs.H));
+  if (!h) return endHand([`&gt; Your hand is not in the stored range at this point: ${NOT_STORED}.`]);
+  spot = env; ctx = buildContext(env); hand = h; result = null;
+  hs.put = ctx.put.slice();
+  if (env.id != null) { recent = recent.filter(id => id !== env.id).concat([env.id]).slice(-RECENT_MAX); lsSet(LS_RECENT, recent); }
+  $("answer").classList.add("hide");
+  busy = false;
+  render();
+  $("tablebox").scrollIntoView({ block: "start", behavior: "smooth" });
+}
+// The betting on this street is over: showdown on the river, else deal the next stored card.
+async function streetEnd(g) {
+  if (hs.board.length >= 5) return showdown(g);
+  const next = hs.board.length === 3 ? "turn" : "river";
+  const r = await fetchJson(`/api/play/cards?solve=${encodeURIComponent(hs.solve)}&path=${encodeURIComponent(hs.path)}`);
+  if (g !== gen) return;
+  const dead = new Set(cardsOf(hs.H + hs.V).concat(hs.board));
+  const cards = (r.cards || []).filter(c => !dead.has(c));
+  if (!cards.length) return endHand([`&gt; The ${next} is not stored for this line: hand ends here.`]);
+  await sleep(STEP_MS);
+  if (g !== gen) return;
+  const card = cards[Math.floor(Math.random() * cards.length)];
+  hs.board.push(card); hs.street = next; hs.put = [0, 0]; hs.allin = false;
+  hs.path = joinPath(hs.path, card);
+  hs.log.push({ title: streetTitle(next, hs.board), acts: [] });
+  hs.last = `${cap(next)}: ${card}`;
+  renderLog(); renderLive();
+  return nextNode(g);
+}
+// All-in and called: deal the rest of the board at random, then show down.
+async function runout(g) {
+  const dead = new Set(cardsOf(hs.H + hs.V).concat(hs.board));
+  const deck = [];
+  for (const r of "23456789TJQKA") for (const s of "cdhs") if (!dead.has(r + s)) deck.push(r + s);
+  while (hs.board.length < 5) {
+    await sleep(STEP_MS);
+    if (g !== gen) return;
+    const card = deck.splice(Math.floor(Math.random() * deck.length), 1)[0];
+    hs.board.push(card);
+    hs.street = hs.board.length === 4 ? "turn" : "river";
+    hs.put = [0, 0];
+    hs.log.push({ title: streetTitle(hs.street, hs.board) + " (run out)", acts: [] });
+    hs.last = `${cap(hs.street)}: ${card}`;
+    renderLog(); renderLive();
+  }
+  return showdown(g);
+}
+async function showdown(g) {
+  const r = await fetchJson(`/api/play/showdown?board=${hs.board.join("")}&a=${hs.H}&b=${hs.V}`);
+  if (g !== gen) return;
+  if (!r || r.error || !r.winner) return endHand([`<span class="err">&gt; Showdown failed: ${esc((r && r.error) || "no answer")}</span>`]);
+  const hero = hs.heroP, vil = 1 - hero, N = hs.name;
+  const lines = [`&gt; Showdown: ${esc(N(hero))} ${suitText(hs.H)} (${esc(r.a)}) vs ${esc(N(vil))} ${suitText(hs.V)} (${esc(r.b)}).`];
+  let heroWin;
+  if (r.winner === "tie") { heroWin = hs.pot / 2; lines.push(`&gt; Split pot: ${bb(hs.pot / 2)} bb each.`); }
+  else {
+    const w = r.winner === "a" ? hero : vil;
+    heroWin = w === hero ? hs.pot : 0;
+    lines.push(`&gt; ${esc(N(w))} wins the pot of ${bb(hs.pot)} bb${w === hero ? " (YOU)" : ""}.`);
+  }
+  return endHand(lines, heroWin);
+}
+function endFold(folder) {
+  const w = 1 - folder;
+  const back = hs.contrib[w] - hs.contrib[folder];   // the bet that was not called goes back
+  hs.contrib[w] -= back; hs.pot -= back; hs.put = [0, 0];
+  const lines = [`&gt; ${esc(hs.name(folder))} folds. ${esc(hs.name(w))} wins the pot of ${bb(hs.pot)} bb${w === hs.heroP ? " (YOU)" : ""}` +
+    (back > 0.005 ? `, ${bb(back)} bb not called goes back.` : ".")];
+  return endHand(lines, w === hs.heroP ? hs.pot : 0);
+}
+// heroWin = chips the hero takes from the pot; undefined = no result (line not stored).
+function endHand(lines, heroWin) {
+  hs.over = true; busy = false;
+  session.hands = (session.hands || 0) + 1;
+  lsSet(LS_SESSION, session); renderStats();
+  const vil = 1 - hs.heroP;
+  if (hs.V && !lines.some(l => l.startsWith("&gt; Showdown:"))) lines.push(`&gt; ${esc(hs.name(vil))} had ${suitText(hs.V)}.`);
+  if (heroWin !== undefined) {
+    const net = hsBehind(hs.heroP) + heroWin - (hs.stack0 + hs.pot0 / 2);
+    lines.push(`&gt; Your result in this hand: ${net >= 0 ? "+" : ""}${bb(net)} bb.`);
+  }
+  // Summary of the hero's decisions in this hand.
+  const ds = hs.decisions;
+  const good = ds.filter(d => GOOD_GRADES.includes(d.grade)).length;
+  const w = Math.max(10, ...ds.map(d => d.act.length + 1));
+  lines.push("", "HAND SUMMARY");
+  ds.forEach((d, k) => {
+    const cls = GOOD_GRADES.includes(d.grade) ? "good" : d.grade === "INACCURACY" ? "" : "err";
+    lines.push(`${String(k + 1).padStart(2)}. ${(d.street || "").toUpperCase().padEnd(6)}${esc(d.act.padEnd(w))}<span class="${cls}">${d.grade.padEnd(11)}</span>loss ${bb(d.loss)} bb`);
+  });
+  lines.push(`DECISIONS ${ds.length} · GOOD ${good}/${ds.length} · EV LOST ${bb(hs.evLost)} bb`);
+  hs.endLines = lines;
+  renderLog(); renderLive(); setButtons();
+  $("logbox").scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+function logAct(text) {
+  hs.log[hs.log.length - 1].acts.push(text);
+  hs.last = text;
+  renderLog(); renderLive();
+}
+// The table while the hand runs between hero decisions (and at the end, with the villain's cards up).
+function renderLive() {
+  if (!hs || !$("felt")) return;
+  $("felt").innerHTML = feltHtml({ hero: hs.heroP, name: hs.name, behind: hsBehind, put: hs.put, board: hs.board, pot: hs.pot,
+    heroCards: hs.H, oppCards: hs.over ? hs.V : null });
+  if (hs.last) $("lastLine").innerHTML = `<div class="last">&gt; ${suitText(esc(hs.last))}</div>`;
+}
+function renderLog() {
+  // Older rows have no opponent range (node.opp): one decision only, no log.
+  if (!hs || !hs.V) { $("logbox").classList.add("hide"); return; }
+  $("logbox").classList.remove("hide");
+  const N = hs.name, vil = 1 - hs.heroP;
+  let t = `&gt; You (${esc(N(hs.heroP))}): ${suitText(hs.H)}   ${esc(N(vil))}: ${hs.over ? suitText(hs.V) : "hidden"}\n`;
+  if (hs.oppNote) t += `<span class="dim">&gt; Note: ${esc(hs.oppNote)}.</span>\n`;
+  t += hs.log.map(e => suitText(esc(`${e.title}: ${e.acts.length ? e.acts.join(", ") : "-"}`))).join("\n");
+  $("log").innerHTML = t;
+  $("handEnd").innerHTML = hs.endLines ? hs.endLines.join("\n") + `\n<button class="btn" id="next2">NEXT HAND <span class="k">[ENTER]</span></button>` : "";
+  if ($("next2")) $("next2").onclick = loadSpot;
+}
+
 // ===== Session panel =====
 function renderStats() {
   const s = session;
   const acc = s.played ? (100 * s.good / s.played).toFixed(0) + "%" : "-";
-  let t = `HANDS     ${s.played}\nACCURACY  ${acc}\nEV LOST   ${bb(s.evLost)} bb\n`;
-  if (s.played) t += `AVG LOSS  ${bb(s.evLost / s.played)} bb/hand\n`;
+  let t = `DECISIONS ${s.played}\nHANDS     ${s.hands || 0} played out\nACCURACY  ${acc}\nEV LOST   ${bb(s.evLost)} bb\n`;
+  if (s.played) t += `AVG LOSS  ${bb(s.evLost / s.played)} bb/decision\n`;
   const cats = Object.entries(s.cats);
   if (cats.length) t += "\nBY CATEGORY\n" + cats.map(([k, v]) => `${k.replace("_", " ").toUpperCase().padEnd(12)}${String(v.good).padStart(3)}/${v.n}`).join("\n") + "\n";
   const gs = ["BEST", "CORRECT", "INACCURACY", "MISTAKE", "BLUNDER"].filter(g => s.grades[g]);
@@ -445,9 +726,19 @@ function renderCats() {
 
 // ===== Keys =====
 $("next").onclick = loadSpot;
+$("cont").onclick = continueHand;
 addEventListener("keydown", e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
-  if (result && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); loadSpot(); return; }
+  if (hs && hs.pending) {
+    if (e.key === "1" || e.key === "2") { e.preventDefault(); allinReply(+e.key - 1); return; }
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); return; }
+  }
+  if (result && busy) { if (e.key === "Enter" || e.key === " ") e.preventDefault(); if (e.key === "n" || e.key === "N") loadSpot(); return; }
+  if (result && canContinue()) {
+    if (e.key === "Enter" || e.key === " " || e.key === "c" || e.key === "C") { e.preventDefault(); continueHand(); return; }
+    if (e.key === "n" || e.key === "N") { e.preventDefault(); loadSpot(); return; }
+  }
+  if (result && (e.key === "Enter" || e.key === " " || e.key === "n" || e.key === "N")) { e.preventDefault(); loadSpot(); return; }
   if (!result && spot && /^[1-9]$/.test(e.key)) {
     const i = +e.key - 1;
     if (i < spot.node.actions.length) { e.preventDefault(); choose(i); }
