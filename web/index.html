@@ -54,7 +54,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="box" data-t="v0.1 · dcfr · c++">
+  <div class="box">
     <h1>POKER LAB</h1>
     <div class="dialog" id="intro"></div>
   </div>
@@ -138,7 +138,7 @@ function setPreset(name) {
 }
 document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => setPreset(b.dataset.preset));
 setPreset("river");
-typeText($("intro"), "> A heads-up postflop solver. Vector-form DCFR in C++.\n> Every hand of both players moves through the tree at once.");
+typeText($("intro"), "> Heads-up solver.");
 
 function bar(frac, width = 24) {
   const n = Math.max(0, Math.min(width, Math.round(frac * width)));
