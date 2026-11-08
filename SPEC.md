@@ -21,7 +21,7 @@ The gate accepts a solve only when exploitability <= target (default 0.5% of pot
 ## Interfaces
 - `pokersolve` CLI: flags in, JSON out (strategy, EV, exploitability per checkpoint).
 - `pokerlab` local server: `POST /api/solve`, `GET /api/status`, `GET /api/node?path=`.
-- `web/`: ASCII, Undertale-like page (black, white mono text, heart cursor, block bars).
+- `web/`: ASCII terminal page (black, white mono text, titled panels, inverted selection, block bars).
 
 ## Acceptance tests (done = all pass)
 1. Evaluator: all 2,598,960 five-card hands give the known category counts.
