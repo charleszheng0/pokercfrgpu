@@ -302,7 +302,8 @@ function render() {
   const lastCard = board[board.length - 1];
   const streetLine = `${(s.street || "street").replace(/^./, m => m.toUpperCase())}${s.street === "flop" ? " " + board.slice(0, 3).join("") : " " + lastCard}: ` +
     (c.lines.length ? c.lines.map(l => l.text).join(", ") : `${heroName} to act`);
-  const story = (s.story || []).map(l => esc(l)).concat([`<b>${esc(streetLine)}</b>`]).map(l => suitText(l)).join("\n");
+  // The server story ends with the bare card of this street ("River Qc"); the street line below repeats it with the actions.
+  const story = (s.story || []).filter(l => !/^(Flop|Turn|River) [^:]*$/.test(l)).map(l => esc(l)).concat([`<b>${esc(streetLine)}</b>`]).map(l => suitText(l)).join("\n");
   const last = c.lines[c.lines.length - 1];
   const lastHtml = last && last.p === c.opp
     ? `<div class="last">&gt; ${esc(last.text)}</div>`
