@@ -3,6 +3,7 @@
 #include <sqlite3.h>
 #include <zlib.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <sstream>
@@ -226,11 +227,48 @@ std::pair<long long, long long> Store::remove_duplicates() {
   return {solves, spots};
 }
 
+namespace {
+
+const char* kSpotSelect =
+    "SELECT s.id, v.preset, v.street, v.board, v.pot, v.stack, v.oop_pos, v.ip_pos, s.story, s.path, s.category,"
+    " s.mixed, s.ev_loss, s.bluff, s.fundamental, v.exploitability_pct, s.node, s.line, s.solve_id"
+    " FROM spots s JOIN solves v ON v.id = s.solve_id";
+
+bool is_card_token(const std::string& t) { return !t.empty() && t.find_first_not_of("0123456789") != std::string::npos; }
+
+// One row of kSpotSelect as the play API envelope. A path through a dealt card (a turn line
+// continued to the river) moves the street on and adds the card to the board.
+std::string spot_envelope(Stmt& st) {
+  std::string street = st.col_text(2), board = st.col_text(3), path = st.col_text(9), tok;
+  for (char c : path + ",") {
+    if (c != ',') {
+      tok += c;
+      continue;
+    }
+    if (is_card_token(tok)) {
+      board += tok;
+      street = street == "flop" ? "turn" : "river";
+    }
+    tok.clear();
+  }
+  std::ostringstream js;
+  js << "{\"id\":" << sqlite3_column_int64(st.s, 0) << ",\"solve_id\":" << sqlite3_column_int64(st.s, 18)
+     << ",\"preset\":\"" << esc(st.col_text(1)) << "\",\"street\":\"" << esc(street) << "\",\"board\":\"" << esc(board)
+     << "\",\"pot\":" << num(sqlite3_column_double(st.s, 4)) << ",\"stack\":" << num(sqlite3_column_double(st.s, 5))
+     << ",\"oop_pos\":\"" << esc(st.col_text(6)) << "\",\"ip_pos\":\"" << esc(st.col_text(7)) << "\",\"story\":" << st.col_text(8)
+     << ",\"path\":\"" << esc(path) << "\",\"line\":\"" << esc(st.col_text(17)) << "\",\"category\":\"" << esc(st.col_text(10))
+     << "\",\"scores\":{\"mixed\":" << num(sqlite3_column_double(st.s, 11))
+     << ",\"ev_loss\":" << num(sqlite3_column_double(st.s, 12)) << ",\"bluff\":" << num(sqlite3_column_double(st.s, 13))
+     << ",\"fundamental\":" << num(sqlite3_column_double(st.s, 14))
+     << "},\"exploitability_pct\":" << num(sqlite3_column_double(st.s, 15)) << ",\"node\":"
+     << unpack_node(sqlite3_column_blob(st.s, 16), sqlite3_column_bytes(st.s, 16)) << "}";
+  return js.str();
+}
+
+}  // namespace
+
 std::string Store::random_spot_json(const std::string& category, const std::vector<long long>& exclude) {
-  std::string sql =
-      "SELECT s.id, v.preset, v.street, v.board, v.pot, v.stack, v.oop_pos, v.ip_pos, s.story, s.path, s.category,"
-      " s.mixed, s.ev_loss, s.bluff, s.fundamental, v.exploitability_pct, s.node, s.line"
-      " FROM spots s JOIN solves v ON v.id = s.solve_id WHERE 1=1";
+  std::string sql = std::string(kSpotSelect) + " WHERE 1=1";
   if (!category.empty() && category != "any") sql += " AND s.category = ?1";
   if (!exclude.empty()) {
     sql += " AND s.id NOT IN (";
@@ -241,18 +279,27 @@ std::string Store::random_spot_json(const std::string& category, const std::vect
   Stmt st(db_, sql);
   if (!category.empty() && category != "any") st.text(1, category);
   if (sqlite3_step(st.s) != SQLITE_ROW) return "";
-  std::ostringstream js;
-  js << "{\"id\":" << sqlite3_column_int64(st.s, 0) << ",\"preset\":\"" << esc(st.col_text(1)) << "\",\"street\":\""
-     << esc(st.col_text(2)) << "\",\"board\":\"" << esc(st.col_text(3)) << "\",\"pot\":" << num(sqlite3_column_double(st.s, 4))
-     << ",\"stack\":" << num(sqlite3_column_double(st.s, 5)) << ",\"oop_pos\":\"" << esc(st.col_text(6))
-     << "\",\"ip_pos\":\"" << esc(st.col_text(7)) << "\",\"story\":" << st.col_text(8) << ",\"path\":\""
-     << esc(st.col_text(9)) << "\",\"line\":\"" << esc(st.col_text(17)) << "\",\"category\":\"" << esc(st.col_text(10))
-     << "\",\"scores\":{\"mixed\":" << num(sqlite3_column_double(st.s, 11))
-     << ",\"ev_loss\":" << num(sqlite3_column_double(st.s, 12)) << ",\"bluff\":" << num(sqlite3_column_double(st.s, 13))
-     << ",\"fundamental\":" << num(sqlite3_column_double(st.s, 14))
-     << "},\"exploitability_pct\":" << num(sqlite3_column_double(st.s, 15)) << ",\"node\":"
-     << unpack_node(sqlite3_column_blob(st.s, 16), sqlite3_column_bytes(st.s, 16)) << "}";
-  return js.str();
+  return spot_envelope(st);
+}
+
+std::string Store::spot_json(long long solve_id, const std::string& path) {
+  Stmt st(db_, std::string(kSpotSelect) + " WHERE s.solve_id = ? AND s.path = ? LIMIT 1");
+  st.integer(1, solve_id), st.text(2, path);
+  if (sqlite3_step(st.s) != SQLITE_ROW) return "";
+  return spot_envelope(st);
+}
+
+std::vector<std::string> Store::cards_after(long long solve_id, const std::string& path) {
+  const std::string prefix = path.empty() ? "" : path + ",";
+  Stmt st(db_, "SELECT DISTINCT path FROM spots WHERE solve_id = ? AND substr(path, 1, ?) = ?");
+  st.integer(1, solve_id), st.integer(2, static_cast<long long>(prefix.size())), st.text(3, prefix);
+  std::vector<std::string> out;
+  while (sqlite3_step(st.s) == SQLITE_ROW) {
+    const std::string rest = st.col_text(0).substr(prefix.size());
+    const std::string tok = rest.substr(0, rest.find(','));
+    if (is_card_token(tok) && std::find(out.begin(), out.end(), tok) == out.end()) out.push_back(tok);
+  }
+  return out;
 }
 
 std::string Store::stats_json() {

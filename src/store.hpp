@@ -55,6 +55,10 @@ class Store {
   // One random spot as the JSON envelope of the play API, or "" when none matches.
   std::string random_spot_json(const std::string& category, const std::vector<long long>& exclude);
   std::string stats_json();
+  // The stored node at one path of one solve (same JSON as random_spot_json), or "".
+  std::string spot_json(long long solve_id, const std::string& path);
+  // Cards stored right after `path` (e.g. the river cards kept for a turn line).
+  std::vector<std::string> cards_after(long long solve_id, const std::string& path);
 
  private:
   void exec(const std::string& sql);

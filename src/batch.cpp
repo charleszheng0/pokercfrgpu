@@ -86,6 +86,21 @@ std::string json_str_array(const std::vector<std::string>& v) {
   return o + "]";
 }
 
+// "OOP Bet 2.5" -> "BB bets 2.5" (position names, plain verbs).
+std::string say(const std::string& h, const Preset& pr) {
+  const size_t sp = h.find(' ');
+  const std::string who = h.substr(0, sp) == "OOP" ? pr.oop_pos : pr.ip_pos;
+  std::string act = h.substr(sp + 1), amt;
+  const size_t sp2 = act.find(' ');
+  if (sp2 != std::string::npos) amt = act.substr(sp2 + 1), act = act.substr(0, sp2);
+  static const std::map<std::string, std::string> verb = {{"Check", "checks"}, {"Call", "calls"}, {"Bet", "bets"},
+                                                          {"Raise", "raises"}, {"All-in", "goes all-in"}, {"Fold", "folds"}};
+  auto it = verb.find(act);
+  std::string out = who + " " + (it == verb.end() ? act : it->second);
+  if (!amt.empty() && act != "Call") out += " " + amt + " bb";
+  return out;
+}
+
 std::string join(const std::vector<std::string>& v, const std::string& sep) {
   std::string o;
   for (size_t i = 0; i < v.size(); ++i) o += (i ? sep : "") + v[i];
@@ -105,6 +120,9 @@ int main(int argc, char** argv) {
   const int max_iters = static_cast<int>(parse_number(f, "iters", 1500));
   const double max_db_gb = parse_number(f, "max_db_gb", 4);  // stop before the disk fills
   const size_t max_depth = static_cast<size_t>(parse_number(f, "depth", 4));  // actions on this street
+  // Turn solves: river cards stored per turn line, and river actions deep.
+  const int river_cards = static_cast<int>(parse_number(f, "river_cards", 2));
+  const size_t river_depth = static_cast<size_t>(parse_number(f, "river_depth", 2));
 
   try {
     Store store(db_path);
@@ -193,34 +211,58 @@ int main(int argc, char** argv) {
       store.begin();
       const long long solve_id = store.add_solve(sr);
       if (sr.status == "ok") {
-        // Every decision node of this street, breadth first, up to max_depth actions deep:
+        // Store every decision node below `prefix`, breadth first, up to `depth` more actions:
         // the first action, the reply to a check or bet, facing a raise, and so on. Lines
-        // through an all-in are not followed (the reply is only call or fold).
-        std::vector<std::vector<std::string>> queue = {{}};
-        for (size_t qi = 0; qi < queue.size(); ++qi) {
-          const std::vector<std::string> path = queue[qi];
-          NodeView v = g.node_view(path);
-          if (v.type != "action") continue;  // street ended (chance, showdown) or fold
-          if (path.size() < max_depth)
+        // through an all-in are not followed (the reply is only call or fold). Paths that end
+        // the street (a call, or a check behind) go to `ends`.
+        auto store_street = [&](const std::vector<std::string>& prefix, size_t depth, const std::vector<std::string>& st,
+                                std::vector<std::vector<std::string>>* ends) {
+          std::vector<std::vector<std::string>> queue = {prefix};
+          for (size_t qi = 0; qi < queue.size(); ++qi) {
+            const std::vector<std::string> path = queue[qi];
+            NodeView v = g.node_view(path);
+            if (v.type != "action") continue;  // street ended (chance, showdown) or fold
             for (size_t k = 0; k < v.actions.size(); ++k) {
               const ActKind kind = v.action_info[k].kind;
-              if (kind == ActKind::Check || kind == ActKind::Bet || kind == ActKind::Raise) {
-                auto next = path;
-                next.push_back(std::to_string(k));
+              auto next = path;
+              next.push_back(std::to_string(k));
+              if (path.size() < prefix.size() + depth && (kind == ActKind::Check || kind == ActKind::Bet || kind == ActKind::Raise))
                 queue.push_back(next);
-              }
+              if (ends && path.size() < prefix.size() + 3 && (kind == ActKind::Call || kind == ActKind::Check) &&
+                  g.node_view(next).type == "chance")
+                ends->push_back(next);
             }
-          if (v.hands.empty()) continue;
-          Scores sc = score_node(v);
-          SpotRow row;
-          row.solve_id = solve_id, row.path = join(path, ","), row.line = join(v.history, " > ");
-          row.actor = v.player, row.actor_pos = v.player == 0 ? pr.oop_pos : pr.ip_pos;
-          row.num_actions = static_cast<int>(v.actions.size()), row.combos = v.combos;
-          row.mixed = sc.mixed, row.ev_loss = sc.ev_loss, row.bluff = sc.bluff, row.fundamental = sc.fundamental;
-          row.category = sc.category, row.score = sc.score, row.story_json = json_str_array(story);
-          row.node_json = Game::to_json(v, /*with_grid=*/false);
-          store.add_spot(row);
-          ++stored;
+            if (v.hands.empty()) continue;
+            Scores sc = score_node(v);
+            SpotRow row;
+            row.solve_id = solve_id, row.path = join(path, ","), row.line = join(v.history, " > ");
+            row.actor = v.player, row.actor_pos = v.player == 0 ? pr.oop_pos : pr.ip_pos;
+            row.num_actions = static_cast<int>(v.actions.size()), row.combos = v.combos;
+            row.mixed = sc.mixed, row.ev_loss = sc.ev_loss, row.bluff = sc.bluff, row.fundamental = sc.fundamental;
+            row.category = sc.category, row.score = sc.score, row.story_json = json_str_array(st);
+            row.node_json = Game::to_json(v, /*with_grid=*/false);
+            store.add_spot(row);
+            ++stored;
+          }
+        };
+        std::vector<std::vector<std::string>> ends;
+        store_street({}, max_depth, story, river ? nullptr : &ends);
+        // Turn solves: continue the common turn lines (up to 3 actions) onto the river, for a
+        // few random river cards each, so the trainer can play a hand from the turn to the end.
+        for (const auto& end : ends) {
+          NodeView chance = g.node_view(end);
+          std::vector<Card> cards = chance.cards;
+          std::shuffle(cards.begin(), cards.end(), rng);
+          for (int c = 0; c < river_cards && c < static_cast<int>(cards.size()); ++c) {
+            std::vector<std::string> st(story.begin(), story.end() - 1);
+            std::vector<std::string> said;
+            for (const std::string& h : chance.history) said.push_back(say(h, pr));
+            st.push_back("Turn " + card_str(board.back()) + ": " + join(said, ", "));
+            st.push_back("River " + card_str(cards[c]));
+            auto prefix = end;
+            prefix.push_back(card_str(cards[c]));
+            store_street(prefix, river_depth, st, nullptr);
+          }
         }
         ++ok;
       } else {

@@ -914,6 +914,12 @@ NodeView Game::node_view(const std::vector<std::string>& path) {
     v.hands.push_back(std::move(hv));
   }
   for (double& f : v.freq) f = v.combos > 0 ? f / v.combos : 0;
+  // The opponent's range here (who can be holding what), for dealing a hidden hand.
+  for (size_t h = 0; h < hands_[o].size(); ++h) {
+    const HandInfo& hi = hands_[o][h];
+    if (reach[o][h] <= 1e-6 || (used >> hi.c1 & 1) || (used >> hi.c2 & 1)) continue;
+    v.opp.emplace_back(combo_index(perm_card(shown, hi.c1), perm_card(shown, hi.c2)), reach[o][h]);
+  }
   return v;
 }
 
@@ -966,7 +972,10 @@ std::string Game::to_json(const NodeView& v, bool with_grid) {
     }
     js << "}";
   }
-  js << "],\"hands\":[" << hands_js.str() << "]}";
+  js << "],\"hands\":[" << hands_js.str() << "],\"opp\":[";
+  for (size_t i = 0; i < v.opp.size(); ++i)
+    js << (i ? "," : "") << "{\"c\":\"" << combo_str(v.opp[i].first) << "\",\"w\":" << json_num(v.opp[i].second, 3) << "}";
+  js << "]}";
   return js.str();
 }
 

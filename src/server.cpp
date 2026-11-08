@@ -7,6 +7,9 @@
 //   GET  /play            -> web/play.html (trainer)
 //   GET  /api/play/spot?category=&exclude=  -> one random stored spot (see docs/STORE.md)
 //   GET  /api/play/stats  -> counts in the training database
+//   GET  /api/play/node?solve=&path=   -> the stored node at a path (to continue a hand)
+//   GET  /api/play/cards?solve=&path=  -> cards stored after a path ({"cards": [...]})
+//   GET  /api/play/showdown?board=&a=&b= -> who wins with hands a and b on the board
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -176,6 +179,45 @@ Response handle(const std::string& method, const std::string& target, const std:
     bool ok = false;
     std::string js = read_file(std::string(WEB_DIR) + "/fixtures/" + name, &ok);
     return ok ? Response{200, "application/json", js} : Response{404, "text/plain", "not found"};
+  }
+  if (method == "GET" && path == "/api/play/showdown") {
+    auto f = parse_form(query);
+    try {
+      std::vector<Card> board = parse_cards(f["board"]), a = parse_cards(f["a"]), b = parse_cards(f["b"]);
+      if (board.size() != 5 || a.size() != 2 || b.size() != 2) throw std::invalid_argument("need a 5-card board and two 2-card hands");
+      std::vector<Card> all = board;
+      all.insert(all.end(), a.begin(), a.end());
+      all.insert(all.end(), b.begin(), b.end());
+      parse_cards(cards_str(all));  // throws on a duplicate card
+      Card ca[7], cb[7];
+      for (int i = 0; i < 5; ++i) ca[i] = cb[i] = board[i];
+      ca[5] = a[0], ca[6] = a[1], cb[5] = b[0], cb[6] = b[1];
+      const uint32_t sa = eval_hand(ca, 7), sb = eval_hand(cb, 7);
+      std::ostringstream js;
+      js << "{\"winner\":\"" << (sa > sb ? "a" : sb > sa ? "b" : "tie") << "\",\"a\":\"" << category_name(hand_category(sa))
+         << "\",\"b\":\"" << category_name(hand_category(sb)) << "\"}";
+      return {200, "application/json", js.str()};
+    } catch (const std::exception& e) {
+      return {400, "application/json", "{\"error\":" + json_str(e.what()) + "}"};
+    }
+  }
+  if (method == "GET" && (path == "/api/play/node" || path == "/api/play/cards")) {
+    auto f = parse_form(query);
+    try {
+      Store store(g_db_path);
+      const long long solve = std::stoll(f["solve"].empty() ? "0" : f["solve"]);
+      if (path == "/api/play/cards") {
+        std::string js = "{\"cards\":[";
+        auto cards = store.cards_after(solve, f["path"]);
+        for (size_t i = 0; i < cards.size(); ++i) js += (i ? ",\"" : "\"") + cards[i] + "\"";
+        return {200, "application/json", js + "]}"};
+      }
+      std::string js = store.spot_json(solve, f["path"]);
+      if (js.empty()) return {404, "application/json", "{\"error\":\"this line is not stored\"}"};
+      return {200, "application/json", js};
+    } catch (const std::exception& e) {
+      return {400, "application/json", "{\"error\":" + json_str(e.what()) + "}"};
+    }
   }
   if (method == "GET" && (path == "/api/play/spot" || path == "/api/play/stats")) {
     auto f = parse_form(query);

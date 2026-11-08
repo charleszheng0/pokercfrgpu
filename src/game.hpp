@@ -96,6 +96,7 @@ struct NodeView {
   std::vector<double> freq;  // range-wide frequency per action
   double combos = 0;
   std::vector<HandView> hands;
+  std::vector<std::pair<int, double>> opp;  // opponent combos that reach this node: (combo, weight)
   std::vector<Card> cards;  // chance node: cards that can come
 };
 
