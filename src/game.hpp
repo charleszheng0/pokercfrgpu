@@ -77,6 +77,28 @@ struct HandInfo {
   uint16_t combo;
 };
 
+// The solved data at one node, with cards as the user sees them (suit symmetry undone).
+struct HandView {
+  int combo;                // combo index (see range.hpp)
+  double w;                 // reach weight of this hand at the node
+  std::vector<double> s;    // average strategy per action
+  std::vector<double> ev;   // EV per action: chips won from the pot from this node on
+  double e;                 // EV of the mixed strategy
+};
+struct NodeView {
+  std::string type;  // "action", "chance", "fold", "showdown"
+  std::vector<Card> board;
+  double pot = 0, contrib[2] = {0, 0};
+  std::vector<std::string> history;
+  int player = -1, winner = -1;
+  std::vector<ActionInfo> action_info;
+  std::vector<std::string> actions;
+  std::vector<double> freq;  // range-wide frequency per action
+  double combos = 0;
+  std::vector<HandView> hands;
+  std::vector<Card> cards;  // chance node: cards that can come
+};
+
 class Game {
  public:
   explicit Game(const GameConfig& cfg);  // throws std::invalid_argument / std::runtime_error
@@ -98,6 +120,8 @@ class Game {
   // JSON for the node reached by a path. Tokens: action index, or a card such as "Kh"
   // after a chance node. Throws std::invalid_argument on a bad path.
   std::string node_json(const std::vector<std::string>& path);
+  NodeView node_view(const std::vector<std::string>& path);
+  static std::string to_json(const NodeView& v);
 
   // Test hook: compares the fast O(n) showdown and fold values with a slow O(n^2)
   // loop over every hand pair, on random reach vectors. Returns the largest error.

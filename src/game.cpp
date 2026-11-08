@@ -796,7 +796,9 @@ std::string Game::action_label(const ActionInfo& a) const {
   return "?";
 }
 
-std::string Game::node_json(const std::vector<std::string>& path) {
+std::string Game::node_json(const std::vector<std::string>& path) { return to_json(node_view(path)); }
+
+NodeView Game::node_view(const std::vector<std::string>& path) {
   std::vector<float> reach[2];
   for (int p = 0; p < 2; ++p) {
     reach[p].resize(hands_[p].size());
@@ -852,81 +854,109 @@ std::string Game::node_json(const std::vector<std::string>& path) {
   }
 
   const Node& n = nodes_[idx];
-  std::ostringstream js;
+  NodeView v;
   const int shown = suit_perms().inv[tau];  // internal card -> card the user sees
-  js << "{\"board\":\"" << cards_str(shown_board) << "\",\"pot\":" << json_num(n.contrib[0] + n.contrib[1])
-     << ",\"contrib\":[" << json_num(n.contrib[0]) << "," << json_num(n.contrib[1]) << "],\"history\":[";
-  for (size_t i = 0; i < history.size(); ++i) js << (i ? "," : "") << "\"" << history[i] << "\"";
-  js << "]";
-
+  v.board = shown_board;
+  v.pot = n.contrib[0] + n.contrib[1];
+  v.contrib[0] = n.contrib[0];
+  v.contrib[1] = n.contrib[1];
+  v.history = history;
   if (n.type == NodeType::Fold) {
-    js << ",\"type\":\"fold\",\"winner\":" << (1 - n.player) << "}";
-    return js.str();
+    v.type = "fold";
+    v.winner = 1 - n.player;
+    return v;
   }
   if (n.type == NodeType::Showdown) {
-    js << ",\"type\":\"showdown\"}";
-    return js.str();
+    v.type = "showdown";
+    return v;
   }
   if (n.type == NodeType::Chance) {
-    js << ",\"type\":\"chance\",\"cards\":[";
+    v.type = "chance";
     uint64_t on_board = 0;
     for (Card c : shown_board) on_board |= 1ULL << c;
-    bool first_card = true;
-    for (int c = 0; c < kNumCards; ++c) {
-      if (on_board >> c & 1) continue;
-      js << (first_card ? "" : ",") << "\"" << card_str(static_cast<Card>(c)) << "\"";
-      first_card = false;
-    }
-    js << "]}";
-    return js.str();
+    for (int c = 0; c < kNumCards; ++c)
+      if (!(on_board >> c & 1)) v.cards.push_back(static_cast<Card>(c));
+    return v;
   }
 
   // Action node: strategy and EV of every hand of the actor that can reach this node.
+  v.type = "action";
   const int a = n.player, o = 1 - a;
+  v.player = a;
   const size_t nh = hands_[a].size(), na = n.num_children;
   std::vector<float> sigma(na * nh), vals(na * nh), comp(nh);
   average_strategy(n, sigma.data());
   for (size_t k = 0; k < na; ++k) walk(n.first_child + static_cast<uint32_t>(k), a, reach[o].data(), &vals[k * nh], Mode::Average);
   compat_sums(a, reach[o].data(), comp.data());
   const double own = n.contrib[a];  // chips already in: EV shown = chips won from the pot from here
-
+  for (size_t k = 0; k < na; ++k) {
+    v.action_info.push_back(actions_[n.first_action + k]);
+    v.actions.push_back(action_label(actions_[n.first_action + k]));
+  }
   uint64_t used = 0;
   for (Card c : boards_[n.board_id]) used |= 1ULL << c;
-
-  std::vector<double> freq(na, 0), cell_w(169, 0), cell_ev(169, 0), cell_s(169 * na, 0);
-  double total = 0;
-  std::ostringstream hands_js;
-  bool first = true;
+  v.freq.assign(na, 0);
   for (size_t h = 0; h < nh; ++h) {
     const HandInfo& hi = hands_[a][h];
     const double w = reach[a][h];
     if (w <= 1e-7 || (used >> hi.c1 & 1) || (used >> hi.c2 & 1) || comp[h] <= 0) continue;
-    double ev_h = 0;
-    const int shown_combo = combo_index(perm_card(shown, hi.c1), perm_card(shown, hi.c2));
-    hands_js << (first ? "" : ",") << "{\"c\":\"" << combo_str(shown_combo) << "\",\"w\":" << json_num(w) << ",\"s\":[";
-    first = false;
-    for (size_t k = 0; k < na; ++k) hands_js << (k ? "," : "") << json_num(sigma[k * nh + h]);
-    hands_js << "],\"ev\":[";
+    HandView hv;
+    hv.combo = combo_index(perm_card(shown, hi.c1), perm_card(shown, hi.c2));
+    hv.w = w;
+    hv.e = 0;
     for (size_t k = 0; k < na; ++k) {
-      const double ev = vals[k * nh + h] / comp[h] + own;
-      ev_h += sigma[k * nh + h] * ev;
-      hands_js << (k ? "," : "") << json_num(ev, 3);
+      hv.s.push_back(sigma[k * nh + h]);
+      hv.ev.push_back(vals[k * nh + h] / comp[h] + own);
+      hv.e += hv.s.back() * hv.ev.back();
+      v.freq[k] += w * sigma[k * nh + h];
     }
-    hands_js << "],\"e\":" << json_num(ev_h, 3) << "}";
-    const int cell = grid_cell(shown_combo);
-    total += w;
-    cell_w[cell] += w;
-    cell_ev[cell] += w * ev_h;
-    for (size_t k = 0; k < na; ++k) {
-      freq[k] += w * sigma[k * nh + h];
-      cell_s[cell * na + k] += w * sigma[k * nh + h];
-    }
+    v.combos += w;
+    v.hands.push_back(std::move(hv));
   }
-  js << ",\"type\":\"action\",\"player\":" << a << ",\"actions\":[";
-  for (size_t k = 0; k < na; ++k) js << (k ? "," : "") << "\"" << action_label(actions_[n.first_action + k]) << "\"";
+  for (double& f : v.freq) f = v.combos > 0 ? f / v.combos : 0;
+  return v;
+}
+
+std::string Game::to_json(const NodeView& v) {
+  std::ostringstream js;
+  js << "{\"board\":\"" << cards_str(v.board) << "\",\"pot\":" << json_num(v.pot) << ",\"contrib\":["
+     << json_num(v.contrib[0]) << "," << json_num(v.contrib[1]) << "],\"history\":[";
+  for (size_t i = 0; i < v.history.size(); ++i) js << (i ? "," : "") << "\"" << v.history[i] << "\"";
+  js << "]";
+  if (v.type == "fold") {
+    js << ",\"type\":\"fold\",\"winner\":" << v.winner << "}";
+    return js.str();
+  }
+  if (v.type == "showdown") {
+    js << ",\"type\":\"showdown\"}";
+    return js.str();
+  }
+  if (v.type == "chance") {
+    js << ",\"type\":\"chance\",\"cards\":[";
+    for (size_t i = 0; i < v.cards.size(); ++i) js << (i ? "," : "") << "\"" << card_str(v.cards[i]) << "\"";
+    js << "]}";
+    return js.str();
+  }
+  const size_t na = v.actions.size();
+  std::vector<double> cell_w(169, 0), cell_ev(169, 0), cell_s(169 * na, 0);
+  std::ostringstream hands_js;
+  for (size_t i = 0; i < v.hands.size(); ++i) {
+    const HandView& h = v.hands[i];
+    hands_js << (i ? "," : "") << "{\"c\":\"" << combo_str(h.combo) << "\",\"w\":" << json_num(h.w) << ",\"s\":[";
+    for (size_t k = 0; k < na; ++k) hands_js << (k ? "," : "") << json_num(h.s[k]);
+    hands_js << "],\"ev\":[";
+    for (size_t k = 0; k < na; ++k) hands_js << (k ? "," : "") << json_num(h.ev[k], 3);
+    hands_js << "],\"e\":" << json_num(h.e, 3) << "}";
+    const int cell = grid_cell(h.combo);
+    cell_w[cell] += h.w;
+    cell_ev[cell] += h.w * h.e;
+    for (size_t k = 0; k < na; ++k) cell_s[cell * na + k] += h.w * h.s[k];
+  }
+  js << ",\"type\":\"action\",\"player\":" << v.player << ",\"actions\":[";
+  for (size_t k = 0; k < na; ++k) js << (k ? "," : "") << "\"" << v.actions[k] << "\"";
   js << "],\"freq\":[";
-  for (size_t k = 0; k < na; ++k) js << (k ? "," : "") << json_num(total > 0 ? freq[k] / total : 0);
-  js << "],\"combos\":" << json_num(total, 2) << ",\"grid\":[";
+  for (size_t k = 0; k < na; ++k) js << (k ? "," : "") << json_num(v.freq[k]);
+  js << "],\"combos\":" << json_num(v.combos, 2) << ",\"grid\":[";
   for (int c = 0; c < 169; ++c) {
     js << (c ? "," : "") << "{\"l\":\"" << grid_label(c) << "\",\"w\":" << json_num(cell_w[c]);
     if (cell_w[c] > 0) {

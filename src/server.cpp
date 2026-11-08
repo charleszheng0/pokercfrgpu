@@ -4,6 +4,9 @@
 //   GET  /api/status      -> progress of the current solve
 //   POST /api/stop        -> stop the current solve early
 //   GET  /api/node?path=  -> strategy at a node (path: "1,0,Kh,2")
+//   GET  /play            -> web/play.html (trainer)
+//   GET  /api/play/spot?category=&exclude=  -> one random stored spot (see docs/STORE.md)
+//   GET  /api/play/stats  -> counts in the training database
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -24,10 +27,21 @@
 
 #include "game.hpp"
 #include "spot.hpp"
+#include "store.hpp"
 
 using namespace poker;
 
 namespace {
+
+std::string g_db_path = std::string(DATA_DIR) + "/spots.db";
+
+std::string read_file(const std::string& p, bool* ok) {
+  std::ifstream in(p, std::ios::binary);
+  *ok = static_cast<bool>(in);
+  std::stringstream ss;
+  ss << in.rdbuf();
+  return ss.str();
+}
 
 std::string url_decode(const std::string& s) {
   std::string out;
@@ -146,12 +160,44 @@ Response handle(const std::string& method, const std::string& target, const std:
   size_t q = target.find('?');
   if (q != std::string::npos) path = target.substr(0, q), query = target.substr(q + 1);
 
-  if (method == "GET" && (path == "/" || path == "/index.html")) {
-    std::ifstream in(std::string(WEB_DIR) + "/index.html", std::ios::binary);
-    if (!in) return {404, "text/plain", "web/index.html not found"};
-    std::stringstream ss;
-    ss << in.rdbuf();
-    return {200, "text/html; charset=utf-8", ss.str()};
+  if (method == "GET" && (path == "/" || path == "/index.html" || path == "/play" || path == "/play.html")) {
+    const std::string file = path.rfind("/play", 0) == 0 ? "play.html" : "index.html";
+    bool ok = false;
+    std::string html = read_file(std::string(WEB_DIR) + "/" + file, &ok);
+    if (!ok) return {404, "text/plain", "web/" + file + " not found"};
+    return {200, "text/html; charset=utf-8", html};
+  }
+  // Sample spots for the trainer when no database exists. Only plain file names are allowed.
+  if (method == "GET" && path.rfind("/fixtures/", 0) == 0) {
+    const std::string name = path.substr(10);
+    if (name.empty() || name.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_-.") != std::string::npos ||
+        name.find("..") != std::string::npos)
+      return {404, "text/plain", "not found"};
+    bool ok = false;
+    std::string js = read_file(std::string(WEB_DIR) + "/fixtures/" + name, &ok);
+    return ok ? Response{200, "application/json", js} : Response{404, "text/plain", "not found"};
+  }
+  if (method == "GET" && (path == "/api/play/spot" || path == "/api/play/stats")) {
+    auto f = parse_form(query);
+    try {
+      Store store(g_db_path);  // one connection per request; SQLite handles the locking
+      if (path == "/api/play/stats") return {200, "application/json", store.stats_json()};
+      std::vector<long long> exclude;
+      std::string tok;
+      for (char c : f["exclude"] + ",") {
+        if (c == ',') {
+          if (!tok.empty() && tok.find_first_not_of("0123456789") == std::string::npos) exclude.push_back(std::stoll(tok));
+          tok.clear();
+        } else tok += c;
+      }
+      if (exclude.size() > 200) exclude.resize(200);
+      std::string js = store.random_spot_json(f["category"], exclude);
+      if (js.empty() && !exclude.empty()) js = store.random_spot_json(f["category"], {});  // all seen: allow repeats
+      if (js.empty()) return {404, "application/json", "{\"error\":\"no stored spots for this category yet\"}"};
+      return {200, "application/json", js};
+    } catch (const std::exception& e) {
+      return {500, "application/json", "{\"error\":" + json_str(e.what()) + "}"};
+    }
   }
   if (method == "POST" && path == "/api/solve") {
     auto f = parse_form(body);
@@ -248,6 +294,7 @@ void serve_client(int fd) {
 
 int main(int argc, char** argv) {
   int port = argc > 1 ? std::atoi(argv[1]) : 8080;
+  if (argc > 2) g_db_path = argv[2];
   std::signal(SIGPIPE, SIG_IGN);
   int s = socket(AF_INET, SOCK_STREAM, 0);
   int one = 1;
@@ -260,7 +307,7 @@ int main(int argc, char** argv) {
     std::perror("bind/listen");
     return 1;
   }
-  std::printf("pokerlab: open http://127.0.0.1:%d\n", port);
+  std::printf("pokerlab: open http://127.0.0.1:%d  (trainer: /play, database: %s)\n", port, g_db_path.c_str());
   std::fflush(stdout);
   for (;;) {
     int fd = accept(s, nullptr, nullptr);
