@@ -974,7 +974,7 @@ std::string Game::to_json(const NodeView& v, bool with_grid) {
   }
   js << "],\"hands\":[" << hands_js.str() << "],\"opp\":[";
   for (size_t i = 0; i < v.opp.size(); ++i)
-    js << (i ? "," : "") << "{\"c\":\"" << combo_str(v.opp[i].first) << "\",\"w\":" << json_num(v.opp[i].second, 3) << "}";
+    js << (i ? "," : "") << "{\"c\":\"" << combo_str(v.opp[i].first) << "\",\"w\":" << json_num(v.opp[i].second, 6) << "}";
   js << "]}";
   return js.str();
 }
