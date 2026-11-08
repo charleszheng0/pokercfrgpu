@@ -21,7 +21,10 @@ codes). They hold text that any future solver version can reproduce:
   exploitability.
 
 So the suit isomorphism, the 16-bit storage and a future CUDA kernel cannot break stored data.
-`meta.format_version` is `1`. A change to the row meaning increases it.
+`meta.format_version` is `2`: the node is a zlib blob (`"Z1"`, 4-byte length, data) of the
+node JSON without the 13x13 grid (the trainer does not use it). Format-1 rows (plain JSON
+text) still read correctly; `pokerbatch --count 0 --compact 1` converts them and runs VACUUM.
+Size: about 6.5 KB per spot (30 KB in format 1).
 
 ## Tables
 
@@ -33,8 +36,14 @@ iterations, seconds, exploitability_pct, ev_oop, ev_ip, memory_mb, status ('ok' 
 `solve_id, path, line, actor, actor_pos, num_actions, combos, mixed, ev_loss, bluff, fundamental,
 category, score, story (JSON array of strings), node (the node JSON, as /api/node returns it)`.
 
-Stored decision points (first street of the solve): the OOP root, IP after a check, IP facing
-each OOP bet, OOP facing each IP bet after a check. All-in nodes are not stored.
+Stored decision points: every decision node of the solve's first street, breadth first, up to
+`--depth` actions deep (default 4): the first action, the reply to a check or a bet, facing a
+raise, facing a re-raise. Lines through an all-in are not followed. About 10-15 spots per solve.
+
+Duplicates: `solves.board_key` = `canonical_board_key(board)`: boards that differ only by suit
+names (or card order) get the same key. With suit-symmetric ranges (all presets are) they have
+the same solution. `pokerbatch` skips keys that the database already has for that preset and
+street, and removes later copies at start.
 
 ## Model limits (say these to users)
 
@@ -63,6 +72,22 @@ These thresholds are first guesses from the first 90 spots. Tune them with real 
   random spot: `{id, preset, street, board, pot, stack, oop_pos, ip_pos, story, path, line,
   category, scores, exploitability_pct, node}`. 404 with `{"error": ...}` when nothing matches.
 - `GET /api/play/stats` returns `{spots, solves, solves_ok, mean_exploitability_pct, by_category}`.
+
+## How big is "everything"? (measured 2026-11-08, Apple M2, idle)
+
+| | Distinct boards | x 6 presets | Time per solve | Total time | Disk (6.5 KB/spot) |
+|---|---|---|---|---|---|
+| River | 134,459 | 806,754 | 0.13 s | about 29 hours | about 79 GB |
+| Turn | 16,432 | 98,592 | 1 s (3-bet pots) to 40 s (SRP), mean about 24 s | about 27 days | about 8 GB |
+
+So full coverage does not fit this laptop's disk (river) or a few nights (turn). A trainer does
+not need it: one night of `scripts/train.sh` (8 hours) gives about 5,800 river and 1,200 turn
+solves, about 100,000 spots and about 0.7 GB, spread over all textures by random sampling.
+`--max_db_gb` (default 4) stops the run before the disk fills.
+
+"Everything" here means this model: flop (and turn) checked through. Lines with earlier bets
+change the ranges and need flop solves (1,755 distinct flops per preset), which is the next
+step after the memory work.
 
 ## Fill it
 

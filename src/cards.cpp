@@ -1,5 +1,6 @@
 #include "cards.hpp"
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace poker {
@@ -124,6 +125,19 @@ const char* category_name(int category) {
   static const char* names[] = {"high card", "pair",  "two pair",   "trips",         "straight",
                                 "flush",     "full house", "quads", "straight flush"};
   return (category >= 0 && category <= 8) ? names[category] : "?";
+}
+
+std::string canonical_board_key(const std::vector<Card>& cards) {
+  int perm[4] = {0, 1, 2, 3};
+  std::string best;
+  do {
+    std::vector<Card> m;
+    for (Card c : cards) m.push_back(make_card(rank_of(c), perm[suit_of(c)]));
+    std::sort(m.begin(), m.end(), [](Card a, Card b) { return a > b; });
+    std::string k = cards_str(m);
+    if (best.empty() || k < best) best = k;
+  } while (std::next_permutation(perm, perm + 4));
+  return best;
 }
 
 }  // namespace poker

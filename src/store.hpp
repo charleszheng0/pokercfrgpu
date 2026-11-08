@@ -6,16 +6,19 @@
 #pragma once
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct sqlite3;
 
 namespace poker {
 
-constexpr int kStoreFormat = 1;
+// 1: node stored as JSON text. 2: node stored as a zlib blob ("Z1" + 4-byte length + data),
+// JSON without the 13x13 grid. Readers accept both.
+constexpr int kStoreFormat = 2;
 
 struct SolveRow {
-  std::string preset, oop_pos, ip_pos, board, street, oop_range, ip_range, config, solver_version, status;
+  std::string preset, oop_pos, ip_pos, board, board_key, street, oop_range, ip_range, config, solver_version, status;
   double pot = 0, stack = 0, seconds = 0, exploitability_pct = 0, ev_oop = 0, ev_ip = 0, memory_mb = 0;
   int iterations = 0;
 };
@@ -36,6 +39,16 @@ class Store {
 
   long long add_solve(const SolveRow& r);
   long long add_spot(const SpotRow& r);
+  // Duplicate control: board_key = canonical_board_key(board) (suit renaming, card order).
+  bool has_solve(const std::string& preset, const std::string& street, const std::string& board_key);
+  std::vector<std::pair<long long, std::string>> solves_without_key();  // (id, board)
+  void set_board_key(long long id, const std::string& key);
+  // Delete later copies of an (preset, street, board_key) solve and their spots.
+  // Returns {solves removed, spots removed}.
+  std::pair<long long, long long> remove_duplicates();
+  // Convert format-1 rows to format 2, then VACUUM. Returns rows converted.
+  long long compact();
+  double file_gb() const;
   void begin();
   void commit();
 
@@ -45,6 +58,7 @@ class Store {
 
  private:
   void exec(const std::string& sql);
+  std::string path_;
   sqlite3* db_ = nullptr;
 };
 

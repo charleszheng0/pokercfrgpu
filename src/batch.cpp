@@ -2,15 +2,17 @@
 //
 //   pokerbatch --db data/spots.db --count 50 --street river --seed 1
 //
-// For each spot: pick a preset (house ranges) and a random board, solve until the
-// exploitability gate is met, reject the solve if it is not, then score every decision node
-// of the first street and store it. The flop (and the turn, for river spots) are taken as
+// For each spot: pick a preset (house ranges) and a random board that the database does not
+// have yet (suit renaming counts as the same board), solve until the exploitability gate is
+// met, reject the solve if it is not, then score every decision node of the first street
+// (up to --depth actions deep) and store it. The flop (and the turn, for river spots) are taken as
 // checked through, so the starting ranges stay the preflop ranges. The story says so.
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <map>
 #include <random>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -101,13 +103,36 @@ int main(int argc, char** argv) {
   const std::string street_opt = field(f, "street", "river");  // river, turn, mix
   const std::string preset_opt = field(f, "preset", "all");
   const int max_iters = static_cast<int>(parse_number(f, "iters", 1500));
+  const double max_db_gb = parse_number(f, "max_db_gb", 4);  // stop before the disk fills
+  const size_t max_depth = static_cast<size_t>(parse_number(f, "depth", 4));  // actions on this street
 
   try {
     Store store(db_path);
+    // Older rows: fill in the board key, then remove later copies of the same spot.
+    auto missing = store.solves_without_key();
+    if (!missing.empty()) {
+      store.begin();
+      for (auto& [id, b] : missing) store.set_board_key(id, canonical_board_key(parse_cards(b)));
+      store.commit();
+    }
+    if (f.count("compact")) {
+      std::printf("compacting... ");
+      std::fflush(stdout);
+      std::printf("%lld rows converted, database now %.2f GB\n", store.compact(), store.file_gb());
+      if (count == 0) return 0;
+    }
+    auto removed = store.remove_duplicates();
+    if (removed.first > 0)
+      std::printf("removed %lld duplicate solves (%lld spots)\n", removed.first, removed.second);
+    std::set<std::string> taken;  // keys used in this run (also the rejected ones)
     std::mt19937 rng(seed);
     const auto& ps = presets();
     int ok = 0, rejected = 0;
     for (int i = 0; i < count; ++i) {
+      if (store.file_gb() > max_db_gb) {
+        std::printf("database is %.2f GB, over --max_db_gb %.2f: stopping\n", store.file_gb(), max_db_gb);
+        return 3;
+      }
       const Preset& pr = preset_opt == "all" ? ps[(seed + static_cast<unsigned>(i)) % ps.size()] : [&]() -> const Preset& {
         for (const auto& p : ps)
           if (p.name == preset_opt) return p;
@@ -115,10 +140,19 @@ int main(int argc, char** argv) {
       }();
       const bool river = street_opt == "river" || (street_opt == "mix" && rng() % 3 != 0);
       const double target = parse_number(f, "target", river ? 0.3 : 0.5);
-      std::vector<int> deck(kNumCards);
-      for (int c = 0; c < kNumCards; ++c) deck[c] = c;
-      std::shuffle(deck.begin(), deck.end(), rng);
-      std::vector<Card> board(deck.begin(), deck.begin() + (river ? 5 : 4));
+      const std::string street = river ? "river" : "turn";
+      std::vector<Card> board;
+      std::string key;
+      for (int tries = 0;; ++tries) {
+        std::vector<int> deck(kNumCards);
+        for (int c = 0; c < kNumCards; ++c) deck[c] = c;
+        std::shuffle(deck.begin(), deck.end(), rng);
+        board.assign(deck.begin(), deck.begin() + (river ? 5 : 4));
+        key = canonical_board_key(board);
+        if (!taken.count(pr.name + street + key) && !store.has_solve(pr.name, street, key)) break;
+        if (tries > 2000) throw std::runtime_error("no new board found for " + pr.name + " " + street);
+      }
+      taken.insert(pr.name + street + key);
 
       std::map<std::string, std::string> fields = {
           {"board", cards_str(board)}, {"pot", std::to_string(pr.pot)}, {"stack", std::to_string(pr.stack)},
@@ -141,7 +175,7 @@ int main(int argc, char** argv) {
 
       SolveRow sr;
       sr.preset = pr.name, sr.oop_pos = pr.oop_pos, sr.ip_pos = pr.ip_pos, sr.board = cards_str(board);
-      sr.street = river ? "river" : "turn", sr.oop_range = pr.oop, sr.ip_range = pr.ip;
+      sr.board_key = key, sr.street = street, sr.oop_range = pr.oop, sr.ip_range = pr.ip;
       sr.config = "bets=" + fields["bets"] + ";raises=" + fields["raises"] + ";max_raises=3;allin=1;allin_threshold=0.67;" +
                   "target=" + std::to_string(target) + ";compress=" + (g.compressed() ? "16" : "32");
       sr.solver_version = POKER_VERSION, sr.pot = pr.pot, sr.stack = pr.stack, sr.iterations = it, sr.seconds = secs;
@@ -159,24 +193,24 @@ int main(int argc, char** argv) {
       store.begin();
       const long long solve_id = store.add_solve(sr);
       if (sr.status == "ok") {
-        // Decision nodes of this street: root, IP after check, IP facing each root bet,
-        // OOP facing each IP bet after a check.
-        std::vector<std::vector<std::string>> paths = {{}};
-        NodeView root = g.node_view({});
-        for (size_t k = 0; k < root.actions.size(); ++k) {
-          if (root.action_info[k].kind == ActKind::Check) {
-            paths.push_back({std::to_string(k)});
-            NodeView ip = g.node_view({std::to_string(k)});
-            for (size_t j = 0; j < ip.actions.size(); ++j)
-              if (aggressive(ip.action_info[j].kind) && ip.action_info[j].kind != ActKind::AllIn)
-                paths.push_back({std::to_string(k), std::to_string(j)});
-          } else if (aggressive(root.action_info[k].kind) && root.action_info[k].kind != ActKind::AllIn) {
-            paths.push_back({std::to_string(k)});
-          }
-        }
-        for (const auto& path : paths) {
+        // Every decision node of this street, breadth first, up to max_depth actions deep:
+        // the first action, the reply to a check or bet, facing a raise, and so on. Lines
+        // through an all-in are not followed (the reply is only call or fold).
+        std::vector<std::vector<std::string>> queue = {{}};
+        for (size_t qi = 0; qi < queue.size(); ++qi) {
+          const std::vector<std::string> path = queue[qi];
           NodeView v = g.node_view(path);
-          if (v.type != "action" || v.hands.empty()) continue;
+          if (v.type != "action") continue;  // street ended (chance, showdown) or fold
+          if (path.size() < max_depth)
+            for (size_t k = 0; k < v.actions.size(); ++k) {
+              const ActKind kind = v.action_info[k].kind;
+              if (kind == ActKind::Check || kind == ActKind::Bet || kind == ActKind::Raise) {
+                auto next = path;
+                next.push_back(std::to_string(k));
+                queue.push_back(next);
+              }
+            }
+          if (v.hands.empty()) continue;
           Scores sc = score_node(v);
           SpotRow row;
           row.solve_id = solve_id, row.path = join(path, ","), row.line = join(v.history, " > ");
@@ -184,7 +218,7 @@ int main(int argc, char** argv) {
           row.num_actions = static_cast<int>(v.actions.size()), row.combos = v.combos;
           row.mixed = sc.mixed, row.ev_loss = sc.ev_loss, row.bluff = sc.bluff, row.fundamental = sc.fundamental;
           row.category = sc.category, row.score = sc.score, row.story_json = json_str_array(story);
-          row.node_json = Game::to_json(v);
+          row.node_json = Game::to_json(v, /*with_grid=*/false);
           store.add_spot(row);
           ++stored;
         }

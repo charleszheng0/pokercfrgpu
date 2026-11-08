@@ -1,8 +1,10 @@
 #include "store.hpp"
 
 #include <sqlite3.h>
+#include <zlib.h>
 
 #include <cstdio>
+#include <filesystem>
 #include <sstream>
 #include <stdexcept>
 
@@ -43,11 +45,45 @@ struct Stmt {
   }
 };
 
+// Node blob: "Z1", 4-byte little-endian JSON length, zlib data. Plain JSON text is format 1.
+std::string pack_node(const std::string& json) {
+  uLongf n = compressBound(static_cast<uLong>(json.size()));
+  std::string out(6 + n, '\0');
+  out[0] = 'Z', out[1] = '1';
+  const uint32_t len = static_cast<uint32_t>(json.size());
+  for (int i = 0; i < 4; ++i) out[2 + i] = static_cast<char>(len >> (8 * i) & 0xff);
+  if (compress2(reinterpret_cast<Bytef*>(&out[6]), &n, reinterpret_cast<const Bytef*>(json.data()),
+                static_cast<uLong>(json.size()), 6) != Z_OK)
+    throw std::runtime_error("zlib compress failed");
+  out.resize(6 + n);
+  return out;
+}
+
+std::string unpack_node(const void* data, int size) {
+  const char* p = static_cast<const char*>(data);
+  if (size < 6 || p[0] != 'Z' || p[1] != '1') return std::string(p, p + size);  // format 1: plain JSON
+  uint32_t len = 0;
+  for (int i = 0; i < 4; ++i) len |= static_cast<uint32_t>(static_cast<unsigned char>(p[2 + i])) << (8 * i);
+  std::string out(len, '\0');
+  uLongf n = len;
+  if (uncompress(reinterpret_cast<Bytef*>(&out[0]), &n, reinterpret_cast<const Bytef*>(p + 6),
+                 static_cast<uLong>(size - 6)) != Z_OK || n != len)
+    throw std::runtime_error("zlib uncompress failed");
+  return out;
+}
+
+// Format 1 rows carry the grid; the trainer does not need it.
+std::string drop_grid(const std::string& js) {
+  const size_t a = js.find(",\"grid\":["), b = js.find("],\"hands\":");
+  if (a == std::string::npos || b == std::string::npos || b < a) return js;
+  return js.substr(0, a) + ",\"grid\":[" + js.substr(b);
+}
+
 const char* kSchema = R"SQL(
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS solves(
   id INTEGER PRIMARY KEY, created TEXT DEFAULT CURRENT_TIMESTAMP,
-  preset TEXT, oop_pos TEXT, ip_pos TEXT, board TEXT, street TEXT, pot REAL, stack REAL,
+  preset TEXT, oop_pos TEXT, ip_pos TEXT, board TEXT, board_key TEXT, street TEXT, pot REAL, stack REAL,
   oop_range TEXT, ip_range TEXT, config TEXT, solver_version TEXT, iterations INTEGER,
   seconds REAL, exploitability_pct REAL, ev_oop REAL, ev_ip REAL, memory_mb REAL, status TEXT);
 CREATE TABLE IF NOT EXISTS spots(
@@ -60,7 +96,7 @@ CREATE INDEX IF NOT EXISTS spots_by_category ON spots(category, score);
 
 }  // namespace
 
-Store::Store(const std::string& path) {
+Store::Store(const std::string& path) : path_(path) {
   if (sqlite3_open(path.c_str(), &db_) != SQLITE_OK) {
     std::string e = db_ ? sqlite3_errmsg(db_) : "out of memory";
     sqlite3_close(db_);
@@ -69,6 +105,14 @@ Store::Store(const std::string& path) {
   sqlite3_busy_timeout(db_, 5000);  // the trainer server may read while a batch writes
   exec("PRAGMA journal_mode=WAL;");
   exec(kSchema);
+  // Databases from before board_key existed: add the column (pokerbatch fills it in).
+  bool has_key = false;
+  {
+    Stmt cols(db_, "PRAGMA table_info(solves)");
+    while (sqlite3_step(cols.s) == SQLITE_ROW) has_key |= cols.col_text(1) == "board_key";
+  }
+  if (!has_key) exec("ALTER TABLE solves ADD COLUMN board_key TEXT");
+  exec("CREATE INDEX IF NOT EXISTS solves_by_key ON solves(preset, street, board_key)");
   Stmt st(db_, "INSERT OR IGNORE INTO meta(key, value) VALUES('format_version', ?)");
   st.text(1, std::to_string(kStoreFormat));
   sqlite3_step(st.s);
@@ -91,13 +135,14 @@ void Store::commit() { exec("COMMIT"); }
 long long Store::add_solve(const SolveRow& r) {
   Stmt st(db_,
           "INSERT INTO solves(preset, oop_pos, ip_pos, board, street, pot, stack, oop_range, ip_range, config,"
-          " solver_version, iterations, seconds, exploitability_pct, ev_oop, ev_ip, memory_mb, status)"
-          " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+          " solver_version, iterations, seconds, exploitability_pct, ev_oop, ev_ip, memory_mb, status, board_key)"
+          " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
   st.text(1, r.preset), st.text(2, r.oop_pos), st.text(3, r.ip_pos), st.text(4, r.board), st.text(5, r.street);
   st.real(6, r.pot), st.real(7, r.stack), st.text(8, r.oop_range), st.text(9, r.ip_range), st.text(10, r.config);
   st.text(11, r.solver_version), st.integer(12, r.iterations), st.real(13, r.seconds);
   st.real(14, r.exploitability_pct), st.real(15, r.ev_oop), st.real(16, r.ev_ip), st.real(17, r.memory_mb);
   st.text(18, r.status);
+  st.text(19, r.board_key);
   if (sqlite3_step(st.s) != SQLITE_DONE) throw std::runtime_error(std::string("sqlite insert: ") + sqlite3_errmsg(db_));
   return sqlite3_last_insert_rowid(db_);
 }
@@ -109,9 +154,76 @@ long long Store::add_spot(const SpotRow& r) {
   st.integer(1, r.solve_id), st.text(2, r.path), st.text(3, r.line), st.integer(4, r.actor), st.text(5, r.actor_pos);
   st.integer(6, r.num_actions), st.real(7, r.combos), st.real(8, r.mixed), st.real(9, r.ev_loss);
   st.real(10, r.bluff), st.real(11, r.fundamental), st.text(12, r.category), st.real(13, r.score);
-  st.text(14, r.story_json), st.text(15, r.node_json);
+  st.text(14, r.story_json);
+  const std::string blob = pack_node(r.node_json);
+  sqlite3_bind_blob(st.s, 15, blob.data(), static_cast<int>(blob.size()), SQLITE_TRANSIENT);
   if (sqlite3_step(st.s) != SQLITE_DONE) throw std::runtime_error(std::string("sqlite insert: ") + sqlite3_errmsg(db_));
   return sqlite3_last_insert_rowid(db_);
+}
+
+double Store::file_gb() const {
+  std::error_code ec;
+  double total = 0;
+  for (const char* ext : {"", "-wal"}) {
+    auto sz = std::filesystem::file_size(path_ + ext, ec);
+    if (!ec) total += static_cast<double>(sz);
+  }
+  return total / 1e9;
+}
+
+long long Store::compact() {
+  long long converted = 0;
+  std::vector<std::pair<long long, std::string>> rows;
+  {
+    Stmt st(db_, "SELECT id, node FROM spots WHERE substr(node, 1, 1) = '{'");
+    while (sqlite3_step(st.s) == SQLITE_ROW) rows.emplace_back(sqlite3_column_int64(st.s, 0), st.col_text(1));
+  }
+  begin();
+  for (auto& [id, js] : rows) {
+    Stmt up(db_, "UPDATE spots SET node = ? WHERE id = ?");
+    const std::string blob = pack_node(drop_grid(js));
+    sqlite3_bind_blob(up.s, 1, blob.data(), static_cast<int>(blob.size()), SQLITE_TRANSIENT);
+    up.integer(2, id);
+    sqlite3_step(up.s);
+    ++converted;
+  }
+  exec("UPDATE meta SET value = '" + std::to_string(kStoreFormat) + "' WHERE key = 'format_version'");
+  commit();
+  exec("PRAGMA wal_checkpoint(TRUNCATE)");
+  exec("VACUUM");
+  return converted;
+}
+
+bool Store::has_solve(const std::string& preset, const std::string& street, const std::string& board_key) {
+  Stmt st(db_, "SELECT 1 FROM solves WHERE preset=? AND street=? AND board_key=? AND status='ok' LIMIT 1");
+  st.text(1, preset), st.text(2, street), st.text(3, board_key);
+  return sqlite3_step(st.s) == SQLITE_ROW;
+}
+
+std::vector<std::pair<long long, std::string>> Store::solves_without_key() {
+  std::vector<std::pair<long long, std::string>> out;
+  Stmt st(db_, "SELECT id, board FROM solves WHERE board_key IS NULL OR board_key = ''");
+  while (sqlite3_step(st.s) == SQLITE_ROW) out.emplace_back(sqlite3_column_int64(st.s, 0), st.col_text(1));
+  return out;
+}
+
+void Store::set_board_key(long long id, const std::string& key) {
+  Stmt st(db_, "UPDATE solves SET board_key=? WHERE id=?");
+  st.text(1, key), st.integer(2, id);
+  sqlite3_step(st.s);
+}
+
+std::pair<long long, long long> Store::remove_duplicates() {
+  const std::string dup =
+      "SELECT s.id FROM solves s WHERE EXISTS (SELECT 1 FROM solves t WHERE t.preset = s.preset AND"
+      " t.street = s.street AND t.board_key = s.board_key AND t.status = 'ok' AND t.id < s.id)";
+  begin();
+  exec("DELETE FROM spots WHERE solve_id IN (" + dup + ")");
+  const long long spots = sqlite3_changes(db_);
+  exec("DELETE FROM solves WHERE id IN (" + dup + ")");
+  const long long solves = sqlite3_changes(db_);
+  commit();
+  return {solves, spots};
 }
 
 std::string Store::random_spot_json(const std::string& category, const std::vector<long long>& exclude) {
@@ -138,7 +250,8 @@ std::string Store::random_spot_json(const std::string& category, const std::vect
      << "\",\"scores\":{\"mixed\":" << num(sqlite3_column_double(st.s, 11))
      << ",\"ev_loss\":" << num(sqlite3_column_double(st.s, 12)) << ",\"bluff\":" << num(sqlite3_column_double(st.s, 13))
      << ",\"fundamental\":" << num(sqlite3_column_double(st.s, 14))
-     << "},\"exploitability_pct\":" << num(sqlite3_column_double(st.s, 15)) << ",\"node\":" << st.col_text(16) << "}";
+     << "},\"exploitability_pct\":" << num(sqlite3_column_double(st.s, 15)) << ",\"node\":"
+     << unpack_node(sqlite3_column_blob(st.s, 16), sqlite3_column_bytes(st.s, 16)) << "}";
   return js.str();
 }
 

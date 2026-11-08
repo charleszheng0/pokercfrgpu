@@ -917,7 +917,7 @@ NodeView Game::node_view(const std::vector<std::string>& path) {
   return v;
 }
 
-std::string Game::to_json(const NodeView& v) {
+std::string Game::to_json(const NodeView& v, bool with_grid) {
   std::ostringstream js;
   js << "{\"board\":\"" << cards_str(v.board) << "\",\"pot\":" << json_num(v.pot) << ",\"contrib\":["
      << json_num(v.contrib[0]) << "," << json_num(v.contrib[1]) << "],\"history\":[";
@@ -957,7 +957,7 @@ std::string Game::to_json(const NodeView& v) {
   js << "],\"freq\":[";
   for (size_t k = 0; k < na; ++k) js << (k ? "," : "") << json_num(v.freq[k]);
   js << "],\"combos\":" << json_num(v.combos, 2) << ",\"grid\":[";
-  for (int c = 0; c < 169; ++c) {
+  for (int c = 0; c < (with_grid ? 169 : 0); ++c) {
     js << (c ? "," : "") << "{\"l\":\"" << grid_label(c) << "\",\"w\":" << json_num(cell_w[c]);
     if (cell_w[c] > 0) {
       js << ",\"ev\":" << json_num(cell_ev[c] / cell_w[c], 3) << ",\"s\":[";

@@ -19,9 +19,10 @@ target_link_libraries(pokercore PUBLIC Threads::Threads)
 target_compile_options(pokercore PRIVATE -Wall -Wextra)
 
 find_package(SQLite3 REQUIRED)
+find_package(ZLIB REQUIRED)
 add_library(pokerstore src/store.cpp)
 target_include_directories(pokerstore PUBLIC src)
-target_link_libraries(pokerstore PUBLIC SQLite3::SQLite3)
+target_link_libraries(pokerstore PUBLIC SQLite3::SQLite3 ZLIB::ZLIB)
 target_compile_options(pokerstore PRIVATE -Wall -Wextra)
 
 # Solver version stored with every solution: the git commit, if available.

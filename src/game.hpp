@@ -121,7 +121,7 @@ class Game {
   // after a chance node. Throws std::invalid_argument on a bad path.
   std::string node_json(const std::vector<std::string>& path);
   NodeView node_view(const std::vector<std::string>& path);
-  static std::string to_json(const NodeView& v);
+  static std::string to_json(const NodeView& v, bool with_grid = true);  // grid: 13x13 summary
 
   // Test hook: compares the fast O(n) showdown and fold values with a slow O(n^2)
   // loop over every hand pair, on random reach vectors. Returns the largest error.

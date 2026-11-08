@@ -26,4 +26,8 @@ uint32_t eval_hand(const Card* cards, int n);
 inline int hand_category(uint32_t strength) { return static_cast<int>(strength >> 20); }
 const char* category_name(int category);
 
+// Key that is the same for every board you get by renaming suits (and for any card order),
+// e.g. "Ks 9d 5c" and "Kh 9s 5d". Use it only when both ranges are suit-symmetric.
+std::string canonical_board_key(const std::vector<Card>& cards);
+
 }  // namespace poker
