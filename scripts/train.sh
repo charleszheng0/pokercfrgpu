@@ -3,11 +3,12 @@
 # each with its own seed, so rounds never repeat. Stop with Ctrl-C (or kill); every
 # finished solve is already committed to the database.
 #   scripts/train.sh [db] [rounds] [first_round]
+# first_round defaults to a number from the clock, so a restart never repeats old boards.
 set -u
 cd "$(dirname "$0")/.."
 DB="${1:-data/spots.db}"
 ROUNDS="${2:-1000}"
-FIRST="${3:-1}"
+FIRST="${3:-$(( $(date +%s) % 1000000 ))}"
 mkdir -p "$(dirname "$DB")"
 for ((r = FIRST; r < FIRST + ROUNDS; r++)); do
   echo "=== round $r $(date '+%H:%M:%S')"
