@@ -10,7 +10,7 @@ It uses vector-form Discounted CFR: one tree pass handles every hand of both pla
 ```bash
 cmake -S . -B build && cmake --build build -j8
 ./build/tests            # acceptance tests (about 10 s)
-./build/pokerlab 8080    # then open http://127.0.0.1:8080
+./build/pokerlab 8080    # then open http://127.0.0.1:8080 (a guided tour starts on the first visit; press TOUR to replay)
 ```
 
 Command line:
