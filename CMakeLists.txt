@@ -19,6 +19,10 @@ target_link_libraries(pokercore PUBLIC Threads::Threads)
 target_compile_options(pokercore PRIVATE -Wall -Wextra)
 
 find_package(SQLite3 REQUIRED)
+# CMake before 4.1 names the target SQLite::SQLite3 (e.g. on the Oracle VM).
+if(NOT TARGET SQLite3::SQLite3 AND TARGET SQLite::SQLite3)
+  add_library(SQLite3::SQLite3 ALIAS SQLite::SQLite3)
+endif()
 find_package(ZLIB REQUIRED)
 add_library(pokerstore src/store.cpp)
 target_include_directories(pokerstore PUBLIC src)
@@ -48,3 +52,6 @@ target_link_libraries(tests pokercore)
 
 enable_testing()
 add_test(NAME tests COMMAND tests)
+
+add_executable(pokerscreen src/screen.cpp)
+target_link_libraries(pokerscreen pokercore)
