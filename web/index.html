@@ -136,7 +136,7 @@ const PRESETS = {
 };
 const $ = id => document.getElementById(id);
 const form = $("spot");
-let path = [], polling = null, lastNode = null;
+let path = [], polling = null, lastNode = null, solveId = null, limits = null;
 
 // Status text appears at once; a blinking "_" cursor (CSS) follows it.
 function typeText(el, text) { el.textContent = text; }
@@ -148,6 +148,11 @@ function setPreset(name) {
 document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => setPreset(b.dataset.preset));
 setPreset("river");
 typeText($("intro"), "> Heads-up solver.");
+fetch("/api/limits").then(r => r.json()).then(l => {
+  limits = l;
+  if (l.public)
+    typeText($("intro"), `> Heads-up solver. Shared server: turn and river spots only, up to ${l.max_seconds} s and ${l.max_iters} iterations per solve.`);
+}).catch(() => {});
 
 function bar(frac, width = 24) {
   const n = Math.max(0, Math.min(width, Math.round(frac * width)));
@@ -172,19 +177,37 @@ form.onsubmit = async (e) => {
   const body = new URLSearchParams(new FormData(form));
   for (const [k, v] of [...body]) if (v === "") body.delete(k);
   $("result").classList.add("hide");
-  const r = await fetch("/api/solve", { method:"POST", body });
-  const j = await r.json();
-  if (!j.ok) { $("status").innerHTML = '<span class="err">> ' + esc(j.error) + "</span>"; return; }
+  if (solveId) fetch("/api/stop?id=" + solveId, { method:"POST" });  // a new solve replaces this page's old one
+  clearInterval(polling);
+  let j;
+  try {
+    const r = await fetch("/api/solve", { method:"POST", body });
+    j = r.status === 429 ? { ok:false, error:"You started many solves in a short time. Wait one minute, then try again." } : await r.json();
+  } catch { j = { ok:false, error:"The server did not answer. Wait a moment, then try again." }; }
+  if (!j.ok) { solveId = null; $("status").innerHTML = '<span class="err">> ' + esc(j.error) + "</span>"; $("progress").textContent = ""; return; }
+  solveId = j.id;
   typeText($("status"), "> The solver is thinking...");
   path = [];
-  clearInterval(polling);
-  polling = setInterval(poll, 250);
+  polling = setInterval(poll, 300);
 };
-$("stop").onclick = () => fetch("/api/stop", { method:"POST" });
+$("stop").onclick = () => { if (solveId) fetch("/api/stop?id=" + solveId, { method:"POST" }); };
 
 async function poll() {
-  const s = await (await fetch("/api/status")).json();
+  const id = solveId;
+  let s;
+  try { s = await (await fetch("/api/status?id=" + id)).json(); } catch { return; }  // try again at the next tick
+  if (id !== solveId) return;
+  if (s.error && !s.state) { clearInterval(polling); $("status").innerHTML = '<span class="err">> ' + esc(s.error) + "</span>"; return; }
   if (s.state === "error") { clearInterval(polling); $("status").innerHTML = '<span class="err">> ' + esc(s.error) + "</span>"; $("progress").textContent = ""; return; }
+  if (s.state === "stopped" && !s.iteration) { clearInterval(polling); typeText($("status"), "> Stopped."); $("progress").textContent = ""; return; }
+  if (s.state === "queued") {
+    typeText($("status"), s.place > 1 ? `> Other solves are running. You are number ${s.place} in line.` : "> Your solve is next in line.");
+    $("progress").textContent = "";
+    return;
+  }
+  if (s.state === "building") { typeText($("status"), "> Building the game tree..."); return; }
+  if (s.state === "expired") { clearInterval(polling); typeText($("status"), "> This result expired. Press SOLVE again."); return; }
+  if (s.state === "running") typeText($("status"), "> The solver is thinking...");
   const e = s.expl_pct < 0 ? "..." : s.expl_pct.toFixed(3) + "%";
   const goal = s.expl_pct < 0 ? 0 : Math.min(1, Math.log10(Math.max(s.expl_pct, 1e-4) / 100) / Math.log10(s.target_pct / 100));
   $("progress").textContent =
@@ -194,7 +217,8 @@ async function poll() {
   if (s.state === "done") {
     clearInterval(polling);
     const ok = s.expl_pct <= s.target_pct;
-    typeText($("status"), (ok ? "> The solve converged." : "> The solve stopped before the goal.") +
+    const why = s.note === "time limit" ? ` (time limit: ${limits ? limits.max_seconds : "?"} s)` : s.note === "stopped" ? " (stopped)" : "";
+    typeText($("status"), (ok ? "> The solve converged." : "> The solve stopped before the goal" + why + ".") +
       `\n> ${s.hands[0]} vs ${s.hands[1]} combos. ${s.nodes} nodes. ${s.memory_mb.toFixed(1)} MB.` +
       `\n> EV: OOP ${s.ev[0].toFixed(2)}  IP ${s.ev[1].toFixed(2)} (of a ${s.pot} pot).`);
     loadNode();
@@ -211,7 +235,7 @@ function esc(s) { return String(s).replace(/[&<>]/g, c => ({ "&":"&amp;", "<":"&
 function suitHtml(cards) { return cards.replace(/([2-9TJQKA])([cdhs])/g, (m, r, s) => `<span class="s-${s}">${r}${({c:"♣",d:"♦",h:"♥",s:"♠"})[s]}</span>`); }
 
 async function loadNode() {
-  const r = await fetch("/api/node?path=" + encodeURIComponent(path.join(",")));
+  const r = await fetch("/api/node?id=" + solveId + "&path=" + encodeURIComponent(path.join(",")));
   const n = await r.json();
   if (n.error) { $("status").innerHTML = '<span class="err">> ' + esc(n.error) + "</span>"; return; }
   lastNode = n;
@@ -319,7 +343,7 @@ function labelOf(c) {
     { el: "t-head", t: "WELCOME",
       x: () => `This is Poker Lab. It finds the ${K("GTO strategy")} for one heads-up spot.<br>This tour shows each part of the page.` },
     { el: "t-spot", t: "PRESETS", go: () => setPreset("river"),
-      x: () => `Start here. A ${K("preset")} fills in a full spot for you.<br>RIVER is fast. TURN takes about 20 s. TOY is a small game with a known answer. The tour loads RIVER.`, sel: ".presets" },
+      x: () => `Start here. A ${K("preset")} fills in a full spot for you.<br>RIVER is fast. TURN takes longer (seconds to about a minute). TOY is a small game with a known answer. The tour loads RIVER.`, sel: ".presets" },
     { el: "t-board", t: "BOARD",
       x: () => `Type 3, 4 or 5 cards, for example ${K("Ks 9d 5c 2h 2d")}.<br>5 cards = a river spot. 4 = turn. 3 = flop (small trees only).` },
     { el: "t-chips", t: "POT AND STACK",

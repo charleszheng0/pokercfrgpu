@@ -1,9 +1,14 @@
 // pokerlab: a small local HTTP server for the solver UI. No dependencies.
 //   GET  /                -> web/index.html
-//   POST /api/solve       -> form fields (see spot.hpp) + iters, target. Starts a solve.
-//   GET  /api/status      -> progress of the current solve
-//   POST /api/stop        -> stop the current solve early
-//   GET  /api/node?path=  -> strategy at a node (path: "1,0,Kh,2")
+//   POST /api/solve       -> form fields (see spot.hpp) + iters, target. Queues a solve,
+//                            returns {"ok":true,"id":"..."}. Each solve has its own id.
+//   GET  /api/status?id=  -> progress of that solve (state queued/building/running/done/error/stopped)
+//   POST /api/stop?id=    -> stop that solve early (or take it out of the line)
+//   GET  /api/node?id=&path= -> strategy at a node of that solve (path: "1,0,Kh,2")
+//   GET  /api/limits      -> the solve limits of this server
+// Solves run one at a time per worker (--workers, default 1); the others wait in line.
+// --public adds limits for a shared server: turn and river only, a memory, iteration and
+// time cap per solve, and a cap on the line length. Run: pokerlab [port] [db] [--public] ...
 //   GET  /play            -> web/play.html (trainer)
 //   GET  /api/play/spot?category=&exclude=  -> one random stored spot (see docs/STORE.md)
 //   GET  /api/play/stats  -> counts in the training database
@@ -15,9 +20,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <csignal>
+#include <deque>
+#include <random>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -80,75 +89,197 @@ std::string json_str(const std::string& s) {
   return out + "\"";
 }
 
-// ---- solve state shared between the HTTP thread and the solver thread
+// ---- solves: every POST /api/solve makes its own Solve with a random id. Worker threads take
+// solves from the line one at a time. Finished solves stay for browsing until they get old or
+// their trees use more than keep_mb together (oldest first).
+struct Limits {
+  bool is_public = false;
+  int workers = 1;            // solves that run at the same time
+  int threads = 0;            // solver threads per solve (0 = the form value, or all cores)
+  double mem_gb = 1e9;        // tree memory cap per solve (the form's mem_gb is capped to this)
+  int max_iters = 1000000;
+  double max_seconds = 0;     // 0 = no time cap
+  size_t max_line = 50;       // solves waiting plus running
+  int min_board = 3;          // 4 = turn and river only
+  double keep_mb = 4000;      // finished trees kept for browsing, all solves together
+  double keep_minutes = 60;
+};
+Limits g_lim;
+
 struct Solve {
   std::mutex mu;  // guards game access and the fields below
+  std::string id;
+  GameConfig cfg;
   std::unique_ptr<Game> game;
-  std::string state = "idle";  // idle, building, running, done, error
-  std::string error;
+  std::string state = "queued";  // queued, building, running, done, error, stopped, expired
+  std::string error, note;
   int iteration = 0, max_iters = 0;
-  double expl_pct = -1, target_pct = 0.5, seconds = 0, pot = 0;
+  double expl_pct = -1, target_pct = 0.5, seconds = 0, pot = 0, game_mb = 0;
   double ev[2] = {0, 0};
   std::string history;  // JSON array of [iteration, exploitability %]
   std::atomic<bool> stop{false};
-  std::thread worker;
+  std::chrono::steady_clock::time_point finished{};
+  bool is_finished() const { return state == "done" || state == "error" || state == "stopped" || state == "expired"; }
 };
-Solve g;
 
-void run_solve(GameConfig cfg, int max_iters, double target_pct) {
+// Lock order: g_jobs_mu first, then a Solve::mu. Never the other way round.
+std::mutex g_jobs_mu;
+std::condition_variable g_cv;
+std::map<std::string, std::shared_ptr<Solve>> g_jobs;
+std::deque<std::shared_ptr<Solve>> g_line;
+size_t g_running = 0;
+
+std::string new_id() {  // caller holds g_jobs_mu
+  static std::mt19937_64 rng{std::random_device{}()};
+  static const char* hex = "0123456789abcdef";
+  std::string id;
+  for (int k = 0; k < 2; ++k) {
+    uint64_t v = rng();
+    for (int i = 0; i < 12; ++i) id += hex[(v >> (4 * i)) & 15];
+  }
+  return id;
+}
+
+// Caller holds g_jobs_mu. Forget old finished solves; free the oldest trees over keep_mb.
+void prune_locked() {
+  const auto now = std::chrono::steady_clock::now();
+  struct Kept { std::chrono::steady_clock::time_point t; double mb; std::shared_ptr<Solve> s; };
+  std::vector<Kept> kept;
+  for (auto it = g_jobs.begin(); it != g_jobs.end();) {
+    auto s = it->second;
+    std::lock_guard<std::mutex> lk(s->mu);
+    if (s->is_finished() && std::chrono::duration<double>(now - s->finished).count() > g_lim.keep_minutes * 60) {
+      it = g_jobs.erase(it);
+      continue;
+    }
+    if (s->game) kept.push_back({s->finished, s->game_mb, s});
+    ++it;
+  }
+  std::sort(kept.begin(), kept.end(), [](const Kept& a, const Kept& b) { return a.t > b.t; });  // newest first
+  double total = 0;
+  for (auto& k : kept) {
+    total += k.mb;
+    if (total <= g_lim.keep_mb) continue;
+    std::lock_guard<std::mutex> lk(k.s->mu);
+    k.s->game.reset();
+    k.s->state = "expired";
+  }
+}
+
+void run_solve(Solve& s) {
   auto t0 = std::chrono::steady_clock::now();
   auto secs = [&] { return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count(); };
+  auto finish = [&](const std::string& state) {  // caller holds s.mu
+    s.state = state;
+    s.seconds = secs();
+    s.finished = std::chrono::steady_clock::now();
+  };
+  {
+    std::lock_guard<std::mutex> lk(s.mu);
+    if (s.stop) return finish("stopped");
+    s.state = "building";
+  }
   std::unique_ptr<Game> game;
   try {
-    game = std::make_unique<Game>(cfg);
+    game = std::make_unique<Game>(s.cfg);
   } catch (const std::exception& e) {
-    std::lock_guard<std::mutex> lk(g.mu);
-    g.state = "error";
-    g.error = e.what();
-    return;
+    std::lock_guard<std::mutex> lk(s.mu);
+    s.error = e.what();
+    return finish("error");
   }
   {
-    std::lock_guard<std::mutex> lk(g.mu);
-    g.state = "running";
+    std::lock_guard<std::mutex> lk(s.mu);
+    s.state = "running";
   }
   Game* gm = game.get();
-  int next_check = 5;
+  int next_check = 5, checked = 0;
+  bool time_hit = false;
   std::string hist;
-  for (int it = 1; it <= max_iters && !g.stop; ++it) {
+  auto record = [&](int it) {
+    double e = gm->exploitability() / s.cfg.pot * 100;
+    checked = it;
+    hist += (hist.empty() ? "" : ",") + std::string("[") + std::to_string(it) + "," + std::to_string(e) + "]";
+    std::lock_guard<std::mutex> lk(s.mu);
+    s.iteration = it;
+    s.expl_pct = e;
+    s.seconds = secs();
+    s.history = hist;
+    return e;
+  };
+  for (int it = 1; it <= s.max_iters && !s.stop; ++it) {
     gm->run_iteration();
-    if (it == next_check || it == max_iters) {
-      double e = gm->exploitability() / cfg.pot * 100;
-      hist += (hist.empty() ? "" : ",") + std::string("[") + std::to_string(it) + "," + std::to_string(e) + "]";
-      std::lock_guard<std::mutex> lk(g.mu);
-      g.iteration = it;
-      g.expl_pct = e;
-      g.seconds = secs();
-      g.history = hist;
-      if (e <= target_pct) break;
+    if (g_lim.max_seconds > 0 && secs() > g_lim.max_seconds) {
+      time_hit = true;
+      break;
+    }
+    if (it == next_check || it == s.max_iters) {
+      if (record(it) <= s.target_pct) break;
       next_check += it < 50 ? 5 : it < 200 ? 25 : 50;
     }
   }
+  if (gm->iterations() > 0 && checked != gm->iterations()) record(gm->iterations());  // stopped between checks
   auto ev = gm->expected_values();
-  std::lock_guard<std::mutex> lk(g.mu);
-  g.iteration = gm->iterations();
-  g.seconds = secs();
-  g.ev[0] = ev[0];
-  g.ev[1] = ev[1];
-  g.game = std::move(game);
-  g.state = "done";
+  std::lock_guard<std::mutex> lk(s.mu);
+  s.iteration = gm->iterations();
+  s.ev[0] = ev[0];
+  s.ev[1] = ev[1];
+  s.game_mb = gm->memory_bytes() / 1e6;
+  s.note = time_hit ? "time limit" : s.stop ? "stopped" : "";
+  s.game = std::move(game);
+  finish("done");
 }
 
-std::string status_json() {
-  std::lock_guard<std::mutex> lk(g.mu);
+void worker_loop() {
+  for (;;) {
+    std::shared_ptr<Solve> s;
+    {
+      std::unique_lock<std::mutex> lk(g_jobs_mu);
+      g_cv.wait(lk, [] { return !g_line.empty(); });
+      s = g_line.front();
+      g_line.pop_front();
+      ++g_running;
+    }
+    run_solve(*s);
+    std::lock_guard<std::mutex> lk(g_jobs_mu);
+    --g_running;
+    prune_locked();
+  }
+}
+
+// The solve with this id (nullptr if unknown) and its place in the line (1 = next, 0 = not waiting).
+std::shared_ptr<Solve> find_solve(const std::string& id, size_t* place = nullptr) {
+  std::lock_guard<std::mutex> lk(g_jobs_mu);
+  auto it = g_jobs.find(id);
+  if (it == g_jobs.end()) return nullptr;
+  if (place) {
+    *place = 0;
+    for (size_t i = 0; i < g_line.size(); ++i)
+      if (g_line[i] == it->second) *place = i + 1;
+  }
+  return it->second;
+}
+
+std::string status_json(Solve& s, size_t place) {
+  std::lock_guard<std::mutex> lk(s.mu);
   std::ostringstream js;
-  js << "{\"state\":\"" << g.state << "\",\"error\":" << json_str(g.error) << ",\"iteration\":" << g.iteration
-     << ",\"max_iters\":" << g.max_iters << ",\"expl_pct\":" << g.expl_pct << ",\"target_pct\":" << g.target_pct
-     << ",\"seconds\":" << g.seconds << ",\"pot\":" << g.pot << ",\"ev\":[" << g.ev[0] << "," << g.ev[1]
-     << "],\"history\":[" << g.history << "]";
-  if (g.game)
-    js << ",\"nodes\":" << g.game->num_nodes() << ",\"memory_mb\":" << g.game->memory_bytes() / 1e6
-       << ",\"hands\":[" << g.game->num_hands(0) << "," << g.game->num_hands(1) << "]";
+  js << "{\"id\":\"" << s.id << "\",\"state\":\"" << s.state << "\",\"place\":" << place
+     << ",\"error\":" << json_str(s.error) << ",\"note\":" << json_str(s.note) << ",\"iteration\":" << s.iteration
+     << ",\"max_iters\":" << s.max_iters << ",\"expl_pct\":" << s.expl_pct << ",\"target_pct\":" << s.target_pct
+     << ",\"seconds\":" << s.seconds << ",\"pot\":" << s.pot << ",\"ev\":[" << s.ev[0] << "," << s.ev[1]
+     << "],\"history\":[" << s.history << "]";
+  if (s.game)
+    js << ",\"nodes\":" << s.game->num_nodes() << ",\"memory_mb\":" << s.game->memory_bytes() / 1e6
+       << ",\"hands\":[" << s.game->num_hands(0) << "," << s.game->num_hands(1) << "]";
   js << "}";
+  return js.str();
+}
+
+std::string limits_json() {
+  std::ostringstream js;
+  js << "{\"public\":" << (g_lim.is_public ? "true" : "false") << ",\"min_board\":" << g_lim.min_board
+     << ",\"max_iters\":" << g_lim.max_iters << ",\"max_seconds\":" << g_lim.max_seconds
+     << ",\"mem_gb\":" << (g_lim.mem_gb > 1e6 ? -1 : g_lim.mem_gb) << ",\"max_line\":" << g_lim.max_line
+     << ",\"workers\":" << g_lim.workers << "}";
   return js.str();
 }
 
@@ -241,53 +372,84 @@ Response handle(const std::string& method, const std::string& target, const std:
       return {500, "application/json", "{\"error\":" + json_str(e.what()) + "}"};
     }
   }
+  if (method == "GET" && path == "/api/limits") return {200, "application/json", limits_json()};
   if (method == "POST" && path == "/api/solve") {
     auto f = parse_form(body);
+    std::shared_ptr<Solve> s;
+    size_t place = 0;
     try {
       GameConfig cfg = config_from_fields(f);
-      int iters = static_cast<int>(parse_number(f, "iters", 1000));
+      if (static_cast<int>(cfg.board.size()) < g_lim.min_board)
+        throw std::invalid_argument(
+            "This server solves turn and river spots only (4 or 5 board cards). "
+            "A flop tree needs more memory than this server has.");
+      int iters = std::max(1, std::min(static_cast<int>(parse_number(f, "iters", 1000)), g_lim.max_iters));
       double target = parse_number(f, "target", 0.5);
-      g.stop = true;
-      if (g.worker.joinable()) g.worker.join();
-      std::lock_guard<std::mutex> lk(g.mu);
-      g.stop = false;
-      g.game.reset();
-      g.state = "building";
-      g.error.clear();
-      g.iteration = 0;
-      g.max_iters = iters;
-      g.expl_pct = -1;
-      g.target_pct = target;
-      g.seconds = 0;
-      g.pot = cfg.pot;
-      g.history.clear();
-      g.worker = std::thread(run_solve, cfg, iters, target);
-      return {200, "application/json", "{\"ok\":true}"};
+      if (g_lim.threads > 0) cfg.threads = g_lim.threads;
+      cfg.mem_limit_gb = std::min(cfg.mem_limit_gb, g_lim.mem_gb);
+      s = std::make_shared<Solve>();
+      s->cfg = cfg;
+      s->max_iters = iters;
+      s->target_pct = target;
+      s->pot = cfg.pot;
     } catch (const std::exception& e) {
       return {400, "application/json", "{\"ok\":false,\"error\":" + json_str(e.what()) + "}"};
     }
-  }
-  if (method == "POST" && path == "/api/stop") {
-    g.stop = true;
-    return {200, "application/json", "{\"ok\":true}"};
-  }
-  if (method == "GET" && path == "/api/status") return {200, "application/json", status_json()};
-  if (method == "GET" && path == "/api/node") {
-    auto f = parse_form(query);
-    std::vector<std::string> p;
-    std::string tok;
-    for (char c : f["path"] + ",") {
-      if (c == ',') {
-        if (!tok.empty()) p.push_back(tok);
-        tok.clear();
-      } else tok += c;
+    {
+      std::lock_guard<std::mutex> lk(g_jobs_mu);
+      prune_locked();
+      if (g_line.size() + g_running >= g_lim.max_line)
+        return {503, "application/json",
+                "{\"ok\":false,\"error\":\"The solver is busy. Please try again in a minute.\"}"};
+      s->id = new_id();
+      g_jobs[s->id] = s;
+      g_line.push_back(s);
+      place = g_line.size();
     }
-    std::lock_guard<std::mutex> lk(g.mu);
-    if (!g.game) return {409, "application/json", "{\"error\":\"no finished solve\"}"};
-    try {
-      return {200, "application/json", g.game->node_json(p)};
-    } catch (const std::exception& e) {
-      return {400, "application/json", "{\"error\":" + json_str(e.what()) + "}"};
+    g_cv.notify_one();
+    return {200, "application/json",
+            "{\"ok\":true,\"id\":\"" + s->id + "\",\"place\":" + std::to_string(place) + "}"};
+  }
+  if (path == "/api/stop" || path == "/api/status" || path == "/api/node") {
+    auto f = parse_form(method == "POST" && query.empty() ? body : query);
+    auto s = find_solve(f["id"]);
+    if (!s) return {404, "application/json", "{\"error\":\"unknown solve id (it may have expired). Solve again.\"}"};
+    if (method == "POST" && path == "/api/stop") {
+      s->stop = true;
+      std::lock_guard<std::mutex> lk(g_jobs_mu);  // still waiting: take it out of the line
+      auto it = std::find(g_line.begin(), g_line.end(), s);
+      if (it != g_line.end()) {
+        g_line.erase(it);
+        std::lock_guard<std::mutex> lk2(s->mu);
+        s->state = "stopped";
+        s->finished = std::chrono::steady_clock::now();
+      }
+      return {200, "application/json", "{\"ok\":true}"};
+    }
+    if (method == "GET" && path == "/api/status") {
+      size_t place = 0;
+      s = find_solve(f["id"], &place);
+      if (!s) return {404, "application/json", "{\"error\":\"unknown solve id\"}"};
+      return {200, "application/json", status_json(*s, place)};
+    }
+    if (method == "GET" && path == "/api/node") {
+      std::vector<std::string> p;
+      std::string tok;
+      for (char c : f["path"] + ",") {
+        if (c == ',') {
+          if (!tok.empty()) p.push_back(tok);
+          tok.clear();
+        } else tok += c;
+      }
+      std::lock_guard<std::mutex> lk(s->mu);
+      if (!s->game)
+        return {409, "application/json",
+                s->state == "expired" ? "{\"error\":\"this result expired. Solve again.\"}" : "{\"error\":\"no finished solve\"}"};
+      try {
+        return {200, "application/json", s->game->node_json(p)};
+      } catch (const std::exception& e) {
+        return {400, "application/json", "{\"error\":" + json_str(e.what()) + "}"};
+      }
     }
   }
   return {404, "text/plain", "not found"};
@@ -335,8 +497,48 @@ void serve_client(int fd) {
 }  // namespace
 
 int main(int argc, char** argv) {
-  int port = argc > 1 ? std::atoi(argv[1]) : 8080;
-  if (argc > 2) g_db_path = argv[2];
+  // Positional: [port] [db]. Flags: --public, then any of --workers N --threads N --mem-gb X
+  // --max-iters N --max-seconds S --max-line N --keep-mb X --keep-minutes M (these win over --public).
+  std::vector<std::string> pos;
+  for (int i = 1; i < argc; ++i)
+    if (std::string(argv[i]) == "--public") {
+      g_lim.is_public = true;
+      g_lim.min_board = 4;
+      g_lim.mem_gb = 0.5;
+      g_lim.max_iters = 1000;
+      g_lim.max_seconds = 60;
+      g_lim.max_line = 10;
+      g_lim.keep_mb = 250;
+      g_lim.keep_minutes = 15;
+    }
+  for (int i = 1; i < argc; ++i) {
+    const std::string a = argv[i];
+    if (a == "--public") continue;
+    if (a.rfind("--", 0) != 0) {
+      pos.push_back(a);
+      continue;
+    }
+    if (i + 1 >= argc) {
+      std::fprintf(stderr, "pokerlab: %s needs a value\n", a.c_str());
+      return 2;
+    }
+    const double v = std::atof(argv[++i]);
+    if (a == "--workers") g_lim.workers = std::max(1, static_cast<int>(v));
+    else if (a == "--threads") g_lim.threads = static_cast<int>(v);
+    else if (a == "--mem-gb") g_lim.mem_gb = v;
+    else if (a == "--max-iters") g_lim.max_iters = std::max(1, static_cast<int>(v));
+    else if (a == "--max-seconds") g_lim.max_seconds = v;
+    else if (a == "--max-line") g_lim.max_line = static_cast<size_t>(std::max(1.0, v));
+    else if (a == "--keep-mb") g_lim.keep_mb = v;
+    else if (a == "--keep-minutes") g_lim.keep_minutes = v;
+    else {
+      std::fprintf(stderr, "pokerlab: unknown option %s\n", a.c_str());
+      return 2;
+    }
+  }
+  int port = pos.size() > 0 ? std::atoi(pos[0].c_str()) : 8080;
+  if (pos.size() > 1) g_db_path = pos[1];
+  for (int w = 0; w < g_lim.workers; ++w) std::thread(worker_loop).detach();
   std::signal(SIGPIPE, SIG_IGN);
   int s = socket(AF_INET, SOCK_STREAM, 0);
   int one = 1;
@@ -350,6 +552,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   std::printf("pokerlab: open http://127.0.0.1:%d  (trainer: /play, database: %s)\n", port, g_db_path.c_str());
+  std::printf("pokerlab: solve limits %s\n", limits_json().c_str());
   std::fflush(stdout);
   for (;;) {
     int fd = accept(s, nullptr, nullptr);

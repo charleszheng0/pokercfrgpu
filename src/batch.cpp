@@ -9,6 +9,7 @@
 // checked through, so the starting ranges stay the preflop ranges. The story says so.
 #include <chrono>
 #include <cmath>
+#include <functional>
 #include <cstdio>
 #include <map>
 #include <random>
@@ -113,16 +114,42 @@ int main(int argc, char** argv) {
   std::map<std::string, std::string> f;
   for (int i = 1; i + 1 < argc; i += 2) f[std::string(argv[i]).substr(2)] = argv[i + 1];
   const std::string db_path = field(f, "db", "data/spots.db");
-  const int count = static_cast<int>(parse_number(f, "count", 10));
   const unsigned seed = static_cast<unsigned>(parse_number(f, "seed", 1));
-  const std::string street_opt = field(f, "street", "river");  // river, turn, mix
+  const std::string street_opt = field(f, "street", "river");  // river, turn, mix, flop
+  const bool flop_mode = street_opt == "flop";
   const std::string preset_opt = field(f, "preset", "all");
   const int max_iters = static_cast<int>(parse_number(f, "iters", 1500));
   const double max_db_gb = parse_number(f, "max_db_gb", 4);  // stop before the disk fills
   const size_t max_depth = static_cast<size_t>(parse_number(f, "depth", 4));  // actions on this street
-  // Turn solves: river cards stored per turn line, and river actions deep.
+  // Continuations: cards stored per line that ends a street, and actions deep on that street.
+  const int turn_cards = static_cast<int>(parse_number(f, "turn_cards", 3));
+  const size_t turn_depth = static_cast<size_t>(parse_number(f, "turn_depth", 3));
   const int river_cards = static_cast<int>(parse_number(f, "river_cards", 2));
   const size_t river_depth = static_cast<size_t>(parse_number(f, "river_depth", 2));
+  // Flop solves are big: one bet size and at most one raise per street by default (see poker-metrics).
+  const std::string bets = field(f, "bets", flop_mode ? "33" : "33,75");
+  const std::string raises = field(f, "raises", "60");
+  const std::string max_raises = field(f, "max_raises", flop_mode ? "1" : "3");
+  // Flop mode: the jobs come from a list file, one "preset|flop|..." per line (pokerscreen writes it).
+  std::vector<std::pair<std::string, std::string>> flop_jobs;
+  if (flop_mode) {
+    FILE* lf = std::fopen(field(f, "flops", "data/flop_list.txt").c_str(), "r");
+    if (!lf) {
+      std::fprintf(stderr, "error: cannot read the flop list (--flops)\n");
+      return 2;
+    }
+    char buf[512];
+    while (std::fgets(buf, sizeof buf, lf)) {
+      std::string l = buf;
+      if (l.empty() || l[0] == '#') continue;
+      const size_t a = l.find('|'), b = l.find('|', a + 1);
+      if (a == std::string::npos) continue;
+      flop_jobs.push_back({l.substr(0, a), l.substr(a + 1, (b == std::string::npos ? l.size() : b) - a - 1)});
+    }
+    std::fclose(lf);
+  }
+  const int count = flop_mode ? static_cast<int>(parse_number(f, "count", static_cast<double>(flop_jobs.size())))
+                              : static_cast<int>(parse_number(f, "count", 10));
 
   try {
     Store store(db_path);
@@ -146,22 +173,34 @@ int main(int argc, char** argv) {
     std::mt19937 rng(seed);
     const auto& ps = presets();
     int ok = 0, rejected = 0;
-    for (int i = 0; i < count; ++i) {
+    auto preset_named = [&](const std::string& name) -> const Preset& {
+      for (const auto& p : ps)
+        if (p.name == name) return p;
+      throw std::invalid_argument("unknown preset: " + name);
+    };
+    for (int i = 0; i < count && (!flop_mode || i < static_cast<int>(flop_jobs.size())); ++i) {
       if (store.file_gb() > max_db_gb) {
         std::printf("database is %.2f GB, over --max_db_gb %.2f: stopping\n", store.file_gb(), max_db_gb);
         return 3;
       }
-      const Preset& pr = preset_opt == "all" ? ps[(seed + static_cast<unsigned>(i)) % ps.size()] : [&]() -> const Preset& {
-        for (const auto& p : ps)
-          if (p.name == preset_opt) return p;
-        throw std::invalid_argument("unknown preset: " + preset_opt);
-      }();
+      const Preset& pr = flop_mode ? preset_named(flop_jobs[i].first)
+                         : preset_opt == "all" ? ps[(seed + static_cast<unsigned>(i)) % ps.size()]
+                                               : preset_named(preset_opt);
       const bool river = street_opt == "river" || (street_opt == "mix" && rng() % 3 != 0);
       const double target = parse_number(f, "target", river ? 0.3 : 0.5);
-      const std::string street = river ? "river" : "turn";
+      const std::string street = flop_mode ? "flop" : river ? "river" : "turn";
       std::vector<Card> board;
       std::string key;
-      for (int tries = 0;; ++tries) {
+      if (flop_mode) {
+        board = parse_cards(flop_jobs[i].second);
+        key = canonical_board_key(board);
+        if (store.has_solve(pr.name, street, key)) {
+          std::printf("[%d/%d] %-16s flop   %-14s already solved: skip\n", i + 1, count, pr.name.c_str(), cards_str(board).c_str());
+          std::fflush(stdout);
+          continue;
+        }
+      }
+      for (int tries = 0; !flop_mode; ++tries) {
         std::vector<int> deck(kNumCards);
         for (int c = 0; c < kNumCards; ++c) deck[c] = c;
         std::shuffle(deck.begin(), deck.end(), rng);
@@ -174,18 +213,28 @@ int main(int argc, char** argv) {
 
       std::map<std::string, std::string> fields = {
           {"board", cards_str(board)}, {"pot", std::to_string(pr.pot)}, {"stack", std::to_string(pr.stack)},
-          {"oop", pr.oop}, {"ip", pr.ip}, {"bets", field(f, "bets", "33,75")}, {"raises", field(f, "raises", "60")},
-          {"threads", field(f, "threads", "0")}, {"mem_gb", field(f, "mem_gb", "3")}};
+          {"oop", pr.oop}, {"ip", pr.ip}, {"bets", bets}, {"raises", raises}, {"max_raises", max_raises},
+          {"threads", field(f, "threads", "0")}, {"mem_gb", field(f, "mem_gb", flop_mode ? "5" : "3")}};
       GameConfig cfg = config_from_fields(fields);
       cfg.board = board;
 
       auto t0 = std::chrono::steady_clock::now();
       Game g(cfg);
+      if (flop_mode) {
+        std::printf("[%d/%d] %-16s flop   %-14s tree %.0f MB, solving...\n", i + 1, count, pr.name.c_str(),
+                    cards_str(board).c_str(), g.memory_bytes() / 1e6);
+        std::fflush(stdout);
+      }
       double expl = 100;
       int it = 0;
       while (it < max_iters) {
         for (int k = 0; k < (river ? 25 : 20) && it < max_iters; ++k, ++it) g.run_iteration();
         expl = g.exploitability() / cfg.pot * 100;
+        if (flop_mode) {
+          std::printf("      it %4d  expl %.3f%%  %.0f s\n", it, expl,
+                      std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+          std::fflush(stdout);
+        }
         if (expl <= target) break;
       }
       const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
@@ -194,7 +243,7 @@ int main(int argc, char** argv) {
       SolveRow sr;
       sr.preset = pr.name, sr.oop_pos = pr.oop_pos, sr.ip_pos = pr.ip_pos, sr.board = cards_str(board);
       sr.board_key = key, sr.street = street, sr.oop_range = pr.oop, sr.ip_range = pr.ip;
-      sr.config = "bets=" + fields["bets"] + ";raises=" + fields["raises"] + ";max_raises=3;allin=1;allin_threshold=0.67;" +
+      sr.config = "bets=" + fields["bets"] + ";raises=" + fields["raises"] + ";max_raises=" + max_raises + ";allin=1;allin_threshold=0.67;" +
                   "target=" + std::to_string(target) + ";compress=" + (g.compressed() ? "16" : "32");
       sr.solver_version = POKER_VERSION, sr.pot = pr.pot, sr.stack = pr.stack, sr.iterations = it, sr.seconds = secs;
       sr.exploitability_pct = expl, sr.ev_oop = ev[0], sr.ev_ip = ev[1], sr.memory_mb = g.memory_bytes() / 1e6;
@@ -203,9 +252,14 @@ int main(int argc, char** argv) {
       // Story shown to the player. Flop (and turn) are checked through in this model.
       std::vector<std::string> story = {"Preflop: " + pr.preflop};
       const std::string fl = card_str(board[0]) + card_str(board[1]) + card_str(board[2]);
-      story.push_back("Flop " + fl + ": " + pr.oop_pos + " checks, " + pr.ip_pos + " checks");
-      if (river) story.push_back("Turn " + card_str(board[3]) + ": " + pr.oop_pos + " checks, " + pr.ip_pos + " checks");
-      story.push_back(std::string(river ? "River " : "Turn ") + card_str(board.back()));
+      if (flop_mode) {
+        story.push_back("Flop " + fl);
+      } else {
+        story.push_back("Flop " + fl + ": " + pr.oop_pos + " checks, " + pr.ip_pos + " checks");
+        if (river) story.push_back("Turn " + card_str(board[3]) + ": " + pr.oop_pos + " checks, " + pr.ip_pos + " checks");
+        story.push_back(std::string(river ? "River " : "Turn ") + card_str(board.back()));
+      }
+      const int root_street = flop_mode ? 0 : river ? 2 : 1;  // 0 flop, 1 turn, 2 river
 
       int stored = 0;
       store.begin();
@@ -245,25 +299,41 @@ int main(int argc, char** argv) {
             ++stored;
           }
         };
-        std::vector<std::vector<std::string>> ends;
-        store_street({}, max_depth, story, river ? nullptr : &ends);
-        // Turn solves: continue the common turn lines (up to 3 actions) onto the river, for a
-        // few random river cards each, so the trainer can play a hand from the turn to the end.
-        for (const auto& end : ends) {
-          NodeView chance = g.node_view(end);
-          std::vector<Card> cards = chance.cards;
-          std::shuffle(cards.begin(), cards.end(), rng);
-          for (int c = 0; c < river_cards && c < static_cast<int>(cards.size()); ++c) {
-            std::vector<std::string> st(story.begin(), story.end() - 1);
-            std::vector<std::string> said;
-            for (const std::string& h : chance.history) said.push_back(say(h, pr));
-            st.push_back("Turn " + card_str(board.back()) + ": " + join(said, ", "));
-            st.push_back("River " + card_str(cards[c]));
-            auto prefix = end;
-            prefix.push_back(card_str(cards[c]));
-            store_street(prefix, river_depth, st, nullptr);
+        // Continue the common lines (up to 3 actions) onto the next street, for a few random cards
+        // each, so the trainer can play a hand to the end: flop -> turn_cards turns -> river_cards rivers.
+        static const char* kStreet[3] = {"Flop", "Turn", "River"};
+        std::function<void(const std::vector<std::string>&, int, const std::vector<std::string>&)> run_street;
+        run_street = [&](const std::vector<std::string>& prefix, int sidx, const std::vector<std::string>& st) {
+          std::vector<std::vector<std::string>> ends;
+          const size_t depth = prefix.empty() ? max_depth : sidx == 1 ? turn_depth : river_depth;
+          store_street(prefix, depth, st, sidx == 2 ? nullptr : &ends);
+          const int ncards = sidx == 0 ? turn_cards : river_cards;
+          for (const auto& end : ends) {
+            NodeView chance = g.node_view(end);
+            // Story: the root story without its bare last line, then one line per street played.
+            std::vector<std::vector<std::string>> seg(1);
+            std::vector<std::string> dealt;
+            for (const std::string& h : chance.history) {
+              if (h.rfind("deal ", 0) == 0) seg.emplace_back(), dealt.push_back(h.substr(5));
+              else seg.back().push_back(say(h, pr));
+            }
+            std::vector<std::string> base(story.begin(), story.end() - 1);
+            for (size_t s2 = 0; s2 < seg.size(); ++s2) {
+              const std::string label = s2 == 0 ? story.back() : std::string(kStreet[root_street + s2]) + " " + dealt[s2 - 1];
+              base.push_back(label + ": " + join(seg[s2], ", "));
+            }
+            std::vector<Card> cards = chance.cards;
+            std::shuffle(cards.begin(), cards.end(), rng);
+            for (int c = 0; c < ncards && c < static_cast<int>(cards.size()); ++c) {
+              auto st2 = base;
+              st2.push_back(std::string(kStreet[sidx + 1]) + " " + card_str(cards[c]));
+              auto next = end;
+              next.push_back(card_str(cards[c]));
+              run_street(next, sidx + 1, st2);
+            }
           }
-        }
+        };
+        run_street({}, root_street, story);
         ++ok;
       } else {
         ++rejected;

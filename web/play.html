@@ -70,6 +70,14 @@
   .log .now { background:#fff; color:#000; padding:0 6px; }
   #handEnd:not(:empty) { margin-top:10px; }
   a { color:#fff; }
+
+  /* Intro replay: earlier streets and actions appear in order (see playIntro). */
+  #table .st { opacity:0; }
+  #table .pc.st { transform:translateY(-8px); }
+  #table .st.on { opacity:1; transform:none; transition:opacity .22s ease var(--d, 0ms), transform .22s ease var(--d, 0ms); }
+  #actbox { transition:opacity .25s; }
+  #actbox.waiting { opacity:.35; pointer-events:none; }
+  @media (prefers-reduced-motion: reduce) { #table .st { opacity:1; transform:none; transition:none; } }
 </style>
 </head>
 <body>
@@ -279,9 +287,14 @@ function heroActions() {
 // ===== Deal the hero a hand =====
 // Weighted by reach; prefer hands that fit the category, else any hand.
 function dealHand(n, category) {
-  const live = n.hands.filter(h => h.w > 1e-3);
-  if (!live.length) return null;
   const kinds = n.actions.map(a => parseAct(a).kind);
+  // Skip uncontested hands: a hand that folds at least 90% is trash with nothing to decide. Fall back to
+  // every hand only if the spot has no other hand.
+  const foldIdx = kinds.indexOf("Fold");
+  const live0 = n.hands.filter(h => h.w > 1e-3);
+  const live1 = foldIdx < 0 ? live0 : live0.filter(h => h.s[foldIdx] < 0.9);
+  const live = live1.length ? live1 : live0;
+  if (!live.length) return null;
   const top = h => Math.max(...h.s);
   const fits = {
     mixed: h => top(h) < 0.7,
@@ -314,7 +327,25 @@ function render() {
   const streetLine = `${(s.street || "street").replace(/^./, m => m.toUpperCase())}${s.street === "flop" ? " " + board.slice(0, 3).join("") : " " + lastCard}: ` +
     (c.lines.length ? c.lines.map(l => l.text).join(", ") : `${heroName} to act`);
   // The server story ends with the bare card of this street ("River Qc"); the street line below repeats it with the actions.
-  const story = (s.story || []).filter(l => !/^(Flop|Turn|River) [^:]*$/.test(l)).map(l => esc(l)).concat([`<b>${esc(streetLine)}</b>`]).map(l => suitText(l)).join("\n");
+  // Intro steps: 0 = hole cards, then for each story line its street head (with that street's board cards) and
+  // each action in turn, then `last` = pot, last action and the action buttons.
+  const raw = (s.story || []).filter(l => !/^(Flop|Turn|River) [^:]*$/.test(l)).concat([streetLine]);
+  let step = 1, curStep = 1;
+  const cardStep = {};   // board index -> step
+  const story = raw.map((l, li) => {
+    const m = l.match(/^([^:]*:)\s*(.*)$/) || [null, l, ""];
+    const head = step++;
+    const st = (m[1].match(/^(Flop|Turn|River)/) || [])[1];
+    if (st === "Flop") [0, 1, 2].forEach(i => cardStep[i] = head);
+    if (st === "Turn") cardStep[3] = head;
+    if (st === "River") cardStep[4] = head;
+    if (li === raw.length - 1) curStep = head;
+    const parts = m[2] ? m[2].split(/, (?=(?:BTN|BB|SB|CO|UTG|HJ|LJ|MP|All)\b)/) : [];
+    const html = `<span class="st sh" data-st="${head}">${suitText(esc(m[1]))}</span>` +
+      parts.map((p, k) => `<span class="st" data-st="${step++}">${k ? ", " : " "}${suitText(esc(p))}</span>`).join("");
+    return li === raw.length - 1 ? `<b>${html}</b>` : html;
+  }).join("\n");
+  const lastStep = step;
   const last = c.lines[c.lines.length - 1];
   const lastHtml = last && last.p === c.opp
     ? `<div class="last">&gt; ${esc(last.text)}</div>`
@@ -323,6 +354,16 @@ function render() {
     `<div id="felt">${feltHtml({ hero: c.hero, name: c.name, behind: c.behind, put: c.put, board, pot: n.pot, heroCards: hand.c, oppCards: null })}</div>` +
     `<div class="story">${story}</div><div id="lastLine">${lastHtml}</div>` +
     `<div class="dim" style="margin-top:8px">&gt; You are ${esc(heroName)} (${c.hero === 0 ? "out of position" : "in position"}). Amounts in big blinds.</div>`;
+  const felt = $("felt");
+  felt.querySelectorAll(".hc .pc").forEach((e, i) => { e.classList.add("st"); e.dataset.st = 0; e.style.setProperty("--d", `${(i % 2) * 70}ms`); });
+  felt.querySelectorAll(".mid > .pc").forEach((e, i) => {
+    e.classList.add("st"); e.dataset.st = cardStep[i] != null ? cardStep[i] : 0;
+    if (i < 3) e.style.setProperty("--d", `${i * 90}ms`);
+  });
+  felt.querySelectorAll(".pot, .chips").forEach(e => { e.classList.add("st"); e.dataset.st = lastStep; });
+  $("lastLine").classList.add("st"); $("lastLine").dataset.st = lastStep;
+  // A fresh spot replays the whole hand; a later decision of the same hand replays only the new street.
+  playIntro(hs && hs.decisions.length ? curStep : 0, lastStep);
   const acts = heroActions();
   $("acts").innerHTML = acts.map((a, i) =>
     `<button class="btn" data-i="${i}"><span class="k">${i + 1}</span> ${esc(a.short)}${a.size ? ` <span class="k">${esc(a.size)}</span>` : ""}</button>`).join("");
@@ -330,6 +371,33 @@ function render() {
   $("keys").textContent = `> Keys 1-${acts.length} choose an action.`;
   renderLog();
 }
+// ===== Intro: deal the earlier streets and actions again, one step at a time =====
+// Elements with data-st="k" appear at step k. A click on the table or any key skips to the end.
+const INTRO_MS = { head: 300, act: 190 };
+let intro = null;
+function stopIntro() { if (intro) { clearTimeout(intro.t); intro.done(); } }
+function playIntro(from, last) {
+  stopIntro();
+  const els = [...$("table").querySelectorAll("[data-st]")];
+  const heads = new Set([...$("table").querySelectorAll(".sh")].map(e => +e.dataset.st));
+  const show = k => els.forEach(e => { if (+e.dataset.st <= k) e.classList.add("on"); });
+  const box = $("actbox");
+  const done = () => { intro = null; show(last); box.classList.remove("waiting"); };
+  show(from - 1);
+  if (from >= last || matchMedia("(prefers-reduced-motion: reduce)").matches) return done();
+  box.classList.add("waiting");
+  let k = from;
+  intro = { t: 0, done };
+  const tick = () => {
+    show(k);
+    if (k >= last) return done();
+    k++;
+    intro.t = setTimeout(tick, heads.has(k) || k === last ? INTRO_MS.head : INTRO_MS.act);
+  };
+  intro.t = setTimeout(tick, 120);
+}
+$("tablebox").addEventListener("click", stopIntro);
+
 // The felt: villain seat, board and pot, hero seat. o.oppCards = null keeps the villain's cards face down.
 function feltHtml(o) {
   const opp = 1 - o.hero;
@@ -401,24 +469,28 @@ function renderAnswer() {
   const wpx = $("rows").clientWidth || 300;
   const chars = Math.floor(wpx / charWidth());
   const nameW = Math.max(...acts.map(a => (a.short + (a.size ? " " + a.size : "")).length)) + 1;
-  const wide = chars >= nameW + 12 + 22;
-  const barW = Math.max(6, Math.min(24, wide ? chars - nameW - 24 : chars - 13));
+  const wide = chars >= nameW + 12 + 35;
+  // Narrow rows: " all your hands " (16) + bar + " 100%" (5), plus 1 spare.
+  const barW = Math.max(6, Math.min(24, wide ? chars - nameW - 35 : chars - 22));
   let html = "";
-  if (wide) html += `<div class="row dim">${"ACTION".padEnd(nameW)}${"GTO, THIS HAND".padEnd(barW + 6)}${"EV bb".padStart(7)}${"LOSS".padStart(8)}</div>`;
+  if (wide) html += `<div class="row dim">${"ACTION".padEnd(nameW)}${"HOW OFTEN GTO DOES IT".padEnd(barW + 6)}${"EV bb".padStart(7)}${"LOSS".padStart(8)}</div>`;
   acts.forEach((a, k) => {
     const label = (a.short + (a.size ? " " + a.size : ""));
     const lossK = h.ev[r.best] - h.ev[k];
     const lossTxt = k === r.best ? "best" : lossK < 0.0005 ? "0" : "-" + bb(lossK);
     const me = k === r.i ? " me" : "";
     if (wide) {
-      html += `<div class="row${me}">${esc(label.padEnd(nameW))}${bar(h.s[k], barW)} ${pct(h.s[k]).padStart(4)} ${bb(h.ev[k]).padStart(7)}${lossTxt.padStart(8)}</div>`;
-      html += `<div class="row dim${me}">${" ".repeat(nameW)}${bar(n.freq[k], barW)} ${pct(n.freq[k]).padStart(4)} range</div>`;
+      html += `<div class="row${me}">${esc(label.padEnd(nameW))}${bar(h.s[k], barW)} ${pct(h.s[k]).padStart(4)} ${bb(h.ev[k]).padStart(7)}${lossTxt.padStart(8)}  <span class="dim">your cards</span></div>`;
+      html += `<div class="row dim${me}">${" ".repeat(nameW)}${bar(n.freq[k], barW)} ${pct(n.freq[k]).padStart(4)}${" ".repeat(15)}all your hands</div>`;
     } else {
       html += `<div class="row${me}">${esc(a.short)}  EV ${bb(h.ev[k])}  ${lossTxt}</div>`;
-      html += `<div class="row${me}"> hand  ${bar(h.s[k], barW)} ${pct(h.s[k]).padStart(4)}</div>`;
-      html += `<div class="row dim${me}"> range ${bar(n.freq[k], barW)} ${pct(n.freq[k]).padStart(4)}</div>`;
+      html += `<div class="row${me}"> your cards     ${bar(h.s[k], barW)} ${pct(h.s[k]).padStart(4)}</div>`;
+      html += `<div class="row dim${me}"> all your hands ${bar(n.freq[k], barW)} ${pct(n.freq[k]).padStart(4)}</div>`;
     }
   });
+  const hc = suitText(esc(h.c));
+  html += `<div class="dim" style="margin-top:8px;white-space:pre-wrap">&gt; Your cards: how often GTO takes each action with ${hc}. Your grade uses this line.\n` +
+    `&gt; All your hands: the same, averaged over every hand you could hold here. It shows the overall plan.</div>`;
   $("rows").innerHTML = html;
   $("expl").textContent = explain(acts, h, r);
 }
@@ -729,6 +801,7 @@ $("next").onclick = loadSpot;
 $("cont").onclick = continueHand;
 addEventListener("keydown", e => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (intro) { e.preventDefault(); stopIntro(); return; }   // first key only skips the replay
   if (hs && hs.pending) {
     if (e.key === "1" || e.key === "2") { e.preventDefault(); allinReply(+e.key - 1); return; }
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); return; }
