@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <filesystem>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 
@@ -93,6 +94,9 @@ CREATE TABLE IF NOT EXISTS spots(
   mixed REAL, ev_loss REAL, bluff REAL, fundamental REAL, category TEXT, score REAL,
   story TEXT, node TEXT);
 CREATE INDEX IF NOT EXISTS spots_by_category ON spots(category, score);
+-- sized = 1: the decision has a bet or raise size (not only fold/call/check/all-in). Kept in its own small
+-- table so adding it never rewrites the big spots rows. The trainer serves only sized spots.
+CREATE TABLE IF NOT EXISTS spot_flags(spot_id INTEGER PRIMARY KEY, sized INTEGER NOT NULL);
 )SQL";
 
 }  // namespace
@@ -159,7 +163,15 @@ long long Store::add_spot(const SpotRow& r) {
   const std::string blob = pack_node(r.node_json);
   sqlite3_bind_blob(st.s, 15, blob.data(), static_cast<int>(blob.size()), SQLITE_TRANSIENT);
   if (sqlite3_step(st.s) != SQLITE_DONE) throw std::runtime_error(std::string("sqlite insert: ") + sqlite3_errmsg(db_));
-  return sqlite3_last_insert_rowid(db_);
+  const long long id = sqlite3_last_insert_rowid(db_);
+  // The "actions" array of the node: does it hold a Bet or a Raise (any size, not the all-in)?
+  const size_t a = r.node_json.find("\"actions\":["), b = a == std::string::npos ? a : r.node_json.find(']', a);
+  const std::string acts = b == std::string::npos ? "" : r.node_json.substr(a, b - a);
+  const bool sized = acts.find("\"Bet ") != std::string::npos || acts.find("\"Raise ") != std::string::npos;
+  Stmt fl(db_, "INSERT OR REPLACE INTO spot_flags(spot_id, sized) VALUES(?,?)");
+  fl.integer(1, id), fl.integer(2, sized ? 1 : 0);
+  sqlite3_step(fl.s);
+  return id;
 }
 
 double Store::file_gb() const {
@@ -267,19 +279,35 @@ std::string spot_envelope(Stmt& st) {
 
 }  // namespace
 
+// A random spot, fast: jump to a random id and take the first matching spot at or after it (wrapping to the
+// start once). ORDER BY RANDOM() would read and sort the whole table (20 s at 430k spots). Only spots with a
+// bet or raise size are served; fold/call/all-in and call-only decisions are skipped.
 std::string Store::random_spot_json(const std::string& category, const std::vector<long long>& exclude) {
-  std::string sql = std::string(kSpotSelect) + " WHERE 1=1";
-  if (!category.empty() && category != "any") sql += " AND s.category = ?1";
+  const bool by_cat = !category.empty() && category != "any";
+  std::string sql = std::string(kSpotSelect) +
+                    " JOIN spot_flags f ON f.spot_id = s.id AND f.sized = 1 WHERE s.id >= ?2";
+  if (by_cat) sql += " AND +s.category = ?1";  // unary +: keep SQLite on the id order, not the category index
   if (!exclude.empty()) {
     sql += " AND s.id NOT IN (";
     for (size_t i = 0; i < exclude.size(); ++i) sql += (i ? "," : "") + std::to_string(exclude[i]);
     sql += ")";
   }
-  sql += " ORDER BY RANDOM() LIMIT 1";
-  Stmt st(db_, sql);
-  if (!category.empty() && category != "any") st.text(1, category);
-  if (sqlite3_step(st.s) != SQLITE_ROW) return "";
-  return spot_envelope(st);
+  sql += " ORDER BY s.id LIMIT 1";
+  long long max_id = 0;
+  {
+    Stmt m(db_, "SELECT COALESCE(MAX(id), 0) FROM spots");
+    if (sqlite3_step(m.s) == SQLITE_ROW) max_id = sqlite3_column_int64(m.s, 0);
+  }
+  if (max_id <= 0) return "";
+  static std::mt19937_64 rng{std::random_device{}()};
+  const long long start = 1 + static_cast<long long>(rng() % static_cast<unsigned long long>(max_id));
+  for (const long long from : {start, 0LL}) {
+    Stmt st(db_, sql);
+    if (by_cat) st.text(1, category);
+    st.integer(2, from);
+    if (sqlite3_step(st.s) == SQLITE_ROW) return spot_envelope(st);
+  }
+  return "";
 }
 
 std::string Store::spot_json(long long solve_id, const std::string& path) {

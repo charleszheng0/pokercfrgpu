@@ -279,9 +279,14 @@ function heroActions() {
 // ===== Deal the hero a hand =====
 // Weighted by reach; prefer hands that fit the category, else any hand.
 function dealHand(n, category) {
-  const live = n.hands.filter(h => h.w > 1e-3);
-  if (!live.length) return null;
   const kinds = n.actions.map(a => parseAct(a).kind);
+  // Skip uncontested hands: a hand that folds at least 90% is trash with nothing to decide. Fall back to
+  // every hand only if the spot has no other hand.
+  const foldIdx = kinds.indexOf("Fold");
+  const live0 = n.hands.filter(h => h.w > 1e-3);
+  const live1 = foldIdx < 0 ? live0 : live0.filter(h => h.s[foldIdx] < 0.9);
+  const live = live1.length ? live1 : live0;
+  if (!live.length) return null;
   const top = h => Math.max(...h.s);
   const fits = {
     mixed: h => top(h) < 0.7,
