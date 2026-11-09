@@ -1,7 +1,28 @@
 # pokercfrgpu
 
-A heads-up No-Limit Hold'em postflop solver in C++, with an ASCII web UI.
+A heads-up No-Limit Hold'em postflop solver written from scratch in C++, and a web trainer
+that grades your decisions against its answers.
 It uses vector-form Discounted CFR: one tree pass handles every hand of both players.
+
+**Live demo: [pokerlab.duckdns.org](https://pokerlab.duckdns.org)**
+
+- [Trainer](https://pokerlab.duckdns.org/play): you get a real spot, choose an action, and get a grade
+  at once against near-optimal play. Then the hand plays out to showdown against the solver strategy.
+- [Solver](https://pokerlab.duckdns.org/): enter a board, two ranges and bet sizes, and solve it live
+  (turn and river on the shared server; solves wait in line).
+
+| Trainer | Solver |
+|---|---|
+| ![Trainer grades a river decision](docs/img/trainer.png) | ![Solver result for a river spot](docs/img/solver.png) |
+
+**In numbers** (measured; details in the sections below):
+
+- 448,259 stored decision spots from 15,003 solves; every solve passed a quality gate of at most
+  0.3% (river) or 0.5% (turn, flop) of the pot in exploitability.
+- Strategies agree with the open-source TexasSolver within 0.4 percentage points.
+- River solve 0.11 s and turn solve about 12 s on average on an Apple M2 laptop.
+- The next practice question loads in about 3 ms (was 20 s before an indexed random pick).
+- The demo runs on one free Oracle Cloud core behind nginx with https.
 
 ![spec](docs/spec.png)
 
@@ -56,6 +77,10 @@ Size keys: `bets`, `raises`, and overrides such as `ip_bets`, `river_bets`,
 
 ## Status and next steps
 
-See [SPEC.md](SPEC.md). Next: suit isomorphism and compression for full flop solves,
-a solution store and spot queue, play mode, then CUDA kernels benchmarked on Colab.
-The old Python prototype is kept at tag `python-prototype`.
+Done: suit isomorphism, 16-bit regret compression, a SQLite solution store
+([docs/STORE.md](docs/STORE.md)), batch training (`pokerbatch`), a free flop screen
+(`pokerscreen`), the trainer (`/play`), and a public solver mode (`pokerlab --public`).
+
+Next: finish the flop library (32 of 74 picked flops are solved), stop stuck flop solves
+early, and test the trainer with real players. There is no GPU code yet, despite the repository
+name. See [SPEC.md](SPEC.md). The old Python prototype is kept at tag `python-prototype`.
