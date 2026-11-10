@@ -120,6 +120,11 @@ int main(int argc, char** argv) {
   const std::string preset_opt = field(f, "preset", "all");
   const int max_iters = static_cast<int>(parse_number(f, "iters", 1500));
   const double max_db_gb = parse_number(f, "max_db_gb", 4);  // stop before the disk fills
+  // Stuck-flop stop: after this many seconds, stop a solve whose error made no new low in the last
+  // stall_iters iterations. 0 = off. Separate limit for 3-bet presets (their solves are ~15x faster).
+  const double stuck_secs = parse_number(f, "stuck_secs", 0);
+  const double stuck_secs_3bet = parse_number(f, "stuck_secs_3bet", 0);
+  const int stall_iters = static_cast<int>(parse_number(f, "stall_iters", 100));
   const size_t max_depth = static_cast<size_t>(parse_number(f, "depth", 4));  // actions on this street
   // Continuations: cards stored per line that ends a street, and actions deep on that street.
   const int turn_cards = static_cast<int>(parse_number(f, "turn_cards", 3));
@@ -225,17 +230,24 @@ int main(int argc, char** argv) {
                     cards_str(board).c_str(), g.memory_bytes() / 1e6);
         std::fflush(stdout);
       }
-      double expl = 100;
-      int it = 0;
+      double expl = 100, best_expl = 1e9;
+      int it = 0, best_it = 0;
+      const double stuck_limit = pr.name.find("3-bet") != std::string::npos ? stuck_secs_3bet : stuck_secs;
       while (it < max_iters) {
         for (int k = 0; k < (river ? 25 : 20) && it < max_iters; ++k, ++it) g.run_iteration();
         expl = g.exploitability() / cfg.pot * 100;
+        const double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
         if (flop_mode) {
-          std::printf("      it %4d  expl %.3f%%  %.0f s\n", it, expl,
-                      std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
+          std::printf("      it %4d  expl %.3f%%  %.0f s\n", it, expl, el);
           std::fflush(stdout);
         }
         if (expl <= target) break;
+        if (expl < best_expl) best_expl = expl, best_it = it;
+        if (stuck_limit > 0 && el > stuck_limit && it - best_it >= stall_iters) {
+          std::printf("      stuck: no new low since it %d (best %.3f%%) after %.0f s: stop\n", best_it, best_expl, el);
+          std::fflush(stdout);
+          break;
+        }
       }
       const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
       auto ev = g.expected_values();
