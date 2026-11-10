@@ -139,6 +139,10 @@ Game::Game(const GameConfig& cfg) : cfg_(cfg) {
     strategy_sum_.assign(arena_size_, 0.f);
   }
   prepare_showdowns();
+  for (int p = 0; p < 2; ++p) {
+    leaf_reach_[p].assign(leaves_.size(), std::vector<float>(hands_[p].size(), 0.f));
+    leaf_val_[p].assign(leaves_.size(), std::vector<float>(hands_[p].size(), 0.f));
+  }
 
   int threads = cfg_.threads > 0 ? cfg_.threads : static_cast<int>(std::thread::hardware_concurrency());
   pool_ = std::make_unique<ThreadPool>(std::max(1, threads));
@@ -202,6 +206,7 @@ std::vector<ActionInfo> Game::legal_actions(const BuildState& st) const {
   const double pot_now = st.contrib[0] + st.contrib[1];
   std::vector<ActionInfo> acts;
   std::vector<double> sizes;  // chips added by the actor
+  if (cfg_.check_first_street && st.board_size == static_cast<int>(cfg_.board.size())) return {{ActKind::Check, 0}};
 
   auto push_size = [&](double add) {
     if (add >= rem_a - kEps || add >= cfg_.allin_threshold * rem_a) add = rem_a;
@@ -302,6 +307,12 @@ void Game::build_street_end(uint32_t idx, const BuildState& st) {
     n.contrib[1] = st.contrib[1];
     if (st.board_size == 5) {
       n.type = NodeType::Showdown;
+      return;
+    }
+    if (cfg_.depth_limit > 0 && st.board_size == static_cast<int>(cfg_.board.size())) {
+      n.type = NodeType::Leaf;  // depth limit: a model gives the value of the rest of the hand
+      n.slot = static_cast<uint32_t>(leaves_.size());
+      leaves_.push_back(idx);
       return;
     }
     n.type = NodeType::Chance;
@@ -564,6 +575,9 @@ void Game::walk(uint32_t idx, int p, const float* opp, float* out, Mode mode) {
     case NodeType::Showdown:
       showdown_values(n, p, opp, out);
       return;
+    case NodeType::Leaf:
+      std::copy(leaf_val_[p][n.slot].begin(), leaf_val_[p][n.slot].end(), out);
+      return;
 
     case NodeType::Chance: {
       const size_t nc = n.num_children;
@@ -624,12 +638,11 @@ void Game::walk(uint32_t idx, int p, const float* opp, float* out, Mode mode) {
       return;
     }
     std::vector<float> sigma(na * nh);
-    if (mode == Mode::Train) current_strategy(n, sigma.data());
-    else average_strategy(n, sigma.data());
+    strategy_for(n, sigma.data(), mode);
     std::fill(out, out + nh, 0.f);
     for (size_t a = 0; a < na; ++a)
       for (size_t h = 0; h < nh; ++h) out[h] += sigma[a * nh + h] * vals[a * nh + h];
-    if (mode == Mode::Train) {
+    if (mode == Mode::Train && !locked(n)) {
       thread_local std::vector<float> rbuf;
       float* r;
       if (compressed_) {
@@ -652,7 +665,9 @@ void Game::walk(uint32_t idx, int p, const float* opp, float* out, Mode mode) {
 
   // Opponent node: split the opponent reach by the opponent strategy.
   std::vector<float> sigma(na * no);
-  if (mode == Mode::Train) {
+  if (locked(n)) {
+    strategy_for(n, sigma.data(), mode);
+  } else if (mode == Mode::Train) {
     current_strategy(n, sigma.data());
     thread_local std::vector<float> sbuf;
     float* s;
@@ -691,10 +706,136 @@ void Game::run_iteration() {
   disc_neg_ = static_cast<float>(tb / (tb + 1));
   disc_strat_ = static_cast<float>(std::pow(t / (t + 1), kGamma));
   for (int p = 0; p < 2; ++p) {
+    if (!leaves_.empty()) compute_leaf_values(Mode::Train);  // leaf values follow the current strategy
     std::vector<float> opp(hands_[1 - p].size()), out(hands_[p].size());
     for (size_t o = 0; o < opp.size(); ++o) opp[o] = hands_[1 - p][o].weight;
     walk(0, p, opp.data(), out.data(), Mode::Train);
   }
+}
+
+// ---------------------------------------------------------------- depth limit, locking
+
+void Game::strategy_for(const Node& n, float* sigma, Mode mode) const {
+  if (locked(n)) {
+    const size_t len = static_cast<size_t>(n.num_children) * hands_[n.player].size();
+    std::copy_n(&lock_data_[lock_off_[n.slot]], len, sigma);
+  } else if (mode == Mode::Train) {
+    current_strategy(n, sigma);
+  } else {
+    average_strategy(n, sigma);
+  }
+}
+
+void Game::reach_pass(uint32_t idx, std::vector<float> r[2], Mode mode, std::vector<StreetEndSample>* samples) {
+  const Node& n = nodes_[idx];
+  if (n.type == NodeType::Leaf) {
+    for (int p = 0; p < 2; ++p) leaf_reach_[p][n.slot] = r[p];
+    return;
+  }
+  if (n.type == NodeType::Chance) {
+    if (!samples || n.board_size != cfg_.board.size()) return;
+    StreetEndSample s;
+    s.info.node = idx;
+    s.info.board = cfg_.board;
+    s.info.contrib = n.contrib[0];
+    s.info.stack_left = cfg_.stack + cfg_.pot / 2 - n.contrib[0];
+    s.all_in = s.info.stack_left <= kEps;
+    for (int p = 0; p < 2; ++p) {
+      s.reach[p] = r[p];
+      s.value[p].assign(hands_[p].size(), 0.f);
+      walk(idx, p, r[1 - p].data(), s.value[p].data(), Mode::Average);
+    }
+    samples->push_back(std::move(s));
+    return;
+  }
+  if (n.type != NodeType::Action) return;
+  const size_t na = n.num_children, nh = hands_[n.player].size();
+  std::vector<float> sigma(na * nh);
+  strategy_for(n, sigma.data(), mode);
+  for (size_t a = 0; a < na; ++a) {
+    std::vector<float> nr[2] = {r[0], r[1]};
+    for (size_t h = 0; h < nh; ++h) nr[n.player][h] *= sigma[a * nh + h];
+    reach_pass(n.first_child + static_cast<uint32_t>(a), nr, mode, samples);
+  }
+}
+
+void Game::compute_leaf_values(Mode mode) {
+  if (!leaf_eval_) throw std::runtime_error("depth-limited tree: no leaf evaluator set");
+  std::vector<float> r[2];
+  for (int p = 0; p < 2; ++p) {
+    r[p].resize(hands_[p].size());
+    for (size_t h = 0; h < hands_[p].size(); ++h) r[p][h] = hands_[p][h].weight;
+  }
+  reach_pass(0, r, mode == Mode::Train ? Mode::Train : Mode::Average, nullptr);
+  pool_->parallel_for(static_cast<int>(leaves_.size()), [&](int k) {
+    const Node& n = nodes_[leaves_[k]];
+    LeafInfo info;
+    info.node = leaves_[k];
+    info.board = cfg_.board;
+    info.contrib = n.contrib[0];
+    info.stack_left = cfg_.stack + cfg_.pot / 2 - n.contrib[0];
+    const float* const rr[2] = {leaf_reach_[0][k].data(), leaf_reach_[1][k].data()};
+    float* const vv[2] = {leaf_val_[0][k].data(), leaf_val_[1][k].data()};
+    leaf_eval_->evaluate(*this, info, rr, vv);
+  });
+}
+
+std::vector<StreetEndSample> Game::street_end_samples() {
+  std::vector<float> r[2];
+  for (int p = 0; p < 2; ++p) {
+    r[p].resize(hands_[p].size());
+    for (size_t h = 0; h < hands_[p].size(); ++h) r[p][h] = hands_[p][h].weight;
+  }
+  std::vector<StreetEndSample> out;
+  reach_pass(0, r, Mode::Average, &out);
+  return out;
+}
+
+void Game::first_street_nodes(uint32_t idx, std::vector<uint32_t>& out) const {
+  const Node& n = nodes_[idx];
+  if (n.type != NodeType::Action) return;
+  out.push_back(idx);
+  for (uint32_t a = 0; a < n.num_children; ++a) first_street_nodes(n.first_child + a, out);
+}
+
+std::vector<float> Game::first_street_strategy() const {
+  std::vector<uint32_t> ids;
+  first_street_nodes(0, ids);
+  std::vector<float> out;
+  for (uint32_t id : ids) {
+    const Node& n = nodes_[id];
+    std::vector<float> sigma(static_cast<size_t>(n.num_children) * hands_[n.player].size());
+    strategy_for(n, sigma.data(), Mode::Average);
+    out.insert(out.end(), sigma.begin(), sigma.end());
+  }
+  return out;
+}
+
+void Game::lock_first_street(const std::vector<float>& strategy) {
+  std::vector<uint32_t> ids;
+  first_street_nodes(0, ids);
+  lock_off_.assign(num_action_nodes_, -1);
+  size_t off = 0;
+  for (uint32_t id : ids) {
+    const Node& n = nodes_[id];
+    lock_off_[n.slot] = static_cast<int64_t>(off);
+    off += static_cast<size_t>(n.num_children) * hands_[n.player].size();
+  }
+  if (off != strategy.size()) {
+    lock_off_.clear();
+    throw std::invalid_argument("lock_first_street: strategy size does not match the tree");
+  }
+  lock_data_ = strategy;
+}
+
+void Game::reset() {
+  std::fill(regrets_.begin(), regrets_.end(), 0.f);
+  std::fill(strategy_sum_.begin(), strategy_sum_.end(), 0.f);
+  std::fill(regrets16_.begin(), regrets16_.end(), 0);
+  std::fill(strategy_sum16_.begin(), strategy_sum16_.end(), 0);
+  std::fill(regret_scale_.begin(), regret_scale_.end(), 0.f);
+  std::fill(strategy_scale_.begin(), strategy_scale_.end(), 0.f);
+  iteration_ = 0;
 }
 
 double Game::pair_weight_sum() const {
@@ -707,6 +848,7 @@ double Game::pair_weight_sum() const {
 }
 
 double Game::exploitability() {
+  if (!leaves_.empty()) compute_leaf_values(Mode::Average);
   const double z = pair_weight_sum();
   double br = 0;
   for (int p = 0; p < 2; ++p) {
@@ -719,6 +861,7 @@ double Game::exploitability() {
 }
 
 std::array<double, 2> Game::expected_values() {
+  if (!leaves_.empty()) compute_leaf_values(Mode::Average);
   const double z = pair_weight_sum();
   std::array<double, 2> ev{};
   for (int p = 0; p < 2; ++p) {
@@ -868,6 +1011,10 @@ NodeView Game::node_view(const std::vector<std::string>& path) {
   }
   if (n.type == NodeType::Showdown) {
     v.type = "showdown";
+    return v;
+  }
+  if (n.type == NodeType::Leaf) {
+    v.type = "leaf";
     return v;
   }
   if (n.type == NodeType::Chance) {

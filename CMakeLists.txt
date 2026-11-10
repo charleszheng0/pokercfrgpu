@@ -47,7 +47,7 @@ add_executable(pokerlab src/server.cpp)
 target_link_libraries(pokerlab pokercore pokerstore)
 target_compile_definitions(pokerlab PRIVATE WEB_DIR="${CMAKE_SOURCE_DIR}/web" DATA_DIR="${CMAKE_SOURCE_DIR}/data")
 
-add_executable(tests tests/tests.cpp)
+add_executable(tests tests/tests.cpp src/value_net.cpp)
 target_link_libraries(tests pokercore)
 
 enable_testing()
@@ -55,3 +55,8 @@ add_test(NAME tests COMMAND tests)
 
 add_executable(pokerscreen src/screen.cpp)
 target_link_libraries(pokerscreen pokercore)
+
+# Depth-limited flop solving with a leaf value network.
+add_executable(pokervnet src/vnet.cpp src/value_net.cpp)
+target_link_libraries(pokervnet pokercore)
+target_compile_options(pokervnet PRIVATE -Wall -Wextra)

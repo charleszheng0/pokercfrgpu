@@ -7,6 +7,7 @@
 
 #include "game.hpp"
 #include "spot.hpp"
+#include "value_net.hpp"
 
 using namespace poker;
 
@@ -261,12 +262,66 @@ void test_compression() {
   CHECK(expl < 0.5, "16-bit exploitability %.3f%%", expl);
 }
 
+// Depth limit: with no betting after the flop, the value of a flop leaf is its check-down
+// value. A depth-limited tree with check-down leaves must then match the full tree.
+void test_depth_limit() {
+  std::printf("[8] depth-limited flop vs full tree (no betting after the flop)\n");
+  std::map<std::string, std::string> f = {{"board", "Ks 9d 5c"}, {"pot", "10"}, {"stack", "40"},
+                                          {"oop", "AA,KK,QQ,JJ,AK,KQ,T9s,A5s,87s"}, {"ip", "AA,KK,TT,AK,AQ,KJs,QJs,65s"},
+                                          {"flop_bets", "50"}, {"flop_raises", "100"}, {"turn_bets", "none"},
+                                          {"river_bets", "none"}, {"turn_raises", "none"}, {"river_raises", "none"},
+                                          {"max_raises", "2"}, {"allin", "0"}, {"threads", "4"}};
+  GameConfig cfg = config_from_fields(f);
+  Game full(cfg);
+  cfg.depth_limit = 1;
+  Game dl(cfg);
+  NetLeafEvaluator eq(dl, nullptr);
+  dl.set_leaf_evaluator(&eq);
+  for (int i = 0; i < 300; ++i) full.run_iteration(), dl.run_iteration();
+  const auto ef = full.expected_values(), ed = dl.expected_values();
+  const double xf = full.exploitability(), xd = dl.exploitability();
+  std::printf("  leaves %zu; EV OOP full %.4f dl %.4f; expl full %.4f dl %.4f chips\n", dl.num_leaves(), ef[0], ed[0], xf,
+              xd);
+  CHECK(dl.num_leaves() > 0, "no leaves");
+  CHECK(std::fabs(ef[0] - ed[0]) < 2e-3 && std::fabs(ef[1] - ed[1]) < 2e-3, "EVs differ");
+  CHECK(std::fabs(xf - xd) < 2e-3, "exploitability differs");
+
+  // Leaf samples of the full tree: value / (contrib * M) is the check-down value d.
+  auto samples = full.street_end_samples();
+  CHECK(samples.size() == dl.num_leaves(), "%zu samples, %zu leaves", samples.size(), dl.num_leaves());
+  std::vector<std::pair<Card, Card>> hs[2];
+  for (int p = 0; p < 2; ++p)
+    for (const auto& h : full.hands(p)) hs[p].push_back({h.c1, h.c2});
+  FlopRunouts R(cfg.board, hs);
+  LeafFeatures F;
+  double worst = 0;
+  for (const auto& s : samples) {
+    const float* const r[2] = {s.reach[0].data(), s.reach[1].data()};
+    compute_leaf_features(R, r, s.info.contrib, s.info.stack_left, F);
+    for (int p = 0; p < 2; ++p)
+      for (size_t h = 0; h < hs[p].size(); ++h)
+        if (F.mass[p][h] > 1e-3)
+          worst = std::max(worst, std::fabs(s.value[p][h] / (s.info.contrib * F.mass[p][h]) - F.d[p][h]));
+  }
+  std::printf("  largest |value / (contrib x M) - d| over samples: %.2e\n", worst);
+  CHECK(worst < 1e-3, "check-down value mismatch %.2e", worst);
+
+  // Node locking: the flop strategy of the solved tree, locked into a fresh tree, gives the same EV.
+  Game locked(config_from_fields(f));
+  locked.lock_first_street(full.first_street_strategy());
+  for (int i = 0; i < 300; ++i) locked.run_iteration();
+  const auto el = locked.expected_values();
+  std::printf("  locked flop: EV OOP %.4f (full %.4f)\n", el[0], ef[0]);
+  CHECK(std::fabs(el[0] - ef[0]) < 0.02, "locked EV differs");
+}
+
 int main(int argc, char** argv) {
   bool quick = argc > 1 && std::string(argv[1]) == "--quick";
   test_ranges();
   test_terminals();
   test_toy_river();
   test_compression();
+  test_depth_limit();
   if (!quick) {
     test_isomorphism();
     test_evaluator();
