@@ -828,6 +828,64 @@ void Game::lock_first_street(const std::vector<float>& strategy) {
   lock_data_ = strategy;
 }
 
+FlatTree Game::export_flat() const {
+  if (!leaves_.empty() || !lock_off_.empty())
+    throw std::runtime_error("export_flat: depth-limited or locked trees are not supported");
+  FlatTree t;
+  for (int p = 0; p < 2; ++p) {
+    t.n_hands[p] = static_cast<int>(hands_[p].size());
+    for (const auto& h : hands_[p]) {
+      t.c1[p].push_back(h.c1), t.c2[p].push_back(h.c2), t.weight[p].push_back(h.weight);
+    }
+    t.same[p] = same_combo_[p];
+    t.hand_perm[p].resize(24 * hands_[p].size());
+    for (int k = 0; k < 24; ++k)
+      for (size_t h = 0; h < hands_[p].size(); ++h)
+        t.hand_perm[p][k * hands_[p].size() + h] =
+            hand_perm_[k][p].empty() ? static_cast<uint16_t>(h) : hand_perm_[k][p][h];
+  }
+  const size_t n = nodes_.size();
+  t.type.resize(n), t.player.resize(n), t.board_size.resize(n), t.dealt.resize(n);
+  t.num_children.resize(n), t.first_child.resize(n), t.first_entry.resize(n), t.board_id.resize(n);
+  t.data.resize(n), t.contrib0.resize(n), t.contrib1.resize(n);
+  for (size_t i = 0; i < n; ++i) {
+    const Node& x = nodes_[i];
+    t.type[i] = static_cast<uint8_t>(x.type), t.player[i] = x.player, t.board_size[i] = x.board_size;
+    t.dealt[i] = x.dealt, t.num_children[i] = x.num_children, t.first_child[i] = x.first_child;
+    t.first_entry[i] = x.first_action, t.board_id[i] = x.board_id, t.data[i] = x.data;
+    t.contrib0[i] = static_cast<float>(x.contrib[0]), t.contrib1[i] = static_cast<float>(x.contrib[1]);
+  }
+  t.arena_size = arena_size_;
+  for (const auto& e : chance_entries_) t.e_card.push_back(e.card), t.e_perm.push_back(e.perm), t.e_child.push_back(e.child);
+  for (int k = 0; k < 24; ++k) t.perm_inv[k] = suit_perms().inv[k];
+  t.showdown_index = showdown_index_;
+  for (const auto& sd : showdowns_)
+    for (int p = 0; p < 2; ++p) t.sd_strength[p].push_back(sd.strength[p]), t.sd_order[p].push_back(sd.order[p]);
+  t.pot = cfg_.pot;
+  t.pair_weight_sum = pair_weight_sum();
+  return t;
+}
+
+void Game::unlock_first_street(double regret_scale, double sum_scale) {
+  if (lock_off_.empty()) return;
+  std::vector<uint32_t> ids;
+  first_street_nodes(0, ids);
+  for (uint32_t id : ids) {
+    const Node& n = nodes_[id];
+    const size_t len = static_cast<size_t>(n.num_children) * hands_[n.player].size();
+    std::vector<float> r(len), sum(len);
+    for (size_t i = 0; i < len; ++i) {
+      const float x = lock_data_[lock_off_[n.slot] + i];
+      r[i] = static_cast<float>(x * regret_scale);
+      sum[i] = static_cast<float>(x * sum_scale);
+    }
+    store_regrets(n, r.data());
+    store_strategy_sum(n, sum.data());
+  }
+  lock_off_.clear();
+  lock_data_.clear();
+}
+
 void Game::reset() {
   std::fill(regrets_.begin(), regrets_.end(), 0.f);
   std::fill(strategy_sum_.begin(), strategy_sum_.end(), 0.f);

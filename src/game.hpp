@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "cards.hpp"
+#include "flat_tree.hpp"
 #include "range.hpp"
 #include "thread_pool.hpp"
 
@@ -151,6 +152,10 @@ class Game {
   const std::vector<HandInfo>& hands(int p) const { return hands_[p]; }
   size_t num_leaves() const { return leaves_.size(); }
   const std::vector<uint32_t>& leaf_nodes() const { return leaves_; }
+  // Reach of player p at leaf k, as last computed (current strategy in training, average after
+  // exploitability() or expected_values()).
+  const std::vector<float>& leaf_reach(int p, size_t k) const { return leaf_reach_[p][k]; }
+  double leaf_contrib(size_t k) const { return nodes_[leaves_[k]].contrib[0]; }
 
   void run_iteration();      // one DCFR iteration (both players)
   double exploitability();   // chips: (BR value of OOP + BR value of IP) / 2
@@ -176,6 +181,10 @@ class Game {
   // keep this strategy in training and in the average; their regrets are not updated.
   void lock_first_street(const std::vector<float>& strategy);
   void reset();  // clear regrets and strategy sums (keeps locks)
+  FlatTree export_flat() const;  // the tree for the level-by-level (GPU) solver
+  // Warm start: remove the lock and seed the first-street nodes so that DCFR starts from the
+  // locked strategy: regrets = strategy x regret_scale, strategy sums = strategy x sum_scale.
+  void unlock_first_street(double regret_scale, double sum_scale);
 
   // Full trees: reach and values at every line that ends the first street (average strategy).
   std::vector<StreetEndSample> street_end_samples();

@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <functional>
 #include <map>
 #include <random>
 #include <set>
@@ -227,7 +228,8 @@ int cmd_train(const std::map<std::string, std::string>& f) {
   const auto t0 = Clock::now();
   for (size_t i = 0; i < files.size(); ++i) {
     const VnetFile d = read_vnet_file(files[i]);
-    const bool valid = valid_every > 0 && static_cast<int>(i % valid_every) == valid_every - 1;
+    // Validation holds out whole boards (suit renaming = same board), never single files.
+    const bool valid = valid_every > 0 && std::hash<std::string>()(canonical_board_key(d.board)) % valid_every == 0;
     file_rows(d, valid ? Xv : X, valid ? Yv : Y);
     (valid ? nv : nt)++;
   }
@@ -329,6 +331,24 @@ int cmd_eval(const std::map<std::string, std::string>& f) {
   const DlResult nn = depth_limited_solve(pr, board, have_net ? &net : nullptr, dl_iters);
   std::printf("%.1f s\n", nn.secs);
   if (dl_only) return 0;
+  if (field(f, "warm", "0") == "1") {
+    // Warm start: K iterations with the network's flop strategy locked, then unlock (seeded) and
+    // run plain DCFR to the target. Compare the total time with plain DCFR from zero.
+    Game g(flop_config(pr, board, 0));
+    const int K = static_cast<int>(parse_number(f, "warm_iters", 20));
+    const double rs = parse_number(f, "regret_scale", 1.0) * pr.pot, ss = parse_number(f, "sum_scale", 1.0);
+    const auto t0 = Clock::now();
+    g.lock_first_street(nn.flop);
+    for (int i = 0; i < K; ++i) g.run_iteration();
+    g.unlock_first_street(rs, ss);
+    const double t_lock = since(t0);
+    SolveLog log;
+    const double e = solve(g, pr.pot, target, full_iters, 10, &log, false);
+    std::printf("warm start: DL %.1f s + locked %d it %.1f s + DCFR %d it %.1f s = %.1f s total, expl %.3f%%\n", nn.secs, K,
+                t_lock, g.iterations() - K, log.secs.back(), nn.secs + t_lock + log.secs.back(), e);
+    for (size_t k = 0; k < log.iters.size(); ++k) std::printf("WCURVE %d %.2f %.3f\n", log.iters[k], log.secs[k], log.expl[k]);
+    return 0;
+  }
   if (field(f, "only_nn", "0") == "1") {  // score the network strategy only (no DCFR baseline)
     Game g(flop_config(pr, board, 0));
     double ls = 0;
@@ -400,6 +420,124 @@ void shape_range(std::vector<float>& w, const std::vector<float>& d, std::mt1993
     for (auto& x : w) x /= mx;
 }
 
+// Label one leaf: solve the turn and river for these ranges (the flop checked through) and
+// store the leaf values. w[p][combo] = range weight.
+bool solve_label(const Preset& pr, const std::vector<Card>& board, double pot, double stack,
+                 const std::vector<float> w[2], double target, int threads, const std::string& path, bool verbose) {
+  if (FILE* e = std::fopen(path.c_str(), "rb")) {
+    std::fclose(e);
+    return false;
+  }
+  GameConfig cfg = flop_config(pr, board, 0);
+  cfg.pot = pot, cfg.stack = stack, cfg.check_first_street = true, cfg.threads = threads;
+  for (int p = 0; p < 2; ++p)
+    for (int ci = 0; ci < kNumCombos; ++ci) cfg.range[p].weight[ci] = w[p][ci];
+  const auto t0 = Clock::now();
+  Game g(cfg);
+  const double expl = solve(g, pot, target, 400, 20, nullptr, false);
+  auto samples = g.street_end_samples();
+  VnetFile d;
+  d.preset = pr.name, d.board = board, d.pot = pot, d.stack = stack, d.expl_pct = expl;
+  d.iterations = g.iterations();
+  for (int p = 0; p < 2; ++p)
+    for (const auto& h : g.hands(p)) d.combos[p].push_back(h.combo);
+  for (auto& s : samples) {
+    VnetLeaf l;
+    l.contrib = s.info.contrib, l.stack_left = s.info.stack_left, l.all_in = s.all_in;
+    for (int p = 0; p < 2; ++p) l.reach[p] = std::move(s.reach[p]), l.value[p] = std::move(s.value[p]);
+    d.leaves.push_back(std::move(l));
+  }
+  write_vnet_file(path, d);
+  if (verbose)
+    std::printf("    label %-16s %-8s pot %5.1f stack %5.1f  %3d it  expl %.3f%%  %5.1f s\n", pr.name.c_str(),
+                cards_str(board).c_str(), pot, stack, g.iterations(), expl, since(t0));
+  std::fflush(stdout);
+  return true;
+}
+
+// ---------------------------------------------------------------- gen3: ranges the solver visits
+
+// ReBeL-style data: run the depth-limited solve on a training flop, take the leaf ranges at
+// several iterations (and the final average ranges), and label each with solve_label.
+int cmd_gen3(const std::map<std::string, std::string>& f) {
+  const std::string out = field(f, "out", "data/vnet3");
+  const int count = static_cast<int>(parse_number(f, "count", 100));
+  const unsigned seed = static_cast<unsigned>(parse_number(f, "seed", 21));
+  const double target = parse_number(f, "target", 0.5);
+  const int dl_iters = static_cast<int>(parse_number(f, "dl_iters", 300));
+  const std::string net_path = field(f, "net", "none");
+  const bool only3 = field(f, "pots", "3bet") == "3bet";
+  Mlp net;
+  if (net_path != "none") net.load(net_path);
+  const std::set<std::string> held_out = list_flop_keys(field(f, "exclude", "data/flop_list.txt"));
+  std::mt19937 rng(seed);
+  const auto& ps = presets();
+  const std::set<int> snaps = {2, 5, 12, 30, 80, 200};
+  for (int i = 0; i < count; ++i) {
+    const Preset& pr = only3 ? ps[4 + rng() % 2] : ps[rng() % ps.size()];
+    std::vector<Card> board;
+    for (;;) {
+      std::vector<int> deck(kNumCards);
+      for (int c = 0; c < kNumCards; ++c) deck[c] = c;
+      std::shuffle(deck.begin(), deck.end(), rng);
+      board.assign(deck.begin(), deck.begin() + 3);
+      if (!held_out.count(canonical_board_key(board))) break;
+    }
+    const auto t0 = Clock::now();
+    Game g(flop_config(pr, board, 1));
+    NetLeafEvaluator ev(g, net_path != "none" ? &net : nullptr);
+    g.set_leaf_evaluator(&ev);
+    struct Pick {
+      double contrib;
+      std::vector<float> w[2];
+      int it;
+    };
+    std::vector<Pick> picks;
+    auto take = [&](int it, int n_leaves) {
+      std::vector<size_t> ks;
+      for (size_t k = 0; k < g.num_leaves(); ++k) {
+        const double sl = pr.stack + pr.pot / 2 - g.leaf_contrib(k);
+        double m0 = 0, m1 = 0;
+        for (float x : g.leaf_reach(0, k)) m0 += x;
+        for (float x : g.leaf_reach(1, k)) m1 += x;
+        if (sl > 0.05 * g.leaf_contrib(k) && m0 > 1e-3 && m1 > 1e-3) ks.push_back(k);
+      }
+      std::shuffle(ks.begin(), ks.end(), rng);
+      for (int j = 0; j < n_leaves && j < static_cast<int>(ks.size()); ++j) {
+        Pick pk;
+        pk.contrib = g.leaf_contrib(ks[j]);
+        pk.it = it;
+        for (int p = 0; p < 2; ++p) {
+          pk.w[p].assign(kNumCombos, 0.f);
+          const auto& r = g.leaf_reach(p, ks[j]);
+          float mx = 0;
+          for (float x : r) mx = std::max(mx, x);
+          for (size_t h = 0; h < r.size(); ++h)
+            pk.w[p][g.hands(p)[h].combo] = std::max(r[h] / mx, 1e-4f);  // keep every hand: its value matters
+        }
+        picks.push_back(std::move(pk));
+      }
+    };
+    for (int it = 1; it <= dl_iters; ++it) {
+      g.run_iteration();
+      if (snaps.count(it)) take(it, 1);
+    }
+    g.exploitability();  // leaf reach = average strategy
+    take(dl_iters, 3);
+    std::printf("[%d] %-16s %-8s DL %.1f s, %zu leaves to label\n", i, pr.name.c_str(), cards_str(board).c_str(),
+                since(t0), picks.size());
+    std::fflush(stdout);
+    for (size_t j = 0; j < picks.size(); ++j) {
+      const auto& pk = picks[j];
+      char name[256];
+      std::snprintf(name, sizeof name, "%s/s%u_%04d_%s_it%d_%zu.bin", out.c_str(), seed, i, cards_str(board).c_str(), pk.it, j);
+      const double pot = 2 * pk.contrib, stack = pr.stack + pr.pot / 2 - pk.contrib;
+      solve_label(pr, board, pot, stack, pk.w, target, 0, name, true);
+    }
+  }
+  return 0;
+}
+
 int cmd_gen2(const std::map<std::string, std::string>& f) {
   const std::string out = field(f, "out", "data/vnet2");
   const int count = static_cast<int>(parse_number(f, "count", 1000));
@@ -411,7 +549,8 @@ int cmd_gen2(const std::map<std::string, std::string>& f) {
   std::uniform_real_distribution<double> U(0, 1);
   const auto& ps = presets();
   for (int i = 0; i < count; ++i) {
-    const Preset& pr = ps[rng() % ps.size()];
+    const bool only3 = field(f, "pots", "all") == "3bet";
+    const Preset& pr = only3 ? ps[4 + rng() % 2] : ps[rng() % ps.size()];
     std::vector<Card> board;
     for (;;) {
       std::vector<int> deck(kNumCards);
@@ -492,6 +631,7 @@ int main(int argc, char** argv) {
   try {
     if (cmd == "gen") return cmd_gen(f);
     if (cmd == "gen2") return cmd_gen2(f);
+    if (cmd == "gen3") return cmd_gen3(f);
     if (cmd == "train") return cmd_train(f);
     if (cmd == "eval") return cmd_eval(f);
   } catch (const std::exception& e) {

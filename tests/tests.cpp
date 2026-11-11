@@ -8,6 +8,7 @@
 #include "game.hpp"
 #include "spot.hpp"
 #include "value_net.hpp"
+#include "flat_solver.hpp"
 
 using namespace poker;
 
@@ -315,6 +316,26 @@ void test_depth_limit() {
   CHECK(std::fabs(el[0] - ef[0]) < 0.02, "locked EV differs");
 }
 
+// The level-by-level (GPU) solver runs the same DCFR: on a turn spot (chance nodes, suit
+// symmetry) the first iterations must give the same exploitability as Game.
+void test_flat_solver() {
+  std::printf("[9] level-by-level solver (%s back end) vs Game\n", FlatSolver::backend());
+  GameConfig cfg = config_from_fields(srp_spot("Ks 9d 5c 2h"));
+  cfg.compress = 0;
+  Game g(cfg);
+  FlatSolver fs(g.export_flat());
+  double worst = 0;
+  for (int it = 1; it <= 12; ++it) {
+    g.run_iteration(), fs.run_iteration();
+    if (it % 4 == 0) {
+      const double a = g.exploitability() / cfg.pot * 100, b = fs.exploitability() / cfg.pot * 100;
+      std::printf("  it %2d  Game %.4f%%  flat %.4f%%\n", it, a, b);
+      worst = std::max(worst, std::fabs(a - b) / a);  // relative: float order differs
+    }
+  }
+  CHECK(worst < 2e-3, "exploitability differs by %.3f%% (relative)", worst * 100);
+}
+
 int main(int argc, char** argv) {
   bool quick = argc > 1 && std::string(argv[1]) == "--quick";
   test_ranges();
@@ -322,6 +343,7 @@ int main(int argc, char** argv) {
   test_toy_river();
   test_compression();
   test_depth_limit();
+  test_flat_solver();
   if (!quick) {
     test_isomorphism();
     test_evaluator();
