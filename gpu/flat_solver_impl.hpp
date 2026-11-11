@@ -52,6 +52,8 @@ struct FlatSolverImpl {
   Buf<uint64_t> data;
   Buf<float> contrib0, contrib1;
   Buf<uint8_t> c1[2], c2[2];
+  Buf<uint32_t> ch_off[2];  // per card c: hands of player p that hold c are ch_idx[ch_off[c] .. ch_off[c+1])
+  Buf<uint16_t> ch_idx[2];
   Buf<int32_t> same[2];
   Buf<uint8_t> e_card, e_perm;
   Buf<uint16_t> e_child;
@@ -76,6 +78,8 @@ struct FlatSolverImpl {
   Buf<uint32_t> list;
   std::vector<int64_t> lbeg, lcnt;  // per level * kNumCat
   int64_t max_show = 0, max_fold = 0;
+  static constexpr int kChunk = 32;  // showdown prefix sums: chunk size
+  int nch = 1;                       // chunks per hand list
 
   // Profiling: with prof on, every kernel is followed by a sync and its time is added up.
   bool prof = false;
@@ -151,6 +155,15 @@ struct FlatSolverImpl {
     board_id.upload(t.board_id), data.upload(t.data), contrib0.upload(t.contrib0), contrib1.upload(t.contrib1);
     for (int p = 0; p < 2; ++p) {
       c1[p].upload(t.c1[p]), c2[p].upload(t.c2[p]), same[p].upload(t.same[p]), hand_perm[p].upload(t.hand_perm[p]);
+      std::vector<uint32_t> off(53, 0);
+      std::vector<uint16_t> idx;
+      for (int c = 0; c < 52; ++c) {
+        off[c] = static_cast<uint32_t>(idx.size());
+        for (int h = 0; h < H[p]; ++h)
+          if (t.c1[p][h] == c || t.c2[p][h] == c) idx.push_back(static_cast<uint16_t>(h));
+      }
+      off[52] = static_cast<uint32_t>(idx.size());
+      ch_off[p].upload(off), ch_idx[p].upload(idx);
     }
     e_card.upload(t.e_card), e_perm.upload(t.e_perm), e_child.upload(t.e_child);
     perm_inv.upload(std::vector<int32_t>(t.perm_inv, t.perm_inv + 24));
@@ -196,8 +209,9 @@ struct FlatSolverImpl {
     regret.alloc(t.arena_size), ssum.alloc(t.arena_size);
     regret.zero(), ssum.zero();
     R.alloc(nodes * Hmax), V.alloc(nodes * Hmax);
-    prefix.alloc(static_cast<size_t>(std::max<int64_t>(max_show, 1)) * (Hmax + 1));
-    foldsum.alloc(static_cast<size_t>(std::max<int64_t>(max_fold, 1)) * 53);
+    nch = (Hmax + kChunk - 1) / kChunk;
+    prefix.alloc(static_cast<size_t>(std::max<int64_t>(max_show, 1)) * (nch + 1));
+    foldsum.alloc(static_cast<size_t>(std::max<int64_t>(max_fold, 1)) * 52);
     device_sync();
   }
 
@@ -294,7 +308,7 @@ struct FlatSolverImpl {
   // Up pass: values of the traverser's hands at every live node, deepest level first.
   void up(int p, int mode, float disc_pos, float disc_neg) {
     using namespace flat;
-    const int o = 1 - p, Hp = H[p], Ho = H[o], HM = Hmax;
+    const int o = 1 - p, Hp = H[p], HM = Hmax;
     float* Rp = R.p;
     float* Vp = V.p;
     const uint8_t* lv = live.p;
@@ -310,9 +324,10 @@ struct FlatSolverImpl {
     const float* ct1 = contrib1.p;
     const uint8_t* hc1 = c1[p].p;
     const uint8_t* hc2 = c2[p].p;
-    const uint8_t* oc1 = c1[o].p;
-    const uint8_t* oc2 = c2[o].p;
     const int32_t* sm = same[p].p;
+    const uint32_t* choff = ch_off[o].p;
+    const uint16_t* chidx = ch_idx[o].p;
+    const int NCH = nch, CH = kChunk;
     const uint8_t* ecard = e_card.p;
     const uint8_t* eperm = e_perm.p;
     const uint16_t* echild = e_child.p;
@@ -335,25 +350,26 @@ struct FlatSolverImpl {
       // Fold nodes: card sums of the opponent reach, then compatible reach x payoff.
       if (cnt(l, kFold)) {
         const uint32_t* lst = L + beg(l, kFold);
-        kernel(3, cnt(l, kFold), LAMBDA(int64_t j) {
+        // One thread per (node, card): reach of the opponent hands that hold the card.
+        kernel(3, cnt(l, kFold) * 52, LAMBDA(int64_t i) {
+          const int64_t j = i / 52;
+          const int c = static_cast<int>(i % 52);
           const uint32_t n = lst[j];
-          acc_t* f = fs + j * 53;
-          for (int c = 0; c < 53; ++c) f[c] = 0;
           if (!lv[n]) return;
           const float* r = Rp + static_cast<size_t>(n) * HM;
-          for (int k = 0; k < Ho; ++k) {
-            f[52] += r[k];
-            f[oc1[k]] += r[k];
-            f[oc2[k]] += r[k];
-          }
+          acc_t sum = 0;
+          for (uint32_t a = choff[c]; a < choff[c + 1]; ++a) sum += r[chidx[a]];
+          fs[j * 52 + c] = sum;
         });
         kernel(4, cnt(l, kFold) * Hp, LAMBDA(int64_t i) {
           const int64_t j = i / Hp;
           const uint32_t n = lst[j];
           const int h = static_cast<int>(i % Hp);
           if (!lv[n]) return;
-          const acc_t* f = fs + j * 53;
-          acc_t v = f[52] - f[hc1[h]] - f[hc2[h]];
+          const acc_t* f = fs + j * 52;
+          acc_t total = 0;  // every hand holds two cards
+          for (int c = 0; c < 52; ++c) total += f[c];
+          acc_t v = total * 0.5f - f[hc1[h]] - f[hc2[h]];
           if (sm[h] >= 0) v += Rp[static_cast<size_t>(n) * HM + sm[h]];
           const int fp = pl[n];
           const acc_t c = fp == 0 ? ct0[n] : ct1[n];
@@ -364,17 +380,28 @@ struct FlatSolverImpl {
       // card removal from the per-card position lists.
       if (cnt(l, kShow)) {
         const uint32_t* lst = L + beg(l, kShow);
-        const int HM1 = HM + 1;
-        kernel(5, cnt(l, kShow), LAMBDA(int64_t j) {
+        // Chunked prefix sums: S[c + 1] = reach in chunks 0..c (sorted order). Chunk sums run in
+        // parallel; then one short prefix per node over the chunks.
+        kernel(5, cnt(l, kShow) * NCH, LAMBDA(int64_t i) {
+          const int64_t j = i / NCH;
+          const int c = static_cast<int>(i % NCH);
           const uint32_t n = lst[j];
           if (!lv[n]) return;
           const int64_t b = static_cast<int64_t>(sdi[bid[n]]) * 2 + p;
           const int m = smm[b];
           const uint16_t* ord = sord + sord_off[b];
           const float* r = Rp + static_cast<size_t>(n) * HM;
-          acc_t* P = pre + j * HM1;
-          P[0] = 0;
-          for (int k = 0; k < m; ++k) P[k + 1] = P[k] + r[ord[k]];
+          const int k0 = c * CH, k1 = k0 + CH < m ? k0 + CH : m;
+          acc_t sum = 0;
+          for (int k = k0; k < k1; ++k) sum += r[ord[k]];
+          pre[j * (NCH + 1) + c + 1] = sum;
+        });
+        kernel(5, cnt(l, kShow), LAMBDA(int64_t j) {
+          const uint32_t n = lst[j];
+          if (!lv[n]) return;
+          acc_t* S = pre + j * (NCH + 1);
+          S[0] = 0;
+          for (int c = 0; c < NCH; ++c) S[c + 1] += S[c];
         });
         kernel(6, cnt(l, kShow) * Hp, LAMBDA(int64_t i) {
           const int64_t j = i / Hp;
@@ -391,8 +418,13 @@ struct FlatSolverImpl {
           const int hi = shi[sown[b] + h], m = smm[b];
           const uint16_t* ord = sord + sord_off[b];
           const float* r = Rp + static_cast<size_t>(n) * HM;
-          const acc_t* P = pre + j * HM1;
-          acc_t win = P[lo], lose = P[m] - P[hi];
+          const acc_t* S = pre + j * (NCH + 1);
+          // P(x) = reach of sorted positions < x = full chunks + the rest of x's chunk.
+          acc_t P_lo = S[lo / CH], P_hi = S[hi / CH], P_m = S[m / CH];
+          for (int k = (lo / CH) * CH; k < lo; ++k) P_lo += r[ord[k]];
+          for (int k = (hi / CH) * CH; k < hi; ++k) P_hi += r[ord[k]];
+          for (int k = (m / CH) * CH; k < m; ++k) P_m += r[ord[k]];
+          acc_t win = P_lo, lose = P_m - P_hi;
           const int cards[2] = {hc1[h], hc2[h]};
           for (int q = 0; q < 2; ++q) {
             const uint64_t a0 = scoff[b * 53 + cards[q]], a1 = scoff[b * 53 + cards[q] + 1];
