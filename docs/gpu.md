@@ -73,6 +73,27 @@ cmake -S . -B build -DPOKER_CUDA=ON -DCMAKE_BUILD_TYPE=Release && cmake --build 
   node views), and that 16-bit storage falls back to the CPU.
 - The web solver shows "GPU" next to the iteration count when a solve ran on the GPU.
 
+### Colab check (2026-11-11, Tesla T4, CUDA 13.0, 2 CPU cores)
+
+`notebooks/colab_gpu_option.ipynb` (script `scripts/colab_gpu_option.sh`) built the three `_gpu`
+programs and ran each one next to its CPU program. All tests passed.
+
+| Run | CPU program (Colab, 2 cores) | `_gpu` program, `--gpu 1` (T4) |
+|---|---|---|
+| `pokersolve`, turn Ks9d5c2h, 200 iterations | 35.00 s, 0.482%, EV OOP 39.890 | 1.88 s, 0.473%, EV OOP 39.885 |
+| `pokerbatch`, 4 river + 2 turn + 1 flop (3-bet Ac9d8c) | 319 s | 27 s |
+| of which: turn 9c2sQs4d / 5d9dTc8h | 90.69 s / 64.29 s | 5.41 s / 3.32 s |
+| of which: flop Ac9d8c | 157.94 s, 0.378%, 414 spots | 10.16 s, 0.382%, 414 spots |
+| `pokerlab`, one turn solve via the web API | | 1.69 s, 0.407%, `backend: cuda`, node view works |
+
+- Same boards (same seed), all 7 solves passed the gate in both runs, and every solve stored the
+  same number of spots (10, 15, 15, 15, 125, 125, 414). GPU rows have `backend=cuda` in `config`.
+- Category counts differ a little (for example mixed 211 vs 215): the two runs reach slightly
+  different near-equilibrium strategies, so a few spots change category. This is expected.
+- The first GPU river solve took 0.35 s instead of about 0.02 s: CUDA starts up on the first solve.
+- The CPU side here is Colab's 2-core CPU, not the 8-thread M2 used in the speed table above. Use
+  the speed table for speedup claims; these rows show that the `--gpu` path works end to end.
+
 ## Use for the value network
 
 `pokervnet --gpu` labels value-network training data with this solver. See
