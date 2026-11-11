@@ -77,3 +77,46 @@ flop strategy of full DCFR at the same solve time, and for check-down leaves (no
 leaf value. The depth-limited tree must then give the same EV and exploitability as the full
 tree (measured: identical to 4 decimals), the stored samples must match `d` (error < 1e-6),
 and a locked flop strategy must give the same EV.
+
+## 6. Results (measured 2026-11-10 to 11)
+
+Training loop (ReBeL style): each round runs the depth-limited solve with the current network,
+records the ranges that reach the flop-end leaves, labels each range with an exact turn+river
+DCFR solve, and retrains. 8 rounds: 0-4 on the M2 laptop, 5-7 on a Colab T4 GPU with the CUDA
+solver ([gpu.md](gpu.md)). Validation boards are not in training.
+
+| Label source | Time per exact label | Labels per hour |
+|---|---|---|
+| M2 CPU, 8 threads (540 labels) | 11.88 s | about 300 |
+| T4 GPU, CUDA solver (1,200 labels) | 3.38-3.56 s | about 860 |
+
+CUDA labels match CPU labels to a relative L2 error of 4.5e-5.
+
+Leaf value error (mean absolute error, % of the leaf pot, unseen boards): check-down heuristic
+about 15%; round 3 network 4.42-4.52%; round 7 network 4.16%.
+
+Held-out 3-bet flop Ac9d8c, flop-locked exploitability (% of pot) by round:
+
+| Round | 0 | 1 | 2 | 3 | 4 | 5 (GPU) | 6 (GPU) | 7 (GPU) |
+|---|---|---|---|---|---|---|---|---|
+| Exploitability | 8.8 | 6.7 | 4.7 | 4.25 | 4.66 | 4.41 | 4.07 | 4.28 |
+
+Three held-out 3-bet flops, round 7 network (depth-limited solve on the Colab CPU) against full
+DCFR on the T4:
+
+| Flop | Check-down leaves | Network | Full DCFR (T4) |
+|---|---|---|---|
+| Ac9d8c | 23.7% | 4.28% in 6.0 s | 0.26% in 5.1 s |
+| QcJd5d | 25.1% | 4.25% in 6.5 s | 0.66% in 8.0 s |
+| Tc9d4h | 24.4% | 3.90% in 7.7 s | 0.36% in 19.6 s |
+
+On the M2 laptop the depth-limited network solve takes 1.2-1.7 s. A full DCFR solve of Ac9d8c
+takes 39.6 s, and 20 DCFR iterations (the same 4% quality) take 6.8-18.3 s.
+
+Conclusions:
+- The network cuts the error of a depth-limited solve about 6x (24% to 4%).
+- It does not reach the 0.5% quality gate, so stored answers still come from full DCFR.
+- With a GPU, full DCFR is about as fast and about 10x more accurate. The network helps only
+  where there is no GPU.
+- Only 3-bet flops were tested. The round 5-7 networks were lost when the Colab runtime reset;
+  `models/vnet_r3.net` is the best saved network.
