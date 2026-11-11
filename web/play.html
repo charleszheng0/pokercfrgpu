@@ -539,6 +539,57 @@ function pickWeighted(items, weight) {
 const streetTitle = (street, board) => street === "flop" ? `Flop ${board.slice(0, 3).join("")}` : `${cap(street || "street")} ${board[board.length - 1]}`;
 const hsBehind = p => hs.stack0 + hs.pot0 / 2 - hs.contrib[p];
 
+// ===== Villain range =====
+// hs.vr = the villain's range for the line played so far: [{c, w}], w = how often the villain has
+// combo c here. At a hero node it is the stored node.opp; at a villain node it is each villain
+// hand's weight times how often that hand takes the action played. A new card removes the combos
+// that hold it. Combos that hold the hero's cards are removed too (the hero can see them).
+const liveRange = (list, dead) => { const d = new Set(dead); return list.filter(o => o.w > 0 && !cardsOf(o.c).some(c => d.has(c))).map(o => ({ c: o.c, w: o.w })); };
+function rangeAfterVillain(n, k) {
+  const dead = cardsOf(hs.H).concat(hs.board);
+  return liveRange(n.hands.map(h => ({ c: h.c, w: h.w * ((h.s && h.s[k]) || 0) })), dead);
+}
+const CAT_ORDER = ["straight flush", "quads", "full house", "flush", "straight", "trips", "two pair", "pair", "high card"];
+const RANKS = "23456789TJQKA";
+function handClass(c) {   // "AhKh" -> "AKs", "9c9d" -> "99"
+  const [a, b] = cardsOf(c).sort((x, y) => RANKS.indexOf(y[0]) - RANKS.indexOf(x[0]));
+  return a[0] === b[0] ? a[0] + b[0] : a[0] + b[0] + (a[1] === b[1] ? "s" : "o");
+}
+// Lines for the hand summary: the villain's range for this line, by made hand, and the most likely hands.
+async function rangeLines(h) {
+  const vr = (h.vr || []).filter(o => o.w > 1e-4);
+  const total = vr.reduce((a, o) => a + o.w, 0);
+  if (!vr.length || !(total > 1e-3)) return [`<span class="dim">&gt; Villain range: this line is too rare to show (weight rounds to 0).</span>`];
+  let r;
+  try {
+    r = await fetchJson(`/api/play/range?board=${h.board.join("")}&hero=${h.H}&combos=${vr.map(o => o.c).join(",")}`);
+  } catch { r = null; }
+  if (!r || r.error || !Array.isArray(r.cat) || r.cat.length !== vr.length) return [`<span class="dim">&gt; Villain range: not available (${esc((r && r.error) || "no answer")}).</span>`];
+  const byCat = {};
+  vr.forEach((o, i) => { byCat[r.cat[i]] = (byCat[r.cat[i]] || 0) + o.w; });
+  const lines = ["", `VILLAIN RANGE FOR THIS LINE (about ${Math.max(1, Math.round(total))} combo${Math.round(total) > 1 ? "s" : ""}${h.vFolded ? ", the hands that fold here" : ""})`];
+  for (const cat of CAT_ORDER) {
+    const p = (byCat[cat] || 0) / total;
+    if (p < 0.005) continue;
+    const bar = "█".repeat(Math.round(p * 20)).padEnd(20, "░");
+    lines.push(`  ${cat.padEnd(15)}${(Math.round(p * 100) + "%").padStart(4)}  ${bar}`);
+  }
+  if (h.assumed) lines.push(`  <span class="dim">The villain's reply to the all-in is not stored: this is its range before that reply.</span>`);
+  if (Array.isArray(r.vs)) {
+    const beat = vr.reduce((a, o, i) => a + (r.vs[i] < 0 ? o.w : r.vs[i] === 0 ? o.w / 2 : 0), 0) / total;
+    lines.push(`  Your hand (${esc(r.hero)}) beats ${Math.round(beat * 100)}% of this range (ties count half).`);
+  }
+  const byClass = {};
+  vr.forEach(o => { const k = handClass(o.c); byClass[k] = (byClass[k] || 0) + o.w; });
+  const top = Object.entries(byClass).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  lines.push(`  Most likely: ${top.map(([k, w]) => `${k} ${Math.round(w / total * 100)}%`).join(", ")}`);
+  if (h.V) {
+    const i = vr.findIndex(o => comboKey(o.c) === comboKey(h.V));
+    lines.push(`  Villain's real hand ${suitText(h.V)}` + (i >= 0 ? ` (${esc(r.cat[i])}) is one of these combos.` : " is a rare combo for this line."));
+  }
+  return lines;
+}
+
 // A new hand for this spot: the villain gets a hidden hand from the stored range (node.opp).
 function startHand(s, h) {
   const n = s.node, board = cardsOf(n.board);
@@ -552,8 +603,9 @@ function startHand(s, h) {
     if (o) V = o.c;
   }
   const lastHist = n.history[n.history.length - 1] || "";
+  const vr = V && Array.isArray(n.opp) ? liveRange(n.opp, cardsOf(h.c).concat(board)) : null;
   return {
-    solve: s.solve_id, path: s.path || "", heroP: n.player, H: h.c, V, oppNote, name: ctx.name,
+    solve: s.solve_id, path: s.path || "", heroP: n.player, H: h.c, V, vr, oppNote, name: ctx.name,
     pot0: s.pot, stack0: s.stack, pot: n.pot, contrib: n.contrib.slice(), put: ctx.put.slice(),
     allin: / All-in /.test(lastHist + " "), board, street: s.street,
     log: [{ title: streetTitle(s.street, board), acts: ctx.lines.map(l => l.text) }],
@@ -591,7 +643,7 @@ async function act(g, p, idx, label) {
   hs.contrib[p] += x.amt; hs.pot += x.amt; hs.put[p] += x.amt;
   hs.path = joinPath(hs.path, idx);
   logAct(`${hs.name(p)} ${d.verb}`);
-  if (x.kind === "Fold") return endFold(p);
+  if (x.kind === "Fold") { if (p !== hs.heroP) hs.vFolded = true; return endFold(p); }
   if (x.kind === "All-in") hs.allin = true;
   if (x.kind === "Call") return (facingAllin || hsBehind(0) < 0.01 || hsBehind(1) < 0.01) ? runout(g) : streetEnd(g);
   if (x.kind === "Check" && p === 1) return streetEnd(g);
@@ -617,6 +669,7 @@ async function nextNode(g) {
   // Villain: its own hand's GTO mix; the range mix if its hand is not stored here (tiny weight).
   const mine = n.hands.find(h => comboKey(h.c) === comboKey(hs.V));
   const k = pickWeighted(n.actions.map((a, i) => i), i => (mine ? mine.s : n.freq)[i]);
+  if (hs.vr) hs.vr = rangeAfterVillain(n, k == null ? 0 : k);
   return act(g, n.player, k == null ? 0 : k, n.actions[k == null ? 0 : k]);
 }
 // The reply to an all-in is not stored. The hero chooses (no grade); the villain is played as a call.
@@ -624,6 +677,7 @@ async function assumeCall(g) {
   const p = hs.contrib[0] < hs.contrib[1] ? 0 : 1;
   const amt = Math.min(hs.contrib[1 - p] - hs.contrib[p], Math.max(0, hsBehind(p)));
   if (p === hs.heroP) return heroFacesAllin(g, amt);
+  hs.assumed = true;
   hs.contrib[p] += amt; hs.pot += amt; hs.put[p] += amt;
   logAct(`${hs.name(p)} calls ${bb(amt)} bb (reply to the all-in not stored: call assumed)`);
   return runout(g);
@@ -653,6 +707,7 @@ function heroTurn(env) {
   const n = env.node;
   const h = n.hands.find(x => comboKey(x.c) === comboKey(hs.H));
   if (!h) return endHand([`&gt; Your hand is not in the stored range at this point: ${NOT_STORED}.`]);
+  if (hs.vr && Array.isArray(n.opp)) hs.vr = liveRange(n.opp, cardsOf(hs.H).concat(hs.board));
   spot = env; ctx = buildContext(env); hand = h; result = null;
   hs.put = ctx.put.slice();
   if (env.id != null) { recent = recent.filter(id => id !== env.id).concat([env.id]).slice(-RECENT_MAX); lsSet(LS_RECENT, recent); }
@@ -674,6 +729,7 @@ async function streetEnd(g) {
   if (g !== gen) return;
   const card = cards[Math.floor(Math.random() * cards.length)];
   hs.board.push(card); hs.street = next; hs.put = [0, 0]; hs.allin = false;
+  if (hs.vr) hs.vr = liveRange(hs.vr, [card]);
   hs.path = joinPath(hs.path, card);
   hs.log.push({ title: streetTitle(next, hs.board), acts: [] });
   hs.last = `${cap(next)}: ${card}`;
@@ -690,6 +746,7 @@ async function runout(g) {
     if (g !== gen) return;
     const card = deck.splice(Math.floor(Math.random() * deck.length), 1)[0];
     hs.board.push(card);
+    if (hs.vr) hs.vr = liveRange(hs.vr, [card]);
     hs.street = hs.board.length === 4 ? "turn" : "river";
     hs.put = [0, 0];
     hs.log.push({ title: streetTitle(hs.street, hs.board) + " (run out)", acts: [] });
@@ -745,6 +802,16 @@ function endHand(lines, heroWin) {
   hs.endLines = lines;
   renderLog(); renderLive(); setButtons();
   $("logbox").scrollIntoView({ block: "nearest", behavior: "smooth" });
+  // After the real hand: the villain's whole range for this line (it comes from the server, so it is added when ready).
+  if (hs.vr) {
+    const me = hs;
+    rangeLines(me).then(extra => {
+      if (hs !== me || !me.endLines) return;   // a new hand started meanwhile
+      const i = me.endLines.indexOf("HAND SUMMARY");
+      me.endLines.splice(i > 0 ? i - 1 : me.endLines.length, 0, ...extra);
+      renderLog();
+    });
+  }
 }
 function logAct(text) {
   hs.log[hs.log.length - 1].acts.push(text);
