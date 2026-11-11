@@ -17,12 +17,18 @@ It uses vector-form Discounted CFR: one tree pass handles every hand of both pla
 
 **In numbers** (measured; details in the sections below):
 
-- 448,259 stored decision spots from 15,003 solves; every solve passed a quality gate of at most
-  0.3% (river) or 0.5% (turn, flop) of the pot in exploitability.
+- 467,027 stored decision spots from 15,041 accepted solves (river, turn, and 70 flops); every one
+  passed a quality gate of at most 0.3% (river) or 0.5% (turn, flop) of the pot in exploitability.
 - Strategies agree with the open-source TexasSolver within 0.4 percentage points.
+- On the same river and turn spots, the CPU solver reaches the same quality 1.7-2.0x faster than
+  TexasSolver on the same laptop (8 threads, median of 3 runs; [docs/benchmark-texassolver.md](docs/benchmark-texassolver.md)).
 - River solve 0.11 s and turn solve about 12 s on average on an Apple M2 laptop.
 - The next practice question loads in about 3 ms (was 20 s before an indexed random pick).
 - The demo runs on one free Oracle Cloud core behind nginx with https.
+- A CUDA version of the solver is 5.4x (turn) to 11.5x (flop) faster on a Tesla T4 GPU than the
+  CPU solver on the M2, at the same exploitability ([docs/gpu.md](docs/gpu.md)).
+- A neural-network value function (DeepStack/ReBeL style) cuts the error of a depth-limited flop
+  solve from about 24% to about 4% of the pot ([docs/value-net.md](docs/value-net.md)).
 
 ![spec](docs/spec.png)
 
@@ -81,6 +87,9 @@ Done: suit isomorphism, 16-bit regret compression, a SQLite solution store
 ([docs/STORE.md](docs/STORE.md)), batch training (`pokerbatch`), a free flop screen
 (`pokerscreen`), the trainer (`/play`), and a public solver mode (`pokerlab --public`).
 
-Next: finish the flop library (32 of 74 picked flops are solved), stop stuck flop solves
-early, and test the trainer with real players. There is no GPU code yet, despite the repository
-name. See [SPEC.md](SPEC.md). The old Python prototype is kept at tag `python-prototype`.
+Also done: 70 of 74 picked flops solved (4 rejected), early stop for stuck flop solves, a CUDA
+solver ([docs/gpu.md](docs/gpu.md)), and depth-limited flop solving with a value network
+([docs/value-net.md](docs/value-net.md)). The value network does not reach the 0.5% gate, so
+stored answers come from full DCFR.
+
+Next: test the trainer with real players. See [SPEC.md](SPEC.md). The old Python prototype is kept at tag `python-prototype`.

@@ -8,11 +8,13 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "cards.hpp"
+#include "flat_tree.hpp"
 #include "range.hpp"
 #include "thread_pool.hpp"
 
@@ -39,9 +41,15 @@ struct GameConfig {
   int compress = -1;
   // Solve one card of each group of suit-symmetric cards and copy the result to the others.
   bool isomorphism = true;
+  // Depth-limited solving: 1 = the tree stops at the end of the first street. Each line that
+  // ends the street becomes a Leaf node; a LeafEvaluator gives its values (see set_leaf_evaluator).
+  int depth_limit = 0;
+  // Data generation: the first street has no bets (check-check), so the ranges given above
+  // are the ranges at the end of that street.
+  bool check_first_street = false;
 };
 
-enum class NodeType : uint8_t { Action, Fold, Showdown, Chance };
+enum class NodeType : uint8_t { Action, Fold, Showdown, Chance, Leaf };
 enum class ActKind : uint8_t { Fold, Check, Call, Bet, Raise, AllIn };
 
 struct ActionInfo {
@@ -100,6 +108,33 @@ struct NodeView {
   std::vector<Card> cards;  // chance node: cards that can come
 };
 
+class Game;
+
+// One leaf of a depth-limited tree: the end of the first street.
+struct LeafInfo {
+  uint32_t node = 0;
+  std::vector<Card> board;
+  double contrib = 0;     // chips each player has in the pot (equal at a street end)
+  double stack_left = 0;  // chips each player still has behind
+};
+
+// Values at the leaves of a depth-limited tree. In: the reach of every hand of both players
+// (r[p] indexed like Game::hands(p)). Out: v[p][h] in the solver's units, the same as walk()
+// returns at a chance node: sum over compatible opponent hands of reach x chips won (zero-sum).
+class LeafEvaluator {
+ public:
+  virtual ~LeafEvaluator() = default;
+  virtual void evaluate(const Game& g, const LeafInfo& leaf, const float* const r[2], float* const v[2]) const = 0;
+};
+
+// Training data for a leaf value model: the state at the end of the first street of a full solve.
+struct StreetEndSample {
+  LeafInfo info;
+  bool all_in = false;
+  std::vector<float> reach[2];  // average-strategy reach of each hand
+  std::vector<float> value[2];  // value of each hand (solver units, see LeafEvaluator)
+};
+
 class Game {
  public:
   explicit Game(const GameConfig& cfg);  // throws std::invalid_argument / std::runtime_error
@@ -114,6 +149,14 @@ class Game {
   int num_hands(int p) const { return static_cast<int>(hands_[p].size()); }
   int iterations() const { return iteration_; }
 
+  const std::vector<HandInfo>& hands(int p) const { return hands_[p]; }
+  size_t num_leaves() const { return leaves_.size(); }
+  const std::vector<uint32_t>& leaf_nodes() const { return leaves_; }
+  // Reach of player p at leaf k, as last computed (current strategy in training, average after
+  // exploitability() or expected_values()).
+  const std::vector<float>& leaf_reach(int p, size_t k) const { return leaf_reach_[p][k]; }
+  double leaf_contrib(size_t k) const { return nodes_[leaves_[k]].contrib[0]; }
+
   void run_iteration();      // one DCFR iteration (both players)
   double exploitability();   // chips: (BR value of OOP + BR value of IP) / 2
   std::array<double, 2> expected_values();  // per player, chips won from the starting pot
@@ -127,6 +170,26 @@ class Game {
   // Test hook: compares the fast O(n) showdown and fold values with a slow O(n^2)
   // loop over every hand pair, on random reach vectors. Returns the largest error.
   double self_check_terminals(int max_nodes, unsigned seed);
+
+  // Depth-limited trees: the model that gives the leaf values. It must outlive the Game.
+  void set_leaf_evaluator(const LeafEvaluator* e) { leaf_eval_ = e; }
+
+  // Average strategy of every action node of the first street, in a fixed order (depth-first
+  // over actions). A depth-limited tree and a full tree of the same config give the same layout.
+  std::vector<float> first_street_strategy() const;
+  // Node locking: fix the first-street strategy (layout of first_street_strategy). Locked nodes
+  // keep this strategy in training and in the average; their regrets are not updated.
+  void lock_first_street(const std::vector<float>& strategy);
+  void reset();  // clear regrets and strategy sums (keeps locks)
+  FlatTree export_flat() const;  // the tree for the level-by-level (GPU) solver
+  // Load regrets and strategy sums solved elsewhere (32-bit layout of export_flat).
+  void import_arenas(const std::vector<float>& regrets, const std::vector<float>& sums, int iterations);
+  // Warm start: remove the lock and seed the first-street nodes so that DCFR starts from the
+  // locked strategy: regrets = strategy x regret_scale, strategy sums = strategy x sum_scale.
+  void unlock_first_street(double regret_scale, double sum_scale);
+
+  // Full trees: reach and values at every line that ends the first street (average strategy).
+  std::vector<StreetEndSample> street_end_samples();
 
  private:
   enum class Mode { Train, BestResponse, Average };
@@ -148,6 +211,11 @@ class Game {
   void prepare_showdowns();
 
   void walk(uint32_t idx, int p, const float* opp, float* out, Mode mode);
+  void strategy_for(const Node& n, float* sigma, Mode mode) const;  // locked, current or average
+  bool locked(const Node& n) const { return !lock_off_.empty() && lock_off_[n.slot] >= 0; }
+  void first_street_nodes(uint32_t idx, std::vector<uint32_t>& out) const;
+  void compute_leaf_values(Mode mode);  // depth-limited trees: fill leaf_val_ from the evaluator
+  void reach_pass(uint32_t idx, std::vector<float> r[2], Mode mode, std::vector<StreetEndSample>* samples);
   void current_strategy(const Node& n, float* sigma) const;
   void average_strategy(const Node& n, float* sigma) const;
   // Regrets and strategy sums go through these, so the 32-bit and 16-bit layouts share code.
@@ -185,6 +253,14 @@ class Game {
   uint64_t arena_size_ = 0;
   size_t num_action_nodes_ = 0;
   int iteration_ = 0;
+  // Depth-limited trees: leaf node ids (Node::slot = leaf number) and cached values per player.
+  std::vector<uint32_t> leaves_;
+  std::vector<std::vector<float>> leaf_reach_[2];
+  std::vector<std::vector<float>> leaf_val_[2];
+  const LeafEvaluator* leaf_eval_ = nullptr;
+  // Node locking: offset into lock_data_ per action node slot, -1 = not locked.
+  std::vector<int64_t> lock_off_;
+  std::vector<float> lock_data_;
   // DCFR discount factors of the current iteration
   float disc_pos_ = 1, disc_neg_ = 1, disc_strat_ = 1;
   std::unique_ptr<ThreadPool> pool_;

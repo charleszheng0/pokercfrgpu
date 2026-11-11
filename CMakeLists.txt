@@ -47,11 +47,41 @@ add_executable(pokerlab src/server.cpp)
 target_link_libraries(pokerlab pokercore pokerstore)
 target_compile_definitions(pokerlab PRIVATE WEB_DIR="${CMAKE_SOURCE_DIR}/web" DATA_DIR="${CMAKE_SOURCE_DIR}/data")
 
-add_executable(tests tests/tests.cpp)
-target_link_libraries(tests pokercore)
+add_executable(tests tests/tests.cpp src/value_net.cpp)
+target_link_libraries(tests pokerflat_cpu)
 
 enable_testing()
 add_test(NAME tests COMMAND tests)
 
 add_executable(pokerscreen src/screen.cpp)
 target_link_libraries(pokerscreen pokercore)
+
+# Depth-limited flop solving with a leaf value network.
+add_executable(pokervnet src/vnet.cpp src/value_net.cpp)
+target_link_libraries(pokervnet pokerflat_cpu)
+target_compile_options(pokervnet PRIVATE -Wall -Wextra)
+
+# Level-by-level solver: CPU-thread back end (always) and CUDA back end (-DPOKER_CUDA=ON).
+add_library(pokerflat_cpu gpu/flat_solver_cpu.cpp)
+target_include_directories(pokerflat_cpu PUBLIC gpu)
+target_link_libraries(pokerflat_cpu PUBLIC pokercore)
+target_compile_options(pokerflat_cpu PRIVATE -Wall -Wextra)
+add_executable(pokerflat gpu/bench.cpp)
+target_link_libraries(pokerflat pokerflat_cpu)
+
+option(POKER_CUDA "Build the CUDA solver (needs nvcc)" OFF)
+if(POKER_CUDA)
+  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)  # must be set before enable_language
+    set(CMAKE_CUDA_ARCHITECTURES native)
+  endif()
+  enable_language(CUDA)
+  add_library(pokerflat_cuda gpu/flat_solver.cu)
+  target_include_directories(pokerflat_cuda PUBLIC gpu)
+  target_link_libraries(pokerflat_cuda PUBLIC pokercore)
+  target_compile_options(pokerflat_cuda PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda -O3>)
+  set_target_properties(pokerflat_cuda PROPERTIES CUDA_STANDARD 17)
+  add_executable(pokergpu gpu/bench.cpp)
+  target_link_libraries(pokergpu pokerflat_cuda)
+  add_executable(pokervnet_gpu src/vnet.cpp src/value_net.cpp)
+  target_link_libraries(pokervnet_gpu pokerflat_cuda)
+endif()

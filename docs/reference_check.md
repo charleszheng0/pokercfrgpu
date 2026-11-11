@@ -58,8 +58,8 @@ exploitability are the meaningful comparison.
 | Turn, to ~0.3% | 54 s, 250 iterations | 85 s, 251 iterations |
 
 These runs shared the CPU with the training job and another benchmark, so treat the times as
-rough. A fair benchmark needs an idle machine, fixed threads and repeated runs
-(see docs/industry.md, item 1).
+rough. The controlled benchmark (idle machine, 8 threads, 3 runs each) is in
+[benchmark-texassolver.md](benchmark-texassolver.md).
 
 ## Reproduce
 

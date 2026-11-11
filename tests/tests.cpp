@@ -7,6 +7,8 @@
 
 #include "game.hpp"
 #include "spot.hpp"
+#include "value_net.hpp"
+#include "flat_solver.hpp"
 
 using namespace poker;
 
@@ -261,12 +263,106 @@ void test_compression() {
   CHECK(expl < 0.5, "16-bit exploitability %.3f%%", expl);
 }
 
+// Depth limit: with no betting after the flop, the value of a flop leaf is its check-down
+// value. A depth-limited tree with check-down leaves must then match the full tree.
+void test_depth_limit() {
+  std::printf("[8] depth-limited flop vs full tree (no betting after the flop)\n");
+  std::map<std::string, std::string> f = {{"board", "Ks 9d 5c"}, {"pot", "10"}, {"stack", "40"},
+                                          {"oop", "AA,KK,QQ,JJ,AK,KQ,T9s,A5s,87s"}, {"ip", "AA,KK,TT,AK,AQ,KJs,QJs,65s"},
+                                          {"flop_bets", "50"}, {"flop_raises", "100"}, {"turn_bets", "none"},
+                                          {"river_bets", "none"}, {"turn_raises", "none"}, {"river_raises", "none"},
+                                          {"max_raises", "2"}, {"allin", "0"}, {"threads", "4"}};
+  GameConfig cfg = config_from_fields(f);
+  Game full(cfg);
+  cfg.depth_limit = 1;
+  Game dl(cfg);
+  NetLeafEvaluator eq(dl, nullptr);
+  dl.set_leaf_evaluator(&eq);
+  for (int i = 0; i < 300; ++i) full.run_iteration(), dl.run_iteration();
+  const auto ef = full.expected_values(), ed = dl.expected_values();
+  const double xf = full.exploitability(), xd = dl.exploitability();
+  std::printf("  leaves %zu; EV OOP full %.4f dl %.4f; expl full %.4f dl %.4f chips\n", dl.num_leaves(), ef[0], ed[0], xf,
+              xd);
+  CHECK(dl.num_leaves() > 0, "no leaves");
+  CHECK(std::fabs(ef[0] - ed[0]) < 2e-3 && std::fabs(ef[1] - ed[1]) < 2e-3, "EVs differ");
+  CHECK(std::fabs(xf - xd) < 2e-3, "exploitability differs");
+
+  // Leaf samples of the full tree: value / (contrib * M) is the check-down value d.
+  auto samples = full.street_end_samples();
+  CHECK(samples.size() == dl.num_leaves(), "%zu samples, %zu leaves", samples.size(), dl.num_leaves());
+  std::vector<std::pair<Card, Card>> hs[2];
+  for (int p = 0; p < 2; ++p)
+    for (const auto& h : full.hands(p)) hs[p].push_back({h.c1, h.c2});
+  FlopRunouts R(cfg.board, hs);
+  LeafFeatures F;
+  double worst = 0;
+  for (const auto& s : samples) {
+    const float* const r[2] = {s.reach[0].data(), s.reach[1].data()};
+    compute_leaf_features(R, r, s.info.contrib, s.info.stack_left, F);
+    for (int p = 0; p < 2; ++p)
+      for (size_t h = 0; h < hs[p].size(); ++h)
+        if (F.mass[p][h] > 1e-3)
+          worst = std::max(worst, std::fabs(s.value[p][h] / (s.info.contrib * F.mass[p][h]) - F.d[p][h]));
+  }
+  std::printf("  largest |value / (contrib x M) - d| over samples: %.2e\n", worst);
+  CHECK(worst < 1e-3, "check-down value mismatch %.2e", worst);
+
+  // Node locking: the flop strategy of the solved tree, locked into a fresh tree, gives the same EV.
+  Game locked(config_from_fields(f));
+  locked.lock_first_street(full.first_street_strategy());
+  for (int i = 0; i < 300; ++i) locked.run_iteration();
+  const auto el = locked.expected_values();
+  std::printf("  locked flop: EV OOP %.4f (full %.4f)\n", el[0], ef[0]);
+  CHECK(std::fabs(el[0] - ef[0]) < 0.02, "locked EV differs");
+
+  // The same lock on the level-by-level solver, and its result loaded back into a Game.
+  auto f2 = f;
+  f2["turn_bets"] = "50", f2["river_bets"] = "75", f2["compress"] = "0";
+  Game src(config_from_fields(f2));
+  for (int i = 0; i < 30; ++i) src.run_iteration();
+  Game lg(config_from_fields(f2)), lg2(config_from_fields(f2));
+  lg.lock_first_street(src.first_street_strategy());
+  lg2.lock_first_street(src.first_street_strategy());
+  FlatSolver fl(lg.export_flat());
+  for (int i = 0; i < 60; ++i) lg.run_iteration(), fl.run_iteration();
+  const double xa = lg.exploitability(), xb = fl.exploitability();
+  std::vector<float> reg, sums;
+  fl.download(reg, sums);
+  lg2.import_arenas(reg, sums, fl.iterations());
+  const double xc = lg2.exploitability();
+  std::printf("  locked flop, turn+river solved 60 it: Game %.5f, flat %.5f, flat loaded into Game %.5f chips\n", xa, xb, xc);
+  CHECK(std::fabs(xa - xb) <= 1e-3 * std::max(1.0, xa) + 1e-4, "locked flat solver differs");
+  CHECK(std::fabs(xb - xc) <= 1e-4 + 1e-3 * xb, "import_arenas differs");
+}
+
+// The level-by-level (GPU) solver runs the same DCFR: on a turn spot (chance nodes, suit
+// symmetry) the first iterations must give the same exploitability as Game.
+void test_flat_solver() {
+  std::printf("[9] level-by-level solver (%s back end) vs Game\n", FlatSolver::backend());
+  GameConfig cfg = config_from_fields(srp_spot("Ks 9d 5c 2h"));
+  cfg.compress = 0;
+  Game g(cfg);
+  FlatSolver fs(g.export_flat());
+  double worst = 0;
+  for (int it = 1; it <= 12; ++it) {
+    g.run_iteration(), fs.run_iteration();
+    if (it % 4 == 0) {
+      const double a = g.exploitability() / cfg.pot * 100, b = fs.exploitability() / cfg.pot * 100;
+      std::printf("  it %2d  Game %.4f%%  flat %.4f%%\n", it, a, b);
+      worst = std::max(worst, std::fabs(a - b) / a);  // relative: float order differs
+    }
+  }
+  CHECK(worst < 2e-3, "exploitability differs by %.3f%% (relative)", worst * 100);
+}
+
 int main(int argc, char** argv) {
   bool quick = argc > 1 && std::string(argv[1]) == "--quick";
   test_ranges();
   test_terminals();
   test_toy_river();
   test_compression();
+  test_depth_limit();
+  test_flat_solver();
   if (!quick) {
     test_isomorphism();
     test_evaluator();
