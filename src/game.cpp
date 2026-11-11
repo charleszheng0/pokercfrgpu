@@ -829,8 +829,7 @@ void Game::lock_first_street(const std::vector<float>& strategy) {
 }
 
 FlatTree Game::export_flat() const {
-  if (!leaves_.empty() || !lock_off_.empty())
-    throw std::runtime_error("export_flat: depth-limited or locked trees are not supported");
+  if (!leaves_.empty()) throw std::runtime_error("export_flat: depth-limited trees are not supported");
   FlatTree t;
   for (int p = 0; p < 2; ++p) {
     t.n_hands[p] = static_cast<int>(hands_[p].size());
@@ -861,9 +860,23 @@ FlatTree Game::export_flat() const {
   t.showdown_index = showdown_index_;
   for (const auto& sd : showdowns_)
     for (int p = 0; p < 2; ++p) t.sd_strength[p].push_back(sd.strength[p]), t.sd_order[p].push_back(sd.order[p]);
+  t.lock_off.assign(n, -1);
+  if (!lock_off_.empty())
+    for (size_t i = 0; i < n; ++i)
+      if (nodes_[i].type == NodeType::Action && lock_off_[nodes_[i].slot] >= 0) t.lock_off[i] = lock_off_[nodes_[i].slot];
+  t.lock_data = lock_data_;
   t.pot = cfg_.pot;
   t.pair_weight_sum = pair_weight_sum();
   return t;
+}
+
+void Game::import_arenas(const std::vector<float>& regrets, const std::vector<float>& sums, int iterations) {
+  if (compressed_) throw std::runtime_error("import_arenas: needs 32-bit storage (compress 0)");
+  if (regrets.size() != regrets_.size() || sums.size() != strategy_sum_.size())
+    throw std::invalid_argument("import_arenas: size does not match the tree");
+  regrets_ = regrets;
+  strategy_sum_ = sums;
+  iteration_ = iterations;
 }
 
 void Game::unlock_first_street(double regret_scale, double sum_scale) {

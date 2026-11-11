@@ -58,7 +58,7 @@ target_link_libraries(pokerscreen pokercore)
 
 # Depth-limited flop solving with a leaf value network.
 add_executable(pokervnet src/vnet.cpp src/value_net.cpp)
-target_link_libraries(pokervnet pokercore)
+target_link_libraries(pokervnet pokerflat_cpu)
 target_compile_options(pokervnet PRIVATE -Wall -Wextra)
 
 # Level-by-level solver: CPU-thread back end (always) and CUDA back end (-DPOKER_CUDA=ON).
@@ -82,4 +82,6 @@ if(POKER_CUDA)
   set_target_properties(pokerflat_cuda PROPERTIES CUDA_STANDARD 17)
   add_executable(pokergpu gpu/bench.cpp)
   target_link_libraries(pokergpu pokerflat_cuda)
+  add_executable(pokervnet_gpu src/vnet.cpp src/value_net.cpp)
+  target_link_libraries(pokervnet_gpu pokerflat_cuda)
 endif()

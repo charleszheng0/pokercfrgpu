@@ -59,6 +59,8 @@ struct FlatSolverImpl {
   Buf<uint16_t> e_child;
   Buf<int32_t> perm_inv;
   Buf<uint16_t> hand_perm[2];
+  Buf<int64_t> lockoff;  // per node: offset into lockdat, or -1
+  Buf<float> lockdat;
   // showdowns, per (showdown s, traverser p): own hand -> [lo, hi) range of equal strength in
   // the opponent's sorted list; opponent sorted order; per card, positions of opponent hands
   // that hold it (for card removal).
@@ -166,6 +168,8 @@ struct FlatSolverImpl {
       ch_off[p].upload(off), ch_idx[p].upload(idx);
     }
     e_card.upload(t.e_card), e_perm.upload(t.e_perm), e_child.upload(t.e_child);
+    lockoff.upload(t.lock_off.empty() ? std::vector<int64_t>(nodes, -1) : t.lock_off);
+    lockdat.upload(t.lock_data.empty() ? std::vector<float>(1, 0.f) : t.lock_data);
     perm_inv.upload(std::vector<int32_t>(t.perm_inv, t.perm_inv + 24));
     live.alloc(nodes);
 
@@ -245,6 +249,8 @@ struct FlatSolverImpl {
     const uint8_t* oc2 = c2[o].p;
     float* reg = regret.p;
     float* ss = ssum.p;
+    const int64_t* lko = lockoff.p;
+    const float* lkd = lockdat.p;
     for (int l = 0; l + 1 < levels; ++l) {
       // Opponent action nodes.
       {
@@ -255,10 +261,13 @@ struct FlatSolverImpl {
           if (!lv[n]) return;
           const int na = static_cast<int>(nc[n]);
           float sig[kMaxActions];
-          if (mode == kTrain) current_strategy(reg + dat[n], na, Ho, h, sig);
+          const bool locked = lko[n] >= 0;
+          if (locked)
+            for (int a = 0; a < na; ++a) sig[a] = lkd[lko[n] + a * Ho + h];
+          else if (mode == kTrain) current_strategy(reg + dat[n], na, Ho, h, sig);
           else average_strategy(ss + dat[n], na, Ho, h, sig);
           const float r = Rp[static_cast<size_t>(n) * HM + h];
-          if (mode == kTrain) {
+          if (mode == kTrain && !locked) {
             float* s = ss + dat[n];
             for (int a = 0; a < na; ++a) s[a * Ho + h] = s[a * Ho + h] * disc_strat + r * sig[a];
           }
@@ -346,6 +355,8 @@ struct FlatSolverImpl {
     acc_t* fs = foldsum.p;
     float* reg = regret.p;
     float* ss = ssum.p;
+    const int64_t* lko = lockoff.p;
+    const float* lkd = lockdat.p;
     for (int l = levels - 1; l >= 0; --l) {
       // Fold nodes: card sums of the opponent reach, then compatible reach x payoff.
       if (cnt(l, kFold)) {
@@ -454,10 +465,13 @@ struct FlatSolverImpl {
             for (int a = 1; a < na; ++a) out = val[a] > out ? val[a] : out;
           } else {
             float sig[kMaxActions];
-            if (mode == kTrain) current_strategy(reg + dat[n], na, Hp, h, sig);
+            const bool locked = lko[n] >= 0;
+            if (locked)
+              for (int a = 0; a < na; ++a) sig[a] = lkd[lko[n] + a * Hp + h];
+            else if (mode == kTrain) current_strategy(reg + dat[n], na, Hp, h, sig);
             else average_strategy(ss + dat[n], na, Hp, h, sig);
             for (int a = 0; a < na; ++a) out += sig[a] * val[a];
-            if (mode == kTrain) {
+            if (mode == kTrain && !locked) {
               float* r = reg + dat[n];
               for (int a = 0; a < na; ++a) {
                 float x = r[a * Hp + h];
@@ -544,6 +558,11 @@ int FlatSolver::iterations() const { return im_->iteration; }
 double FlatSolver::memory_gb() const { return im_->memory_gb(); }
 const char* FlatSolver::backend() { return backend_name(); }
 void FlatSolver::set_profile(bool on) { im_->prof = on; }
+void FlatSolver::download(std::vector<float>& regrets, std::vector<float>& sums) const {
+  regrets.resize(im_->regret.n), sums.resize(im_->ssum.n);
+  im_->regret.download_at(0, regrets.data(), regrets.size());
+  im_->ssum.download_at(0, sums.data(), sums.size());
+}
 std::string FlatSolver::profile_report() const { return im_->profile_report(); }
 
 }  // namespace poker

@@ -30,6 +30,10 @@ struct FlatTree {
   std::vector<std::vector<uint32_t>> sd_strength[2];
   std::vector<std::vector<uint16_t>> sd_order[2];
 
+  // Node locking (first street): per node an offset into lock_data, or -1.
+  std::vector<int64_t> lock_off;
+  std::vector<float> lock_data;
+
   double pot = 0, pair_weight_sum = 0;
 };
 

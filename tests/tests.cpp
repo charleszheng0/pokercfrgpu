@@ -314,6 +314,25 @@ void test_depth_limit() {
   const auto el = locked.expected_values();
   std::printf("  locked flop: EV OOP %.4f (full %.4f)\n", el[0], ef[0]);
   CHECK(std::fabs(el[0] - ef[0]) < 0.02, "locked EV differs");
+
+  // The same lock on the level-by-level solver, and its result loaded back into a Game.
+  auto f2 = f;
+  f2["turn_bets"] = "50", f2["river_bets"] = "75", f2["compress"] = "0";
+  Game src(config_from_fields(f2));
+  for (int i = 0; i < 30; ++i) src.run_iteration();
+  Game lg(config_from_fields(f2)), lg2(config_from_fields(f2));
+  lg.lock_first_street(src.first_street_strategy());
+  lg2.lock_first_street(src.first_street_strategy());
+  FlatSolver fl(lg.export_flat());
+  for (int i = 0; i < 60; ++i) lg.run_iteration(), fl.run_iteration();
+  const double xa = lg.exploitability(), xb = fl.exploitability();
+  std::vector<float> reg, sums;
+  fl.download(reg, sums);
+  lg2.import_arenas(reg, sums, fl.iterations());
+  const double xc = lg2.exploitability();
+  std::printf("  locked flop, turn+river solved 60 it: Game %.5f, flat %.5f, flat loaded into Game %.5f chips\n", xa, xb, xc);
+  CHECK(std::fabs(xa - xb) <= 1e-3 * std::max(1.0, xa) + 1e-4, "locked flat solver differs");
+  CHECK(std::fabs(xb - xc) <= 1e-4 + 1e-3 * xb, "import_arenas differs");
 }
 
 // The level-by-level (GPU) solver runs the same DCFR: on a turn spot (chance nodes, suit

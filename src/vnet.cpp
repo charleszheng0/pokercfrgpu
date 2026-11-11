@@ -12,11 +12,13 @@
 #include <cstdio>
 #include <functional>
 #include <map>
+#include <memory>
 #include <random>
 #include <set>
 #include <string>
 #include <vector>
 
+#include "flat_solver.hpp"
 #include "game.hpp"
 #include "presets.hpp"
 #include "spot.hpp"
@@ -36,6 +38,10 @@ const Preset& preset_named(const std::string& name) {
   throw std::invalid_argument("unknown preset: " + name);
 }
 
+// --gpu 1: full-tree solves (labels, DCFR baselines, lock checks) run on the level-by-level
+// solver (CUDA in pokervnet_gpu); depth-limited solves stay on Game.
+bool g_gpu = false;
+
 GameConfig flop_config(const Preset& pr, const std::vector<Card>& board, int depth_limit, int compress = -1) {
   std::map<std::string, std::string> fields = {
       {"board", cards_str(board)}, {"pot", std::to_string(pr.pot)}, {"stack", std::to_string(pr.stack)},
@@ -44,7 +50,7 @@ GameConfig flop_config(const Preset& pr, const std::vector<Card>& board, int dep
   GameConfig cfg = config_from_fields(fields);
   cfg.board = board;
   cfg.depth_limit = depth_limit;
-  cfg.compress = compress;
+  cfg.compress = g_gpu && depth_limit == 0 ? 0 : compress;  // GPU results load back as 32-bit
   return cfg;
 }
 
@@ -56,16 +62,37 @@ struct SolveLog {
   std::vector<double> secs, expl;
   std::vector<std::vector<float>> flop_strategy;  // first-street strategy at each check
 };
+// Runs a full tree on Game (CPU) or on the level-by-level solver (--gpu 1). sync() loads the
+// GPU result back into the Game, so the Game can be read as usual afterwards.
+struct AnySolver {
+  Game& g;
+  std::unique_ptr<FlatSolver> fs;
+  explicit AnySolver(Game& game) : g(game) {
+    if (g_gpu && g.num_leaves() == 0) fs = std::make_unique<FlatSolver>(g.export_flat());
+  }
+  void run_iteration() { fs ? fs->run_iteration() : g.run_iteration(); }
+  double exploitability() { return fs ? fs->exploitability() : g.exploitability(); }
+  int iterations() const { return fs ? fs->iterations() : g.iterations(); }
+  void sync() {
+    if (!fs) return;
+    std::vector<float> r, s;
+    fs->download(r, s);
+    g.import_arenas(r, s, fs->iterations());
+  }
+};
+
 double solve(Game& g, double pot, double target, int max_iters, int step, SolveLog* log, bool verbose) {
   const auto t0 = Clock::now();
   double expl = 100;
   int it = 0;
   double el_solve = 0;  // time in iterations only (exploitability checks not counted)
+  AnySolver S(g);
   while (it < max_iters) {
     const auto t1 = Clock::now();
-    for (int k = 0; k < step && it < max_iters; ++k, ++it) g.run_iteration();
+    for (int k = 0; k < step && it < max_iters; ++k, ++it) S.run_iteration();
     el_solve += since(t1);
-    expl = g.exploitability() / pot * 100;
+    expl = S.exploitability() / pot * 100;
+    if (log) S.sync();
     if (log) {
       log->iters.push_back(it);
       log->secs.push_back(el_solve);
@@ -78,6 +105,7 @@ double solve(Game& g, double pot, double target, int max_iters, int step, SolveL
     }
     if (expl <= target) break;
   }
+  S.sync();
   return expl;
 }
 
@@ -296,10 +324,11 @@ double locked_exploitability(Game& g, const std::vector<float>& flop, double pot
   const auto t0 = Clock::now();
   g.reset();
   g.lock_first_street(flop);
+  AnySolver S(g);
   double best = 1e9, prev = 1e9;
   for (int it = 0; it < max_iters;) {
-    for (int k = 0; k < 20 && it < max_iters; ++k, ++it) g.run_iteration();
-    const double e = g.exploitability() / pot * 100;
+    for (int k = 0; k < 20 && it < max_iters; ++k, ++it) S.run_iteration();
+    const double e = S.exploitability() / pot * 100;
     best = std::min(best, e);
     if (it >= 100 && prev - e < 0.01) break;  // the rest of the tree has converged
     prev = e;
@@ -628,6 +657,8 @@ int main(int argc, char** argv) {
   const std::string cmd = argv[1];
   std::map<std::string, std::string> f;
   for (int i = 2; i + 1 < argc; i += 2) f[std::string(argv[i]).substr(2)] = argv[i + 1];
+  g_gpu = f.count("gpu") && f["gpu"] == "1";
+  if (g_gpu) std::printf("full-tree solves on the level-by-level solver (%s back end)\n", FlatSolver::backend());
   try {
     if (cmd == "gen") return cmd_gen(f);
     if (cmd == "gen2") return cmd_gen2(f);

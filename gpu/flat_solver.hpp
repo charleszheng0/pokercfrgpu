@@ -24,6 +24,7 @@ class FlatSolver {
   static const char* backend();
   void set_profile(bool on);           // sync after every kernel and time it
   std::string profile_report() const;  // seconds and launches per kernel kind
+  void download(std::vector<float>& regrets, std::vector<float>& sums) const;  // for Game::import_arenas
 
  private:
   std::unique_ptr<FlatSolverImpl> im_;

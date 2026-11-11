@@ -182,6 +182,8 @@ class Game {
   void lock_first_street(const std::vector<float>& strategy);
   void reset();  // clear regrets and strategy sums (keeps locks)
   FlatTree export_flat() const;  // the tree for the level-by-level (GPU) solver
+  // Load regrets and strategy sums solved elsewhere (32-bit layout of export_flat).
+  void import_arenas(const std::vector<float>& regrets, const std::vector<float>& sums, int iterations);
   // Warm start: remove the lock and seed the first-street nodes so that DCFR starts from the
   // locked strategy: regrets = strategy x regret_scale, strategy sums = strategy x sum_scale.
   void unlock_first_street(double regret_scale, double sum_scale);
