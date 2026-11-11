@@ -15,6 +15,7 @@
 //   GET  /api/play/node?solve=&path=   -> the stored node at a path (to continue a hand)
 //   GET  /api/play/cards?solve=&path=  -> cards stored after a path ({"cards": [...]})
 //   GET  /api/play/showdown?board=&a=&b= -> who wins with hands a and b on the board
+//   GET  /api/play/range?board=&hero=&combos= -> made hand of each combo (and vs the hero on the river)
 // --gpu 1: in a CUDA build (pokerlab_gpu) every solve runs on the GPU solver (gpu/).
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -338,6 +339,49 @@ Response handle(const std::string& method, const std::string& target, const std:
       std::ostringstream js;
       js << "{\"winner\":\"" << (sa > sb ? "a" : sb > sa ? "b" : "tie") << "\",\"a\":\"" << category_name(hand_category(sa))
          << "\",\"b\":\"" << category_name(hand_category(sb)) << "\"}";
+      return {200, "application/json", js.str()};
+    } catch (const std::exception& e) {
+      return {400, "application/json", "{\"error\":" + json_str(e.what()) + "}"};
+    }
+  }
+  if (method == "GET" && path == "/api/play/range") {
+    // The made hand of each villain combo on this board; on a 5-card board also who wins against
+    // the hero's hand (vs: 1 villain wins, 0 tie, -1 hero wins). Order follows combos=.
+    auto f = parse_form(query);
+    try {
+      const std::vector<Card> board = parse_cards(f["board"]), hero = parse_cards(f["hero"]);
+      if (board.size() < 3 || board.size() > 5 || hero.size() != 2) throw std::invalid_argument("need a 3-5 card board and a 2-card hero hand");
+      std::vector<Card> bh = board;
+      bh.insert(bh.end(), hero.begin(), hero.end());
+      parse_cards(cards_str(bh));  // throws on a duplicate card
+      const bool river = board.size() == 5;
+      Card hc[7];
+      for (size_t i = 0; i < board.size(); ++i) hc[i] = board[i];
+      hc[board.size()] = hero[0], hc[board.size() + 1] = hero[1];
+      const uint32_t hs = eval_hand(hc, static_cast<int>(board.size()) + 2);
+      std::ostringstream cat, vs;
+      std::string list = f["combos"];
+      size_t n = 0, pos = 0;
+      while (pos <= list.size() && !list.empty()) {
+        const size_t comma = std::min(list.find(',', pos), list.size());
+        const std::vector<Card> v = parse_cards(list.substr(pos, comma - pos));
+        if (v.size() != 2) throw std::invalid_argument("each combo needs 2 cards");
+        if (++n > 1326) throw std::invalid_argument("too many combos");
+        std::vector<Card> chk = bh;
+        chk.insert(chk.end(), v.begin(), v.end());
+        parse_cards(cards_str(chk));  // throws if the combo shares a card with the board or the hero
+        Card vc[7];
+        std::copy(board.begin(), board.end(), vc);
+        vc[board.size()] = v[0], vc[board.size() + 1] = v[1];
+        const uint32_t s = eval_hand(vc, static_cast<int>(board.size()) + 2);
+        cat << (n > 1 ? "," : "") << "\"" << category_name(hand_category(s)) << "\"";
+        vs << (n > 1 ? "," : "") << (s > hs ? 1 : s < hs ? -1 : 0);
+        pos = comma + 1;
+      }
+      std::ostringstream js;
+      js << "{\"hero\":\"" << category_name(hand_category(hs)) << "\",\"cat\":[" << cat.str() << "]";
+      if (river) js << ",\"vs\":[" << vs.str() << "]";
+      js << "}";
       return {200, "application/json", js.str()};
     } catch (const std::exception& e) {
       return {400, "application/json", "{\"error\":" + json_str(e.what()) + "}"};
