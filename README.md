@@ -40,6 +40,10 @@ cmake -S . -B build && cmake --build build -j8
 ./build/pokerlab 8080    # then open http://127.0.0.1:8080 (a guided tour starts on the first visit; press TOUR to replay)
 ```
 
+With an NVIDIA GPU: build with `-DPOKER_CUDA=ON` and run `pokerbatch_gpu`, `pokersolve_gpu` or
+`pokerlab_gpu` with `--gpu 1`. Training and web solves then run on the CUDA solver
+([docs/gpu.md](docs/gpu.md)).
+
 Command line:
 
 ```bash

@@ -50,6 +50,29 @@ threads cut a 20-iteration 3-bet flop run from 4.79 s to 1.13 s (4.2x). FP64 sum
 The GPU solver keeps reach and value vectors for every node: 1.8 GB for the 3-bet flop and
 10.5 GB for the single-raised flop. Both fit a 16 GB T4.
 
+## Training and solving with CUDA (`--gpu 1`)
+
+On a machine with an NVIDIA GPU and the CUDA toolkit, build the GPU versions:
+
+```bash
+cmake -S . -B build -DPOKER_CUDA=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build -j
+./build/pokerbatch_gpu --db data/spots.db --street flop --flops data/flop_list.txt --gpu 1   # training
+./build/pokersolve_gpu --board "Ks 9d 5c 2h" --pot 10 --stack 95 --oop "..." --ip "..." --gpu 1
+./build/pokerlab_gpu 8080 --gpu 1                                                            # web solver
+```
+
+- Each full-tree solve runs on the GPU solver. After the last iteration the result loads back into
+  the CPU `Game`, so the quality gate, spot scoring, storage and node views are the same code as
+  on the CPU. Stored rows get `backend=cuda` in their `config` column.
+- GPU solves use 32-bit storage (16-bit regrets do not load back). If the GPU solver cannot be set
+  up for one solve (for example not enough GPU memory), that solve runs on the CPU and the
+  program says why.
+- In a normal build (no CUDA), `--gpu 1` prints a note and the CPU solver runs as before.
+- Shared code: `src/any_solver.hpp`. Test [10] runs this path with the CPU back end of the same
+  solver code and checks that the loaded result reads like a CPU solve (exploitability, EVs,
+  node views), and that 16-bit storage falls back to the CPU.
+- The web solver shows "GPU" next to the iteration count when a solve ran on the GPU.
+
 ## Use for the value network
 
 `pokervnet --gpu` labels value-network training data with this solver. See

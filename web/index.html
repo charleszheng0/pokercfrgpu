@@ -150,8 +150,11 @@ setPreset("river");
 typeText($("intro"), "> Heads-up solver.");
 fetch("/api/limits").then(r => r.json()).then(l => {
   limits = l;
+  const gpu = l.gpu ? " Solves run on a CUDA GPU." : "";
   if (l.public)
-    typeText($("intro"), `> Heads-up solver. Shared server: turn and river spots only, up to ${l.max_seconds} s and ${l.max_iters} iterations per solve.`);
+    typeText($("intro"), `> Heads-up solver. Shared server: turn and river spots only, up to ${l.max_seconds} s and ${l.max_iters} iterations per solve.${gpu}`);
+  else if (gpu)
+    typeText($("intro"), "> Heads-up solver." + gpu);
 }).catch(() => {});
 
 function bar(frac, width = 24) {
@@ -211,14 +214,15 @@ async function poll() {
   const e = s.expl_pct < 0 ? "..." : s.expl_pct.toFixed(3) + "%";
   const goal = s.expl_pct < 0 ? 0 : Math.min(1, Math.log10(Math.max(s.expl_pct, 1e-4) / 100) / Math.log10(s.target_pct / 100));
   $("progress").textContent =
-    `ITER ${String(s.iteration).padStart(5)} / ${s.max_iters}   ${s.seconds.toFixed(1)} s\n` +
+    `ITER ${String(s.iteration).padStart(5)} / ${s.max_iters}   ${s.seconds.toFixed(1)} s${s.backend === "cuda" ? "   GPU" : ""}\n` +
     `EXPLOITABILITY ${bar(Math.max(0, goal))} ${e} of pot (goal ${s.target_pct}%)\n\n` +
     chart(s.history, s.target_pct);
   if (s.state === "done") {
     clearInterval(polling);
     const ok = s.expl_pct <= s.target_pct;
     const why = s.note === "time limit" ? ` (time limit: ${limits ? limits.max_seconds : "?"} s)` : s.note === "stopped" ? " (stopped)" : "";
-    typeText($("status"), (ok ? "> The solve converged." : "> The solve stopped before the goal" + why + ".") +
+    const where = s.backend === "cuda" ? " on the GPU" : "";
+    typeText($("status"), (ok ? `> The solve converged${where}.` : "> The solve stopped before the goal" + why + ".") +
       `\n> ${s.hands[0]} vs ${s.hands[1]} combos. ${s.nodes} nodes. ${s.memory_mb.toFixed(1)} MB.` +
       `\n> EV: OOP ${s.ev[0].toFixed(2)}  IP ${s.ev[1].toFixed(2)} (of a ${s.pot} pot).`);
     loadNode();

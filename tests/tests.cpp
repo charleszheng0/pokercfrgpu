@@ -8,6 +8,7 @@
 #include "game.hpp"
 #include "spot.hpp"
 #include "value_net.hpp"
+#include "any_solver.hpp"
 #include "flat_solver.hpp"
 
 using namespace poker;
@@ -355,6 +356,39 @@ void test_flat_solver() {
   CHECK(worst < 2e-3, "exploitability differs by %.3f%% (relative)", worst * 100);
 }
 
+// The --gpu path of pokersolve / pokerbatch / pokerlab (any_solver.hpp): a solve on the
+// level-by-level solver, loaded back into the Game, must read like a normal Game solve
+// (EVs, exploitability, node strategies). 16-bit storage must fall back to Game.
+void test_any_solver() {
+  std::printf("[10] --gpu solve path (AnySolver, %s back end) vs Game\n", FlatSolver::backend());
+  GameConfig cfg = config_from_fields(srp_spot("Ks 9d 5c 2h 2d"));
+  prepare_gpu_config(cfg, true);
+  Game a(cfg), b(cfg);
+  AnySolver flat(a, true), cpu(b, false);
+  CHECK(flat.on_flat() && !cpu.on_flat(), "solver choice wrong (flat %d, cpu %d)", flat.on_flat(), cpu.on_flat());
+  for (int it = 0; it < 60; ++it) flat.run_iteration(), cpu.run_iteration();
+  const double xf = flat.exploitability(), xc = cpu.exploitability();
+  flat.sync();
+  CHECK(a.iterations() == 60, "iterations after sync: %d", a.iterations());
+  const double xa = a.exploitability();
+  const auto ea = a.expected_values(), eb = b.expected_values();
+  std::printf("  expl: flat %.4f%%, flat in Game %.4f%%, Game %.4f%% | EV OOP %.4f vs %.4f\n", xf / cfg.pot * 100,
+              xa / cfg.pot * 100, xc / cfg.pot * 100, ea[0], eb[0]);
+  CHECK(std::fabs(xa - xf) <= 1e-3 * xf + 1e-6, "loaded result differs from the flat solver");
+  // Float sums run in a different order, so the two solves drift apart a little; both are DCFR.
+  CHECK(std::fabs(xa - xc) <= 1e-3 * cfg.pot, "flat and Game solves differ by more than 0.1%% of the pot");
+  CHECK(std::fabs(ea[0] - eb[0]) <= 1e-3 * cfg.pot, "EV differs");
+  const std::string ja = a.node_json({}), jb = b.node_json({});
+  const double dj = std::fabs(static_cast<double>(ja.size()) - static_cast<double>(jb.size()));
+  CHECK(ja.size() > 10 && dj <= 0.01 * jb.size(), "root node view differs (%zu vs %zu bytes)", ja.size(), jb.size());
+
+  GameConfig c16 = cfg;
+  c16.compress = 1;
+  Game g16(c16);
+  AnySolver fallback(g16, true);
+  CHECK(!fallback.on_flat() && fallback.fallback_reason() == "16-bit storage", "16-bit storage did not fall back");
+}
+
 int main(int argc, char** argv) {
   bool quick = argc > 1 && std::string(argv[1]) == "--quick";
   test_ranges();
@@ -363,6 +397,7 @@ int main(int argc, char** argv) {
   test_compression();
   test_depth_limit();
   test_flat_solver();
+  test_any_solver();
   if (!quick) {
     test_isomorphism();
     test_evaluator();
