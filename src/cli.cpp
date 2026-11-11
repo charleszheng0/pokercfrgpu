@@ -3,12 +3,14 @@
 // Example:
 //   pokersolve --board "Ks 9d 5c 2h 2d" --pot 10 --stack 95 \
 //     --oop "QQ-22,AJs-A2s,KTs+" --ip "AA-22,A2s+,KTo+" --bets 33,75 --target 0.3
+// --gpu 1 runs the solve on the GPU in a CUDA build (pokersolve_gpu).
 #include <chrono>
 #include <cstdio>
 #include <iostream>
 #include <map>
 #include <string>
 
+#include "any_solver.hpp"
 #include "game.hpp"
 #include "spot.hpp"
 
@@ -20,13 +22,15 @@ int main(int argc, char** argv) {
     std::string k = argv[i];
     if (k.rfind("--", 0) != 0 || i + 1 >= argc) {
       std::fprintf(stderr, "usage: pokersolve --board B --pot P --stack S --oop R --ip R [--bets 33,75] "
-                           "[--raises 60] [--iters N] [--target PCT] [--threads T] [--path 0,1]\n");
+                           "[--raises 60] [--iters N] [--target PCT] [--threads T] [--path 0,1] [--gpu 1]\n");
       return 2;
     }
     f[k.substr(2)] = argv[++i];
   }
   try {
     GameConfig cfg = config_from_fields(f);
+    const bool gpu = use_gpu(field(f, "gpu", "0") == "1", "pokersolve");
+    prepare_gpu_config(cfg, gpu);
     const int max_iters = static_cast<int>(parse_number(f, "iters", 1000));
     const double target_pct = parse_number(f, "target", 0.5);
     auto t0 = std::chrono::steady_clock::now();
@@ -38,18 +42,24 @@ int main(int argc, char** argv) {
                 game.memory_bytes() / 1e6, std::chrono::duration<double, std::milli>(t1 - t0).count());
     std::printf("storage %s | dealt cards solved %zu of %zu (suit symmetry)\n", game.compressed() ? "16-bit" : "32-bit",
                 game.chance_cards_solved(), game.chance_cards_total());
+    AnySolver solver(game, gpu);
+    if (gpu) {
+      if (solver.on_flat()) std::printf("solver: GPU (%s back end)\n", solver.backend());
+      else std::printf("solver: CPU (GPU not used: %s)\n", solver.fallback_reason().c_str());
+    }
     double expl_pct = 100;
     int next_check = 10;
     for (int it = 1; it <= max_iters; ++it) {
-      game.run_iteration();
+      solver.run_iteration();
       if (it == next_check || it == max_iters) {
-        expl_pct = game.exploitability() / cfg.pot * 100;
+        expl_pct = solver.exploitability() / cfg.pot * 100;
         double sec = std::chrono::duration<double>(std::chrono::steady_clock::now() - t1).count();
         std::printf("iter %5d  exploitability %.3f%% of pot  (%.2f s)\n", it, expl_pct, sec);
         if (expl_pct <= target_pct) break;
         next_check += it < 100 ? 10 : 50;
       }
     }
+    solver.sync();  // GPU result into the Game (no-op on the CPU solver)
     auto ev = game.expected_values();
     std::printf("EV: OOP %.3f  IP %.3f  (sum %.3f = pot)\n", ev[0], ev[1], ev[0] + ev[1]);
     std::vector<std::string> path;

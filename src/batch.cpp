@@ -7,6 +7,9 @@
 // met, reject the solve if it is not, then score every decision node of the first street
 // (up to --depth actions deep) and store it. The flop (and the turn, for river spots) are taken as
 // checked through, so the starting ranges stay the preflop ranges. The story says so.
+//
+// --gpu 1: in a CUDA build (pokerbatch_gpu) every solve runs on the GPU solver (gpu/), then the
+// result loads back into the Game for scoring and storage. Same gate, same stored data.
 #include <chrono>
 #include <cmath>
 #include <functional>
@@ -17,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include "any_solver.hpp"
 #include "game.hpp"
 #include "presets.hpp"
 #include "spot.hpp"
@@ -125,6 +129,8 @@ int main(int argc, char** argv) {
   const double stuck_secs = parse_number(f, "stuck_secs", 0);
   const double stuck_secs_3bet = parse_number(f, "stuck_secs_3bet", 0);
   const int stall_iters = static_cast<int>(parse_number(f, "stall_iters", 100));
+  const bool gpu = use_gpu(field(f, "gpu", "0") == "1", "pokerbatch");
+  if (gpu) std::printf("solves run on the GPU (%s back end)\n", FlatSolver::backend());
   const size_t max_depth = static_cast<size_t>(parse_number(f, "depth", 4));  // actions on this street
   // Continuations: cards stored per line that ends a street, and actions deep on that street.
   const int turn_cards = static_cast<int>(parse_number(f, "turn_cards", 3));
@@ -222,9 +228,12 @@ int main(int argc, char** argv) {
           {"threads", field(f, "threads", "0")}, {"mem_gb", field(f, "mem_gb", flop_mode ? "5" : "3")}};
       GameConfig cfg = config_from_fields(fields);
       cfg.board = board;
+      prepare_gpu_config(cfg, gpu);
 
       auto t0 = std::chrono::steady_clock::now();
       Game g(cfg);
+      AnySolver S(g, gpu);
+      if (gpu && !S.on_flat()) std::printf("      GPU not used for this solve (%s): CPU solver\n", S.fallback_reason().c_str());
       if (flop_mode) {
         std::printf("[%d/%d] %-16s flop   %-14s tree %.0f MB, solving...\n", i + 1, count, pr.name.c_str(),
                     cards_str(board).c_str(), g.memory_bytes() / 1e6);
@@ -234,8 +243,8 @@ int main(int argc, char** argv) {
       int it = 0, best_it = 0;
       const double stuck_limit = pr.name.find("3-bet") != std::string::npos ? stuck_secs_3bet : stuck_secs;
       while (it < max_iters) {
-        for (int k = 0; k < (river ? 25 : 20) && it < max_iters; ++k, ++it) g.run_iteration();
-        expl = g.exploitability() / cfg.pot * 100;
+        for (int k = 0; k < (river ? 25 : 20) && it < max_iters; ++k, ++it) S.run_iteration();
+        expl = S.exploitability() / cfg.pot * 100;
         const double el = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
         if (flop_mode) {
           std::printf("      it %4d  expl %.3f%%  %.0f s\n", it, expl, el);
@@ -249,6 +258,7 @@ int main(int argc, char** argv) {
           break;
         }
       }
+      S.sync();  // GPU result into the Game (no-op on the CPU solver)
       const double secs = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
       auto ev = g.expected_values();
 
@@ -256,7 +266,7 @@ int main(int argc, char** argv) {
       sr.preset = pr.name, sr.oop_pos = pr.oop_pos, sr.ip_pos = pr.ip_pos, sr.board = cards_str(board);
       sr.board_key = key, sr.street = street, sr.oop_range = pr.oop, sr.ip_range = pr.ip;
       sr.config = "bets=" + fields["bets"] + ";raises=" + fields["raises"] + ";max_raises=" + max_raises + ";allin=1;allin_threshold=0.67;" +
-                  "target=" + std::to_string(target) + ";compress=" + (g.compressed() ? "16" : "32");
+                  "target=" + std::to_string(target) + ";compress=" + (g.compressed() ? "16" : "32") + (S.on_flat() ? std::string(";backend=") + S.backend() : std::string());
       sr.solver_version = POKER_VERSION, sr.pot = pr.pot, sr.stack = pr.stack, sr.iterations = it, sr.seconds = secs;
       sr.exploitability_pct = expl, sr.ev_oop = ev[0], sr.ev_ip = ev[1], sr.memory_mb = g.memory_bytes() / 1e6;
       sr.status = expl <= target ? "ok" : "rejected";

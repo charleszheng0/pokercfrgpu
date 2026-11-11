@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "any_solver.hpp"
 #include "flat_solver.hpp"
 #include "game.hpp"
 #include "presets.hpp"
@@ -62,31 +63,14 @@ struct SolveLog {
   std::vector<double> secs, expl;
   std::vector<std::vector<float>> flop_strategy;  // first-street strategy at each check
 };
-// Runs a full tree on Game (CPU) or on the level-by-level solver (--gpu 1). sync() loads the
-// GPU result back into the Game, so the Game can be read as usual afterwards.
-struct AnySolver {
-  Game& g;
-  std::unique_ptr<FlatSolver> fs;
-  explicit AnySolver(Game& game) : g(game) {
-    if (g_gpu && g.num_leaves() == 0) fs = std::make_unique<FlatSolver>(g.export_flat());
-  }
-  void run_iteration() { fs ? fs->run_iteration() : g.run_iteration(); }
-  double exploitability() { return fs ? fs->exploitability() : g.exploitability(); }
-  int iterations() const { return fs ? fs->iterations() : g.iterations(); }
-  void sync() {
-    if (!fs) return;
-    std::vector<float> r, s;
-    fs->download(r, s);
-    g.import_arenas(r, s, fs->iterations());
-  }
-};
+// Full trees run on Game (CPU) or on the level-by-level solver (--gpu 1): see any_solver.hpp.
 
 double solve(Game& g, double pot, double target, int max_iters, int step, SolveLog* log, bool verbose) {
   const auto t0 = Clock::now();
   double expl = 100;
   int it = 0;
   double el_solve = 0;  // time in iterations only (exploitability checks not counted)
-  AnySolver S(g);
+  AnySolver S(g, g_gpu);
   while (it < max_iters) {
     const auto t1 = Clock::now();
     for (int k = 0; k < step && it < max_iters; ++k, ++it) S.run_iteration();
@@ -324,7 +308,7 @@ double locked_exploitability(Game& g, const std::vector<float>& flop, double pot
   const auto t0 = Clock::now();
   g.reset();
   g.lock_first_street(flop);
-  AnySolver S(g);
+  AnySolver S(g, g_gpu);
   double best = 1e9, prev = 1e9;
   for (int it = 0; it < max_iters;) {
     for (int k = 0; k < 20 && it < max_iters; ++k, ++it) S.run_iteration();

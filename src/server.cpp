@@ -15,6 +15,7 @@
 //   GET  /api/play/node?solve=&path=   -> the stored node at a path (to continue a hand)
 //   GET  /api/play/cards?solve=&path=  -> cards stored after a path ({"cards": [...]})
 //   GET  /api/play/showdown?board=&a=&b= -> who wins with hands a and b on the board
+// --gpu 1: in a CUDA build (pokerlab_gpu) every solve runs on the GPU solver (gpu/).
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -37,6 +38,7 @@
 #include <string>
 #include <thread>
 
+#include "any_solver.hpp"
 #include "game.hpp"
 #include "spot.hpp"
 #include "store.hpp"
@@ -103,6 +105,7 @@ struct Limits {
   int min_board = 3;          // 4 = turn and river only
   double keep_mb = 4000;      // finished trees kept for browsing, all solves together
   double keep_minutes = 60;
+  bool gpu = false;           // --gpu 1 in a CUDA build: solves run on the GPU solver
 };
 Limits g_lim;
 
@@ -113,6 +116,7 @@ struct Solve {
   std::unique_ptr<Game> game;
   std::string state = "queued";  // queued, building, running, done, error, stopped, expired
   std::string error, note;
+  std::string backend = "cpu";  // "cuda" when the solve ran on the GPU
   int iteration = 0, max_iters = 0;
   double expl_pct = -1, target_pct = 0.5, seconds = 0, pot = 0, game_mb = 0;
   double ev[2] = {0, 0};
@@ -192,11 +196,17 @@ void run_solve(Solve& s) {
     s.state = "running";
   }
   Game* gm = game.get();
+  AnySolver solver(*gm, g_lim.gpu);
+  {
+    std::lock_guard<std::mutex> lk(s.mu);
+    s.backend = solver.on_flat() ? solver.backend() : "cpu";
+    if (g_lim.gpu && !solver.on_flat()) s.note = "GPU not used: " + solver.fallback_reason();
+  }
   int next_check = 5, checked = 0;
   bool time_hit = false;
   std::string hist;
   auto record = [&](int it) {
-    double e = gm->exploitability() / s.cfg.pot * 100;
+    double e = solver.exploitability() / s.cfg.pot * 100;
     checked = it;
     hist += (hist.empty() ? "" : ",") + std::string("[") + std::to_string(it) + "," + std::to_string(e) + "]";
     std::lock_guard<std::mutex> lk(s.mu);
@@ -207,7 +217,7 @@ void run_solve(Solve& s) {
     return e;
   };
   for (int it = 1; it <= s.max_iters && !s.stop; ++it) {
-    gm->run_iteration();
+    solver.run_iteration();
     if (g_lim.max_seconds > 0 && secs() > g_lim.max_seconds) {
       time_hit = true;
       break;
@@ -217,14 +227,15 @@ void run_solve(Solve& s) {
       next_check += it < 50 ? 5 : it < 200 ? 25 : 50;
     }
   }
-  if (gm->iterations() > 0 && checked != gm->iterations()) record(gm->iterations());  // stopped between checks
+  if (solver.iterations() > 0 && checked != solver.iterations()) record(solver.iterations());  // stopped between checks
+  solver.sync();  // GPU result into the Game, so /api/node reads it as usual (no-op on the CPU solver)
   auto ev = gm->expected_values();
   std::lock_guard<std::mutex> lk(s.mu);
   s.iteration = gm->iterations();
   s.ev[0] = ev[0];
   s.ev[1] = ev[1];
   s.game_mb = gm->memory_bytes() / 1e6;
-  s.note = time_hit ? "time limit" : s.stop ? "stopped" : "";
+  if (time_hit || s.stop) s.note = time_hit ? "time limit" : "stopped";
   s.game = std::move(game);
   finish("done");
 }
@@ -265,7 +276,7 @@ std::string status_json(Solve& s, size_t place) {
   js << "{\"id\":\"" << s.id << "\",\"state\":\"" << s.state << "\",\"place\":" << place
      << ",\"error\":" << json_str(s.error) << ",\"note\":" << json_str(s.note) << ",\"iteration\":" << s.iteration
      << ",\"max_iters\":" << s.max_iters << ",\"expl_pct\":" << s.expl_pct << ",\"target_pct\":" << s.target_pct
-     << ",\"seconds\":" << s.seconds << ",\"pot\":" << s.pot << ",\"ev\":[" << s.ev[0] << "," << s.ev[1]
+     << ",\"seconds\":" << s.seconds << ",\"pot\":" << s.pot << ",\"backend\":" << json_str(s.backend) << ",\"ev\":[" << s.ev[0] << "," << s.ev[1]
      << "],\"history\":[" << s.history << "]";
   if (s.game)
     js << ",\"nodes\":" << s.game->num_nodes() << ",\"memory_mb\":" << s.game->memory_bytes() / 1e6
@@ -279,7 +290,7 @@ std::string limits_json() {
   js << "{\"public\":" << (g_lim.is_public ? "true" : "false") << ",\"min_board\":" << g_lim.min_board
      << ",\"max_iters\":" << g_lim.max_iters << ",\"max_seconds\":" << g_lim.max_seconds
      << ",\"mem_gb\":" << (g_lim.mem_gb > 1e6 ? -1 : g_lim.mem_gb) << ",\"max_line\":" << g_lim.max_line
-     << ",\"workers\":" << g_lim.workers << "}";
+     << ",\"workers\":" << g_lim.workers << ",\"gpu\":" << (g_lim.gpu ? "true" : "false") << "}";
   return js.str();
 }
 
@@ -387,6 +398,7 @@ Response handle(const std::string& method, const std::string& target, const std:
       double target = parse_number(f, "target", 0.5);
       if (g_lim.threads > 0) cfg.threads = g_lim.threads;
       cfg.mem_limit_gb = std::min(cfg.mem_limit_gb, g_lim.mem_gb);
+      prepare_gpu_config(cfg, g_lim.gpu);
       s = std::make_shared<Solve>();
       s->cfg = cfg;
       s->max_iters = iters;
@@ -531,11 +543,14 @@ int main(int argc, char** argv) {
     else if (a == "--max-line") g_lim.max_line = static_cast<size_t>(std::max(1.0, v));
     else if (a == "--keep-mb") g_lim.keep_mb = v;
     else if (a == "--keep-minutes") g_lim.keep_minutes = v;
+    else if (a == "--gpu") g_lim.gpu = v != 0;
     else {
       std::fprintf(stderr, "pokerlab: unknown option %s\n", a.c_str());
       return 2;
     }
   }
+  g_lim.gpu = use_gpu(g_lim.gpu, "pokerlab");
+  if (g_lim.gpu) std::printf("solves run on the GPU (%s back end)\n", FlatSolver::backend());
   int port = pos.size() > 0 ? std::atoi(pos[0].c_str()) : 8080;
   if (pos.size() > 1) g_db_path = pos[1];
   for (int w = 0; w < g_lim.workers; ++w) std::thread(worker_loop).detach();
