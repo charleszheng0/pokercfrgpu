@@ -420,10 +420,10 @@ struct FlatSolverImpl {
           const float* r = Rp + static_cast<size_t>(n) * HM;
           const acc_t* S = pre + j * (NCH + 1);
           // P(x) = reach of sorted positions < x = full chunks + the rest of x's chunk.
-          acc_t P_lo = S[lo / CH], P_hi = S[hi / CH], P_m = S[m / CH];
+          acc_t P_lo = S[lo / CH], P_hi = S[hi / CH];
+          const acc_t P_m = S[(m + CH - 1) / CH];  // the chunks cover the whole list
           for (int k = (lo / CH) * CH; k < lo; ++k) P_lo += r[ord[k]];
           for (int k = (hi / CH) * CH; k < hi; ++k) P_hi += r[ord[k]];
-          for (int k = (m / CH) * CH; k < m; ++k) P_m += r[ord[k]];
           acc_t win = P_lo, lose = P_m - P_hi;
           const int cards[2] = {hc1[h], hc2[h]};
           for (int q = 0; q < 2; ++q) {
