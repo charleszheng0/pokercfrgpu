@@ -3,6 +3,9 @@
 // code runs on both back ends. See flat_solver.hpp for the method.
 #pragma once
 #include <algorithm>
+#include <chrono>
+#include <cstdio>
+#include <string>
 #include <cmath>
 #include <stdexcept>
 #include <vector>
@@ -13,6 +16,11 @@
 namespace poker {
 
 namespace flat {
+#ifdef __CUDACC__
+typedef float acc_t;   // T4-class GPUs run FP64 at 1/32 of FP32
+#else
+typedef double acc_t;  // CPU: same precision as Game
+#endif
 constexpr int kMaxActions = 8;
 enum Mode { kTrain = 0, kAverage = 1, kBest = 2 };
 enum Cat { kAct0 = 0, kAct1 = 1, kChance = 2, kFold = 3, kShow = 4, kNumCat = 5 };
@@ -62,12 +70,40 @@ struct FlatSolverImpl {
   // solver state
   Buf<float> regret, ssum;
   Buf<float> R, V;          // nodes x Hmax: opponent reach (down pass), traverser value (up pass)
-  Buf<double> prefix;       // showdown prefix sums of the current level
-  Buf<double> foldsum;      // fold: 52 card sums + total, per fold node of the current level
+  Buf<flat::acc_t> prefix;  // showdown prefix sums of the current level
+  Buf<flat::acc_t> foldsum;      // fold: 52 card sums + total, per fold node of the current level
   // level lists
   Buf<uint32_t> list;
   std::vector<int64_t> lbeg, lcnt;  // per level * kNumCat
   int64_t max_show = 0, max_fold = 0;
+
+  // Profiling: with prof on, every kernel is followed by a sync and its time is added up.
+  bool prof = false;
+  double prof_secs[10] = {0};
+  long prof_calls[10] = {0};
+  template <class F>
+  void kernel(int id, int64_t n, F f) {
+    if (!prof) {
+      for_each(n, f);
+      return;
+    }
+    device_sync();
+    const auto t0 = std::chrono::steady_clock::now();
+    for_each(n, f);
+    device_sync();
+    prof_secs[id] += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+    ++prof_calls[id];
+  }
+  std::string profile_report() const {
+    static const char* names[10] = {"down_opp", "down_own", "down_chance", "fold_prep", "fold", "show_prep", "show", "up_own", "up_opp", "up_chance"};
+    std::string out;
+    char buf[160];
+    for (int i = 0; i < 10; ++i) {
+      std::snprintf(buf, sizeof buf, "  %-12s %9.3f s  %8ld launches\n", names[i], prof_secs[i], prof_calls[i]);
+      out += buf;
+    }
+    return out;
+  }
 
   int64_t beg(int l, int c) const { return lbeg[l * flat::kNumCat + c]; }
   int64_t cnt(int l, int c) const { return lcnt[l * flat::kNumCat + c]; }
@@ -199,7 +235,7 @@ struct FlatSolverImpl {
       // Opponent action nodes.
       {
         const uint32_t* lst = L + beg(l, o == 0 ? kAct0 : kAct1);
-        for_each(cnt(l, o == 0 ? kAct0 : kAct1) * Ho, LAMBDA(int64_t i) {
+        kernel(0, cnt(l, o == 0 ? kAct0 : kAct1) * Ho, LAMBDA(int64_t i) {
           const uint32_t n = lst[i / Ho];
           const int h = static_cast<int>(i % Ho);
           if (!lv[n]) return;
@@ -223,7 +259,7 @@ struct FlatSolverImpl {
       // Own action nodes: reach passes through unchanged.
       {
         const uint32_t* lst = L + beg(l, p == 0 ? kAct0 : kAct1);
-        for_each(cnt(l, p == 0 ? kAct0 : kAct1) * Ho, LAMBDA(int64_t i) {
+        kernel(1, cnt(l, p == 0 ? kAct0 : kAct1) * Ho, LAMBDA(int64_t i) {
           const uint32_t n = lst[i / Ho];
           const int h = static_cast<int>(i % Ho);
           if (!lv[n]) return;
@@ -238,7 +274,7 @@ struct FlatSolverImpl {
       // Chance nodes: hands that hold the dealt card get no reach.
       {
         const uint32_t* lst = L + beg(l, kChance);
-        for_each(cnt(l, kChance) * Ho, LAMBDA(int64_t i) {
+        kernel(2, cnt(l, kChance) * Ho, LAMBDA(int64_t i) {
           const uint32_t n = lst[i / Ho];
           const int h = static_cast<int>(i % Ho);
           if (!lv[n]) return;
@@ -251,8 +287,8 @@ struct FlatSolverImpl {
           }
         });
       }
-      device_sync();
     }
+    device_sync();
   }
 
   // Up pass: values of the traverser's hands at every live node, deepest level first.
@@ -291,17 +327,17 @@ struct FlatSolverImpl {
     const uint16_t* sord = sd_ord.p;
     const uint64_t* scoff = sd_card_off.p;
     const int32_t* scpos = sd_card_pos.p;
-    double* pre = prefix.p;
-    double* fs = foldsum.p;
+    acc_t* pre = prefix.p;
+    acc_t* fs = foldsum.p;
     float* reg = regret.p;
     float* ss = ssum.p;
     for (int l = levels - 1; l >= 0; --l) {
       // Fold nodes: card sums of the opponent reach, then compatible reach x payoff.
       if (cnt(l, kFold)) {
         const uint32_t* lst = L + beg(l, kFold);
-        for_each(cnt(l, kFold), LAMBDA(int64_t j) {
+        kernel(3, cnt(l, kFold), LAMBDA(int64_t j) {
           const uint32_t n = lst[j];
-          double* f = fs + j * 53;
+          acc_t* f = fs + j * 53;
           for (int c = 0; c < 53; ++c) f[c] = 0;
           if (!lv[n]) return;
           const float* r = Rp + static_cast<size_t>(n) * HM;
@@ -311,16 +347,16 @@ struct FlatSolverImpl {
             f[oc2[k]] += r[k];
           }
         });
-        for_each(cnt(l, kFold) * Hp, LAMBDA(int64_t i) {
+        kernel(4, cnt(l, kFold) * Hp, LAMBDA(int64_t i) {
           const int64_t j = i / Hp;
           const uint32_t n = lst[j];
           const int h = static_cast<int>(i % Hp);
           if (!lv[n]) return;
-          const double* f = fs + j * 53;
-          double v = f[52] - f[hc1[h]] - f[hc2[h]];
+          const acc_t* f = fs + j * 53;
+          acc_t v = f[52] - f[hc1[h]] - f[hc2[h]];
           if (sm[h] >= 0) v += Rp[static_cast<size_t>(n) * HM + sm[h]];
           const int fp = pl[n];
-          const double c = fp == 0 ? ct0[n] : ct1[n];
+          const acc_t c = fp == 0 ? ct0[n] : ct1[n];
           Vp[static_cast<size_t>(n) * HM + h] = static_cast<float>(v * (p == fp ? -c : c));
         });
       }
@@ -329,18 +365,18 @@ struct FlatSolverImpl {
       if (cnt(l, kShow)) {
         const uint32_t* lst = L + beg(l, kShow);
         const int HM1 = HM + 1;
-        for_each(cnt(l, kShow), LAMBDA(int64_t j) {
+        kernel(5, cnt(l, kShow), LAMBDA(int64_t j) {
           const uint32_t n = lst[j];
           if (!lv[n]) return;
           const int64_t b = static_cast<int64_t>(sdi[bid[n]]) * 2 + p;
           const int m = smm[b];
           const uint16_t* ord = sord + sord_off[b];
           const float* r = Rp + static_cast<size_t>(n) * HM;
-          double* P = pre + j * HM1;
+          acc_t* P = pre + j * HM1;
           P[0] = 0;
           for (int k = 0; k < m; ++k) P[k + 1] = P[k] + r[ord[k]];
         });
-        for_each(cnt(l, kShow) * Hp, LAMBDA(int64_t i) {
+        kernel(6, cnt(l, kShow) * Hp, LAMBDA(int64_t i) {
           const int64_t j = i / Hp;
           const uint32_t n = lst[j];
           const int h = static_cast<int>(i % Hp);
@@ -355,8 +391,8 @@ struct FlatSolverImpl {
           const int hi = shi[sown[b] + h], m = smm[b];
           const uint16_t* ord = sord + sord_off[b];
           const float* r = Rp + static_cast<size_t>(n) * HM;
-          const double* P = pre + j * HM1;
-          double win = P[lo], lose = P[m] - P[hi];
+          const acc_t* P = pre + j * HM1;
+          acc_t win = P[lo], lose = P[m] - P[hi];
           const int cards[2] = {hc1[h], hc2[h]};
           for (int q = 0; q < 2; ++q) {
             const uint64_t a0 = scoff[b * 53 + cards[q]], a1 = scoff[b * 53 + cards[q] + 1];
@@ -373,12 +409,12 @@ struct FlatSolverImpl {
       // Own action nodes: strategy-weighted value; regret update (train) or best action.
       {
         const uint32_t* lst = L + beg(l, p == 0 ? kAct0 : kAct1);
-        for_each(cnt(l, p == 0 ? kAct0 : kAct1) * Hp, LAMBDA(int64_t i) {
+        kernel(7, cnt(l, p == 0 ? kAct0 : kAct1) * Hp, LAMBDA(int64_t i) {
           const uint32_t n = lst[i / Hp];
           const int h = static_cast<int>(i % Hp);
           if (!lv[n]) return;
           const int na = static_cast<int>(nc[n]);
-          float val[kMaxActions];
+          float val[kMaxActions] = {0};
           for (int a = 0; a < na; ++a) val[a] = Vp[static_cast<size_t>(fc[n] + a) * HM + h];
           float out = 0;
           if (mode == kBest) {
@@ -404,7 +440,7 @@ struct FlatSolverImpl {
       // Opponent action nodes: sum over the live children.
       {
         const uint32_t* lst = L + beg(l, o == 0 ? kAct0 : kAct1);
-        for_each(cnt(l, o == 0 ? kAct0 : kAct1) * Hp, LAMBDA(int64_t i) {
+        kernel(8, cnt(l, o == 0 ? kAct0 : kAct1) * Hp, LAMBDA(int64_t i) {
           const uint32_t n = lst[i / Hp];
           const int h = static_cast<int>(i % Hp);
           if (!lv[n]) return;
@@ -420,7 +456,7 @@ struct FlatSolverImpl {
       // through the suit permutation; then divide by the number of cards.
       {
         const uint32_t* lst = L + beg(l, kChance);
-        for_each(cnt(l, kChance) * Hp, LAMBDA(int64_t i) {
+        kernel(9, cnt(l, kChance) * Hp, LAMBDA(int64_t i) {
           const uint32_t n = lst[i / Hp];
           const int h = static_cast<int>(i % Hp);
           if (!lv[n]) return;
@@ -439,8 +475,8 @@ struct FlatSolverImpl {
           Vp[static_cast<size_t>(n) * HM + h] = out / static_cast<float>(48 - bs[n]);
         });
       }
-      device_sync();
     }
+    device_sync();
   }
 
   void run_iteration() {
@@ -475,5 +511,7 @@ double FlatSolver::exploitability() { return im_->exploitability(); }
 int FlatSolver::iterations() const { return im_->iteration; }
 double FlatSolver::memory_gb() const { return im_->memory_gb(); }
 const char* FlatSolver::backend() { return backend_name(); }
+void FlatSolver::set_profile(bool on) { im_->prof = on; }
+std::string FlatSolver::profile_report() const { return im_->profile_report(); }
 
 }  // namespace poker

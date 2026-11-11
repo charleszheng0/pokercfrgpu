@@ -5,6 +5,7 @@
 // (node, hand). The back end (CUDA or CPU threads) is chosen when it is compiled.
 #pragma once
 #include <memory>
+#include <string>
 
 #include "flat_tree.hpp"
 
@@ -21,6 +22,8 @@ class FlatSolver {
   int iterations() const;
   double memory_gb() const;  // device memory in use
   static const char* backend();
+  void set_profile(bool on);           // sync after every kernel and time it
+  std::string profile_report() const;  // seconds and launches per kernel kind
 
  private:
   std::unique_ptr<FlatSolverImpl> im_;

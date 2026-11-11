@@ -74,7 +74,9 @@ int main(int argc, char** argv) {
       const FlatTree t = g.export_flat();
       FlatSolver fs(t);
       std::printf("level-by-level solver (%s back end), %.2f GB:\n", FlatSolver::backend(), fs.memory_gb());
+      if (parse_number(f, "profile", 0) != 0) fs.set_profile(true);
       run(FlatSolver::backend(), fs, cfg.pot, target, iters, step);
+      if (parse_number(f, "profile", 0) != 0) std::printf("profile:\n%s", fs.profile_report().c_str());
     }
     if (parse_number(f, "cpu", 1) != 0) {
       std::printf("Game (CPU DCFR, depth-first, %u threads):\n", std::thread::hardware_concurrency());
