@@ -8,6 +8,8 @@ It uses vector-form Discounted CFR: one tree pass handles every hand of both pla
 
 - [Trainer](https://pokerlab.duckdns.org/play): you get a real spot, choose an action, and get a grade
   at once against near-optimal play. Then the hand plays out to showdown against the solver strategy.
+  At the end you see the villain's real cards and its whole range for the line: the made-hand mix,
+  how much of it your hand beats on the river, and its most likely hands.
 - [Solver](https://pokerlab.duckdns.org/): enter a board, two ranges and bet sizes, and solve it live
   (turn and river on the shared server; solves wait in line).
 
@@ -84,16 +86,24 @@ Size keys: `bets`, `raises`, and overrides such as `ip_bets`, `river_bets`,
 - Terminal math: the fast sweep equals a slow pairwise loop (error about 1e-7).
 - Toy river game: call frequency 0.500 and bluff share 0.333, as theory predicts.
 - Speed: river under 2 s, turn under 60 s, both under 0.5% of pot.
+- Depth-limited tree and node locking match the full tree (test 8); the GPU-algorithm solver
+  matches the CPU solver (test 9); the `--gpu` solve path reads like a CPU solve (test 10).
 
-## Status and next steps
+## Status
 
-Done: suit isomorphism, 16-bit regret compression, a SQLite solution store
-([docs/STORE.md](docs/STORE.md)), batch training (`pokerbatch`), a free flop screen
-(`pokerscreen`), the trainer (`/play`), and a public solver mode (`pokerlab --public`).
+Done:
+- Solver: suit isomorphism, 16-bit regret compression, a thread pool, and an optional CUDA
+  solver for training and solving (`--gpu 1`, [docs/gpu.md](docs/gpu.md)).
+- Library: a SQLite solution store ([docs/STORE.md](docs/STORE.md)), batch training
+  (`pokerbatch`) with a quality gate and an early stop for stuck flop solves, a free flop screen
+  (`pokerscreen`), and 70 of 74 picked flops solved (4 rejected).
+- Trainer (`/play`): graded decisions, play-out to showdown, the villain's real hand and range at
+  the end of each hand.
+- Public solver mode (`pokerlab --public`) on the live demo.
+- Research: depth-limited flop solving with a value network ([docs/value-net.md](docs/value-net.md)).
+  It does not reach the 0.5% gate, so stored answers come from full DCFR.
 
-Also done: 70 of 74 picked flops solved (4 rejected), early stop for stuck flop solves, a CUDA
-solver ([docs/gpu.md](docs/gpu.md)), and depth-limited flop solving with a value network
-([docs/value-net.md](docs/value-net.md)). The value network does not reach the 0.5% gate, so
-stored answers come from full DCFR.
+Limits: preflop ranges are hand-built (not solved), there are few bet sizes, and the shared
+demo solves turn and river only (one CPU core, no GPU). No user study yet.
 
-Next: test the trainer with real players. See [SPEC.md](SPEC.md). The old Python prototype is kept at tag `python-prototype`.
+See [SPEC.md](SPEC.md). The old Python prototype is kept at tag `python-prototype`.
